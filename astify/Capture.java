@@ -100,6 +100,7 @@ public abstract class Capture implements Positioned {
         public static<T extends Positioned> ListCapture<T> createFrom(List<T> elements) {
             assert elements != null;
             assert !elements.isEmpty();
+
             return new ListCapture<>(elements.get(0).getPosition().to(elements.get(elements.size() - 1).getPosition()), elements);
         }
 

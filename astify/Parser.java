@@ -105,19 +105,21 @@ public class Parser {
             MatchPredicate.State predicateState = new MatchPredicate.State(token, lastPosition, getSources(sequence));
             boolean failed = false;
 
-            for (MatchPredicate predicate : predicates.get(i)) {
-                if (!predicate.test(predicateState)) {
-                    failed = true;
-                    failures.add(predicate.getError(predicateState));
-                }
-            }
-
             if (matcher.matches(token)) {
                 sequences.set(i, sequence.addCapture(new Capture.TokenCapture(token)));
             }
             else {
                 failed = true;
                 failures.add(matcher.getError(token, predicateState.sources));
+            }
+
+            if (!failed) {
+                for (MatchPredicate predicate : predicates.get(i)) {
+                    if (!predicate.test(predicateState)) {
+                        failed = true;
+                        failures.add(predicate.getError(predicateState));
+                    }
+                }
             }
 
             if (failed) {

@@ -33,8 +33,6 @@ public interface MatchPredicate {
             }
 
             @Override public ParserFailure getError(State state) {
-                System.out.println(state.lastTokenPosition);
-                System.out.println(state.nextToken.position);
                 return new ParserFailure.PredicateFailure(state.sources, "Unexpected space before " + state.nextToken.toString());
             }
         };
