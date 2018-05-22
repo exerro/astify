@@ -2,6 +2,7 @@
 package example;
 
 import astify.Capture;
+import astify.MatchPredicate;
 
 public class ExamplePatternBuilder extends astify.PatternBuilder {
     public ExamplePatternBuilder() {
@@ -14,11 +15,12 @@ public class ExamplePatternBuilder extends astify.PatternBuilder {
                 keyword("null")
         ));
 
-        define("binary-operator", one_of(
-                symbol("+"),
-                symbol("-"),
-                symbol("*"),
-                symbol("/")
+        defineInline("binary-operator", one_of(
+                operator("+"),
+                operator("-"),
+                operator("*"),
+                operator("/"),
+                operator("==")
         ));
 
         define("binary-expression", one_of(
@@ -26,6 +28,13 @@ public class ExamplePatternBuilder extends astify.PatternBuilder {
                 ref("primary-expression")
         ));
 
-        sequence("main", Capture.nth(0), list(ref("binary-expression")));
+        sequence("declaration", Declaration::create, token(Word), token(Word).addPredicate(MatchPredicate.sameLine()), symbol(";"));
+
+        sequence("statement", Capture.nth(0), one_of(
+                sequence("expression-statement", Capture.nth(1), keyword("eval"), ref("binary-expression")),
+                ref("declaration")
+        ), predicate(MatchPredicate.nextLine()));
+
+        sequence("example", Capture.nth(0), list(ref("statement")), eof());
     }
 }

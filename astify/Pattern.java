@@ -8,6 +8,21 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class Pattern {
+    private List<MatchPredicate> predicates = new ArrayList<>();
+
+    public Pattern addPredicate(MatchPredicate predicate) {
+        predicates.add(predicate);
+        return this;
+    }
+
+    Matcher addPredicates(Matcher matcher) {
+        for (MatchPredicate predicate : predicates) {
+            matcher.addPredicate(predicate);
+        }
+
+        return matcher;
+    }
+
     abstract Matcher getMatcher();
 
     static class TokenPattern extends Pattern {
@@ -28,7 +43,7 @@ public abstract class Pattern {
         }
 
         @Override Matcher getMatcher() {
-            return value == null ? new Matcher.TokenMatcher(type) : new Matcher.TokenMatcher(type, value);
+            return addPredicates(value == null ? new Matcher.TokenMatcher(type) : new Matcher.TokenMatcher(type, value));
         }
     }
 
@@ -38,7 +53,7 @@ public abstract class Pattern {
         }
 
         @Override Matcher getMatcher() {
-            return new Matcher.NothingMatcher();
+            return addPredicates(new Matcher.NothingMatcher());
         }
     }
 
@@ -62,7 +77,7 @@ public abstract class Pattern {
                 matchers.add(pattern.getMatcher());
             }
 
-            return new Matcher.SequenceMatcher(name, matchers, generator);
+            return addPredicates(new Matcher.SequenceMatcher(name, matchers, generator));
         }
     }
 
@@ -81,7 +96,7 @@ public abstract class Pattern {
                 matchers.add(pattern.getMatcher());
             }
 
-            return new Matcher.BranchMatcher(matchers);
+            return addPredicates(new Matcher.BranchMatcher(matchers));
         }
     }
 
@@ -93,8 +108,8 @@ public abstract class Pattern {
             this.generator = generator;
         }
 
-        @Override  Matcher getMatcher() {
-            return new Matcher.GeneratorMatcher(generator);
+        @Override Matcher getMatcher() {
+            return addPredicates(new Matcher.GeneratorMatcher(generator));
         }
     }
 
@@ -114,10 +129,10 @@ public abstract class Pattern {
         }
 
         @Override Matcher getMatcher() {
-            return new Matcher.BranchMatcher(Arrays.asList(
+            return addPredicates(new Matcher.BranchMatcher(Arrays.asList(
                 pattern.getMatcher(),
                 generator == null ? new Matcher.NothingMatcher() : new Matcher.SequenceMatcher(null, Collections.singletonList(new Matcher.NothingMatcher()), generator)
-            ));
+            )));
         }
     }
 
@@ -153,7 +168,7 @@ public abstract class Pattern {
 
         @Override public Matcher getMatcher() {
             Matcher matcher = pattern.getMatcher();
-            return generateMatcher();
+            return addPredicates(generateMatcher());
         }
     }
 }

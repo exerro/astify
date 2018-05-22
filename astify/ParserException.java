@@ -37,7 +37,6 @@ public class ParserException extends Exception {
         for (ParserException exception : exceptions) {
             assert position.equals(exception.position) : "Cannot combine exceptions thrown at different positions";
             messages.add(exception.getMessage());
-
         }
 
         return new ParserException(position, String.join("\n", messages));
@@ -57,13 +56,20 @@ public class ParserException extends Exception {
         }
 
         includeSource = groups.size() > 1;
+        includeSource = true;
 
         for (List<String> group : groups.keySet()) {
             Set<ParserFailure> sourceFailures = groups.get(group);
             List<String> expected = new ArrayList<>();
+            List<ParserFailure> otherFailures = new ArrayList<>();
 
             for (ParserFailure failure : sourceFailures) {
-                expected.add(failure.getExpected());
+                if (failure.getExpected() != null) {
+                    expected.add(failure.getExpected());
+                }
+                else {
+                    otherFailures.add(failure);
+                }
             }
 
             String message;
@@ -75,7 +81,13 @@ public class ParserException extends Exception {
                 message = "Expected one of {" + String.join(", ", expected) + "}";
             }
 
-            results.add(new ParserException(token.position, message + ", got " + token.toString() + (includeSource ? " (in parse as " + sourceNames.get(group) + ")" : "")));
+            if (expected.size() > 0) {
+                results.add(new ParserException(token.position, message + ", got " + token.toString() + (includeSource ? " (in parse as " + sourceNames.get(group) + ")" : "")));
+            }
+
+            for (ParserFailure failure : otherFailures) {
+                results.add(new ParserException(token.position, failure.getError() + (includeSource ? " (in parse as " + sourceNames.get(group) + ")" : "")));
+            }
         }
 
         return results;

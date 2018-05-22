@@ -1,5 +1,6 @@
 package astify;
 
+import astify.token.Token;
 import astify.token.TokenType;
 
 import java.util.*;
@@ -44,6 +45,23 @@ public class PatternBuilder {
     public Pattern symbol(String symbol) {
         assert symbol != null;
         return new Pattern.TokenPattern(TokenType.Symbol, symbol);
+    }
+
+    public Pattern operator(String symbol) {
+        if (symbol.length() == 1) return symbol(symbol);
+        List<Pattern> patterns = new ArrayList<>();
+
+        patterns.add(symbol(symbol.substring(0, 1)));
+
+        for (int i = 1; i < symbol.length(); ++i) {
+            patterns.add(symbol(symbol.substring(i, i + 1)).addPredicate(MatchPredicate.noSpace()));
+        }
+
+        return new Pattern.SequencePattern(null, patterns, (captures) -> new Capture.TokenCapture(new Token(
+                Symbol,
+                symbol,
+                captures.get(0).spanningPosition.to(captures.get(captures.size() - 1).spanningPosition
+                ))));
     }
 
     public Pattern token(String name, TokenType type) {
@@ -114,18 +132,29 @@ public class PatternBuilder {
         return token(TokenType.EOF);
     }
 
-    public Pattern define(String name, Pattern pattern) {
+    public Pattern predicate(MatchPredicate predicate) {
+        return new Pattern.NothingPattern().addPredicate(predicate);
+    }
+
+    public Pattern defineInline(String name, Pattern pattern) {
         assert name != null;
         assert pattern != null;
         assert !environment.containsKey(name) : "Redefinition of " + name;
 
-        if (!(pattern instanceof Pattern.SequencePattern)) {
-            pattern = new Pattern.SequencePattern(name, Arrays.asList(pattern), Capture.nth(0));
-        }
-
         environment.put(name, pattern);
 
         return pattern;
+    }
+
+    public Pattern define(String name, Pattern pattern) {
+        assert name != null;
+        assert pattern != null;
+
+        if (!(pattern instanceof Pattern.SequencePattern)) {
+            pattern = new Pattern.SequencePattern(name, Collections.singletonList(pattern), Capture.nth(0));
+        }
+
+        return defineInline(name, pattern);
     }
 
     public Pattern lookup(String name) {

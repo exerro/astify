@@ -54,19 +54,23 @@ public final class Position {
         return new Position(source, line2, char2 + n);
     }
 
+    public boolean isAfter(Position otherToken) {
+        return source.equals(otherToken.source) && line1 == otherToken.line2 && char1 == otherToken.char2 + 1;
+    }
+
     public String getLineAndCaret() {
-        int lineNumberLength = Math.max(3, getLength(line1, line2));
+        int lineNumberLength = Math.max(1, getLength(line1, line2));
 
         if (line1 == line2) {
-            return formatNumber(line1, lineNumberLength) + " " + source.getLine(line1) + "\n"
-                    + rep(" ", lineNumberLength + char1) + rep("^", char2 - char1 + 1);
+            return formatNumber(line1, lineNumberLength) + " | " + source.getLine(line1) + "\n"
+                    + rep(" ", lineNumberLength + char1 + 2) + rep("^", char2 - char1 + 1);
         }
         else {
             String l1 = source.getLine(line1), l2 = source.getLine(line2);
-            return formatNumber(line1, lineNumberLength) + " " + l1 + "\n"
-                    + rep(" ", lineNumberLength + char1) + rep("^", l1.length() - char1 + 1) + " ...\n"
-                    + formatNumber(line2, lineNumberLength) + " " + l2 + "\n"
-                    + rep(" ", lineNumberLength - 3) + "... " + rep("^", char2);
+            return formatNumber(line1, lineNumberLength) + " | " + l1 + "\n"
+                    + rep(" ", lineNumberLength + char1 + 2) + rep("^", l1.length() - char1 + 1) + " ...\n"
+                    + formatNumber(line2, lineNumberLength) + " | " + l2 + "\n"
+                    + rep(" ", lineNumberLength - 1) + "... " + rep("^", char2);
         }
     }
 

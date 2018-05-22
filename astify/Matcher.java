@@ -3,9 +3,25 @@ package astify;
 import astify.token.Token;
 import astify.token.TokenType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 abstract class Matcher {
+    private final List<MatchPredicate> predicates;
+
+    Matcher() {
+        predicates = new ArrayList<>();
+    }
+
+    Matcher addPredicate(MatchPredicate predicate) {
+        predicates.add(predicate);
+        return this;
+    }
+
+    List<MatchPredicate> getPredicates() {
+        return new ArrayList<>(predicates);
+    }
+
     static class TokenMatcher extends Matcher {
         private final TokenType type;
         private final String value;
@@ -74,7 +90,7 @@ abstract class Matcher {
         }
 
         @Override public String toString() {
-            return "<sequence-matcher>";
+            return name == null ? "<sequence-matcher>" : "<sequence-matcher '" + name + "'>";
         }
     }
 
