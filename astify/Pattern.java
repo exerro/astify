@@ -25,7 +25,7 @@ public abstract class Pattern {
 
     abstract Matcher getMatcher();
 
-    static class TokenPattern extends Pattern {
+    public static class TokenPattern extends Pattern {
         private final TokenType type;
         private final String value;
 
@@ -47,7 +47,7 @@ public abstract class Pattern {
         }
     }
 
-    static class NothingPattern extends Pattern {
+    public static class NothingPattern extends Pattern {
         NothingPattern() {
             // empty
         }
@@ -57,7 +57,7 @@ public abstract class Pattern {
         }
     }
 
-    static class SequencePattern extends Pattern {
+    public static class SequencePattern extends Pattern {
         final String name;
         private final List<Pattern> patterns;
         private final CaptureGenerator generator;
@@ -81,7 +81,7 @@ public abstract class Pattern {
         }
     }
 
-    static class BranchPattern extends Pattern {
+    public static class BranchPattern extends Pattern {
         private final List<Pattern> branches;
 
         BranchPattern(List<Pattern> branches) {
@@ -100,7 +100,7 @@ public abstract class Pattern {
         }
     }
 
-    static class GeneratorPattern extends Pattern {
+    public static class GeneratorPattern extends Pattern {
         private final Matcher.GeneratorMatcher.MatcherGenerator generator;
 
         GeneratorPattern(Matcher.GeneratorMatcher.MatcherGenerator generator) {
@@ -113,7 +113,7 @@ public abstract class Pattern {
         }
     }
 
-    static class OptionalPattern extends Pattern {
+    public static class OptionalPattern extends Pattern {
         private final Pattern pattern;
         private final CaptureGenerator generator;
 
@@ -136,7 +136,7 @@ public abstract class Pattern {
         }
     }
 
-    static class ListPattern extends Pattern {
+    public static class ListPattern extends Pattern {
         private final Pattern pattern;
 
         ListPattern(Pattern pattern) {
@@ -156,11 +156,16 @@ public abstract class Pattern {
             return Capture.ListCapture.createFrom(allCaptures);
         }
 
+        static Capture generateFromList(List<Capture> captures) {
+            assert captures.size() == 2;
+            return generateFromList(captures.get(0), captures.get(1));
+        }
+
         Matcher generateMatcher() {
             return new OptionalPattern(
                     new Pattern.SequencePattern(null,
                             Arrays.asList(pattern, new GeneratorPattern(this::generateMatcher)),
-                            captures -> ListPattern.generateFromList(captures.get(0), captures.get(1))
+                            ListPattern::generateFromList
                     ),
                     (captures) -> Capture.ListCapture.createEmpty(captures.get(0).spanningPosition)
             ).getMatcher();
@@ -169,6 +174,24 @@ public abstract class Pattern {
         @Override public Matcher getMatcher() {
             Matcher matcher = pattern.getMatcher();
             return addPredicates(generateMatcher());
+        }
+    }
+
+    public static class DelimitedPattern extends Pattern {
+        private final Pattern pattern, delim;
+
+        DelimitedPattern(Pattern pattern, Pattern delim) {
+            assert pattern != null;
+            assert delim != null;
+            this.pattern = pattern;
+            this.delim = delim;
+        }
+
+        @Override public Matcher getMatcher() {
+            return addPredicates(new Matcher.SequenceMatcher(null, Arrays.asList(
+                    pattern.getMatcher(),
+                    new ListPattern(new SequencePattern(null, Arrays.asList(delim, pattern), Capture.nth(1))).getMatcher()
+            ), ListPattern::generateFromList));
         }
     }
 }

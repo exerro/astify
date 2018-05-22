@@ -9,9 +9,24 @@ import astify.token.TokenType;
 import java.util.*;
 
 public class Parser {
-    private final List<Matcher> matchers;
-    private final List<MatcherSequence> sequences;
-    private final List<List<MatchPredicate>> predicates;
+    private static final boolean debugPrint = false;
+
+    private static class PartialResult {
+        public final Capture result;
+        public final List<MatchPredicate> predicates;
+        public final List<String> sources;
+
+        private PartialResult(Capture result, List<MatchPredicate> predicates, List<String> sources) {
+            this.result = result;
+            this.predicates = predicates;
+            this.sources = sources;
+        }
+    }
+
+    private final List<Matcher> matchers = new ArrayList<>();
+    private final List<MatcherSequence> sequences = new ArrayList<>();
+    private final List<List<MatchPredicate>> predicates = new ArrayList<>();
+    private final List<PartialResult> partialResults = new ArrayList<>();
 
     private boolean finished = false;
     private List<Capture> results;
@@ -19,12 +34,14 @@ public class Parser {
     private List<ParserException> exceptions;
 
     public Parser() {
-        matchers = new ArrayList<>();
-        sequences = new ArrayList<>();
-        predicates = new ArrayList<>();
+        exceptions = new ArrayList<>();
+        results = new ArrayList<>();
     }
 
     public void setup(Pattern pattern, Position begin) {
+        assert pattern != null;
+        assert begin != null;
+
         Matcher.SequenceMatcher sequenceMatcher = pattern.getMatcher() instanceof Matcher.SequenceMatcher
                 ? (Matcher.SequenceMatcher) pattern.getMatcher()
                 : new Matcher.SequenceMatcher(null, Collections.singletonList(pattern.getMatcher()), (captures) -> captures.get(0));
@@ -36,10 +53,10 @@ public class Parser {
         sequences.add(new MatcherSequence(null, sequenceMatcher));
         matchers.add(pattern.getMatcher());
         predicates.add(new ArrayList<>());
-        finished = false;
         results = new ArrayList<>();
         exceptions = new ArrayList<>();
         lastPosition = begin;
+        finished = false;
     }
 
     public List<Capture> getResults() {
@@ -52,7 +69,9 @@ public class Parser {
         while ((token = generator.getNext()).type != TokenType.EOF) {
             feedToken(token);
 
-            if (hasError()) return;
+            if (hasError()) {
+                return;
+            }
         }
 
         finish();
@@ -65,17 +84,31 @@ public class Parser {
 
         prepare();
 
-        MatchPredicate.State predicateState = new MatchPredicate.State(token, lastPosition);
+        for (PartialResult partial : partialResults) {
+            for (MatchPredicate predicate : partial.predicates) {
+                MatchPredicate.State state = new MatchPredicate.State(token, lastPosition, partial.sources);
+
+                if (predicate.test(state)) {
+                    results.add(partial.result);
+                }
+                else {
+                    failures.add(predicate.getError(state));
+                }
+            }
+        }
+
+        partialResults.clear();
 
         for (int i = matchers.size() - 1; i >= 0; --i) {
             Matcher.TokenMatcher matcher = (Matcher.TokenMatcher) matchers.get(i);
             MatcherSequence sequence = sequences.get(i);
+            MatchPredicate.State predicateState = new MatchPredicate.State(token, lastPosition, getSources(sequence));
             boolean failed = false;
 
             for (MatchPredicate predicate : predicates.get(i)) {
                 if (!predicate.test(predicateState)) {
                     failed = true;
-                    failures.add(new ParserFailure.PredicateFailure(getSources(sequence), predicate.getError(predicateState)));
+                    failures.add(predicate.getError(predicateState));
                 }
             }
 
@@ -84,7 +117,7 @@ public class Parser {
             }
             else {
                 failed = true;
-                failures.add(matcher.getError(token, getSources(sequence)));
+                failures.add(matcher.getError(token, predicateState.sources));
             }
 
             if (failed) {
@@ -135,7 +168,7 @@ public class Parser {
     private void prepare() {
         assert !finished;
 
-        System.out.println("prepare()");
+        if (debugPrint) System.out.println("prepare()");
 
         for (int i = sequences.size() - 1; i >= 0; --i) {
             updateMatcher(i);
@@ -144,7 +177,7 @@ public class Parser {
         for (int i = sequences.size() - 1; i >= 0; --i) {
             boolean first = true;
 
-            System.out.print(i + " / " + (sequences.size() - 1) + " :: ");
+            if (debugPrint) System.out.print(i + " / " + (sequences.size() - 1) + " :: ");
 
             while (true) {
                 MatcherSequence sequence = sequences.get(i);
@@ -152,10 +185,10 @@ public class Parser {
 
                 predicates.get(i).addAll(matcher.getPredicates());
 
-                if (!first) { System.out.print(" -> "); /**/ }
+                if (!first) { if (debugPrint) System.out.print(" -> "); }
                 else first = false;
 
-                System.out.print(matcher.toString() + " [" + matcher.getPredicates().size() + "/" + predicates.get(i).size() + "]");
+                if (debugPrint) System.out.print(matcher.toString() + " [" + matcher.getPredicates().size() + "/" + predicates.get(i).size() + "]");
 
                 if (matcher instanceof Matcher.NothingMatcher) {
                     sequences.set(i, sequence.addCapture(new Capture.EmptyCapture(new Position(lastPosition.source, lastPosition.line2, lastPosition.char2))));
@@ -196,7 +229,7 @@ public class Parser {
                 }
             }
 
-            System.out.println();
+            if (debugPrint) System.out.println();
         }
     }
 
@@ -207,10 +240,17 @@ public class Parser {
             MatcherSequence.CompletionPair pair = sequence.complete();
 
             if (pair.sequence == null) {
+
+                if (predicates.get(i).size() > 0) {
+                    partialResults.add(new PartialResult(pair.result, predicates.get(i), getSources(sequence)));
+                }
+                else {
+                    results.add(pair.result);
+                }
+
                 sequences.remove(i);
                 matchers.remove(i);
                 predicates.remove(i);
-                results.add(pair.result);
 
                 return true;
             }
