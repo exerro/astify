@@ -46,7 +46,7 @@ public abstract class Capture implements Positioned {
     }
 
     public static class EmptyCapture extends Capture {
-        protected EmptyCapture(Position spanningPosition) {
+        public EmptyCapture(Position spanningPosition) {
             super(spanningPosition);
         }
 

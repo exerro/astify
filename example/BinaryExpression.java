@@ -40,7 +40,7 @@ public class BinaryExpression extends Expression {
 
         BinaryExpression expression = new BinaryExpression((Expression) leftOperand.get(), (Expression) rightOperand.get(), operator.token.value);
 
-        return new Capture.ObjectCapture<>(expression, expression.getPosition());
+        return Capture.ObjectCapture.create(expression);
     }
 
     @Override public String toString() {

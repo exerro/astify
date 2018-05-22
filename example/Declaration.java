@@ -28,7 +28,7 @@ public class Declaration implements Positioned {
         Capture.TokenCapture name = (Capture.TokenCapture) captures.get(1);
         Position position = type.spanningPosition.to(captures.get(captures.size() - 1).spanningPosition);
 
-        return new Capture.ObjectCapture<>(new Declaration(type.getValue(), name.getValue(), position), position);
+        return Capture.ObjectCapture.create(new Declaration(type.getValue(), name.getValue(), position));
     }
 
     @Override public Position getPosition() {
