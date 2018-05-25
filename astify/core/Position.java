@@ -59,6 +59,7 @@ public final class Position {
         return source.equals(otherPosition.source) && line1 == otherPosition.line2 && char1 == otherPosition.char2 + 1;
     }
 
+    // returns a string representation of the position, showing its source lines and pointers to the characters it spans
     public String getLineAndCaret() {
         int lineNumberLength = Math.max(1, getLength(line1, line2));
 

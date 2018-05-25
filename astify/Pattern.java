@@ -25,7 +25,7 @@ public abstract class Pattern {
 
     abstract Matcher getMatcher();
 
-    public static class TokenPattern extends Pattern {
+    public static final class TokenPattern extends Pattern {
         private final TokenType type;
         private final String value;
 
@@ -47,7 +47,7 @@ public abstract class Pattern {
         }
     }
 
-    public static class NothingPattern extends Pattern {
+    public static final class NothingPattern extends Pattern {
         NothingPattern() {
             // empty
         }
@@ -57,7 +57,7 @@ public abstract class Pattern {
         }
     }
 
-    public static class SequencePattern extends Pattern {
+    public final static class SequencePattern extends Pattern {
         final String name;
         private final List<Pattern> patterns;
         private final CaptureGenerator generator;
@@ -81,7 +81,7 @@ public abstract class Pattern {
         }
     }
 
-    public static class BranchPattern extends Pattern {
+    public static final class BranchPattern extends Pattern {
         private final List<Pattern> branches;
 
         BranchPattern(List<Pattern> branches) {
@@ -100,7 +100,7 @@ public abstract class Pattern {
         }
     }
 
-    public static class GeneratorPattern extends Pattern {
+    public static final class GeneratorPattern extends Pattern {
         private final Matcher.GeneratorMatcher.MatcherGenerator generator;
 
         GeneratorPattern(Matcher.GeneratorMatcher.MatcherGenerator generator) {
@@ -113,7 +113,7 @@ public abstract class Pattern {
         }
     }
 
-    public static class OptionalPattern extends Pattern {
+    public static final class OptionalPattern extends Pattern {
         private final Pattern pattern;
         private final CaptureGenerator generator;
 
@@ -136,7 +136,7 @@ public abstract class Pattern {
         }
     }
 
-    public static class ListPattern extends Pattern {
+    public static final class ListPattern extends Pattern {
         private final Pattern pattern;
 
         ListPattern(Pattern pattern) {
@@ -144,6 +144,7 @@ public abstract class Pattern {
             this.pattern = pattern;
         }
 
+        // unwraps a list of `captures`, adds `capture` to the beginning, and returns the resulting list
         static Capture generateFromList(Capture capture, Capture captures) {
             assert captures instanceof Capture.ListCapture;
 
@@ -177,7 +178,7 @@ public abstract class Pattern {
         }
     }
 
-    public static class DelimitedPattern extends Pattern {
+    public static final class DelimitedPattern extends Pattern {
         private final Pattern pattern, delim;
 
         DelimitedPattern(Pattern pattern, Pattern delim) {
