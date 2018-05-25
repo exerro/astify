@@ -134,8 +134,9 @@ public class PatternBuilder {
         return sequence(Capture.ListCapture::createFrom, parts);
     }
 
-    public Pattern.BranchPattern one_of(Pattern... options) {
+    public Pattern one_of(Pattern... options) {
         assert options.length > 0;
+        if (options.length == 1) return options[0];
         return new Pattern.BranchPattern(Arrays.asList(options));
     }
 

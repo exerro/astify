@@ -1,19 +1,12 @@
 
 package example;
 
+import astify.Capture;
 import astify.core.Position;
-import astify.core.Positioned;
 
-public abstract class Expression implements Positioned {
-    private final Position position;
-
+public abstract class Expression extends Capture.ObjectCapture {
     protected Expression(Position position) {
-        assert position != null;
-        this.position = position;
-    }
-
-    @Override public Position getPosition() {
-        return position;
+        super(position);
     }
 
     @Override public String toString() {

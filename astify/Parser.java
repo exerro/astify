@@ -9,12 +9,12 @@ import astify.token.TokenType;
 import java.util.*;
 
 public class Parser {
-    private static final boolean debugPrint = false;
+    private static final boolean debugPrint = true;
 
     private static class PartialResult {
-        public final Capture result;
-        public final List<MatchPredicate> predicates;
-        public final List<String> sources;
+        private final Capture result;
+        private final List<MatchPredicate> predicates;
+        private final List<String> sources;
 
         private PartialResult(Capture result, List<MatchPredicate> predicates, List<String> sources) {
             this.result = result;

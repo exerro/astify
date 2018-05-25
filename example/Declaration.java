@@ -3,20 +3,18 @@ package example;
 
 import astify.Capture;
 import astify.core.Position;
-import astify.core.Positioned;
-import astify.token.Token;
 
 import java.util.List;
 
-public class Declaration implements Positioned {
+public class Declaration extends Capture.ObjectCapture {
     private final String type, name;
-    private final Position position;
 
     protected Declaration(String type, String name, Position position) {
-        assert position != null;
+        super(position);
+        assert type != null;
+        assert name != null;
         this.type = type;
         this.name = name;
-        this.position = position;
     }
 
     public static Capture create(List<Capture> captures) {
@@ -28,11 +26,7 @@ public class Declaration implements Positioned {
         Capture.TokenCapture name = (Capture.TokenCapture) captures.get(1);
         Position position = type.spanningPosition.to(captures.get(captures.size() - 1).spanningPosition);
 
-        return Capture.ObjectCapture.create(new Declaration(type.getValue(), name.getValue(), position));
-    }
-
-    @Override public Position getPosition() {
-        return position;
+        return new Declaration(type.getValue(), name.getValue(), position);
     }
 
     @Override public String toString() {

@@ -24,7 +24,7 @@ public abstract class Capture implements Positioned {
         return spanningPosition;
     }
 
-    public static class TokenCapture extends Capture {
+    public static final class TokenCapture extends Capture {
         public final Token token;
 
         public TokenCapture(Token token) {
@@ -45,7 +45,7 @@ public abstract class Capture implements Positioned {
         }
     }
 
-    public static class EmptyCapture extends Capture {
+    public static final class EmptyCapture extends Capture {
         public EmptyCapture(Position spanningPosition) {
             super(spanningPosition);
         }
@@ -121,25 +121,13 @@ public abstract class Capture implements Positioned {
         }
     }
 
-    public static class ObjectCapture<T> extends Capture {
-        private final T object;
-
-        public ObjectCapture(T object, Position spanningPosition) {
+    public static abstract class ObjectCapture extends Capture {
+        protected ObjectCapture(Position spanningPosition) {
             super(spanningPosition);
-            assert object != null;
-            this.object = object;
-        }
-
-        public T get() {
-            return object;
-        }
-
-        public static<T extends Positioned> ObjectCapture<T> create(T object) {
-            return new ObjectCapture<>(object, object.getPosition());
         }
 
         @Override public String toString() {
-            return "<object-capture " + object.toString() + ">";
+            return "<object-capture>";
         }
     }
 }

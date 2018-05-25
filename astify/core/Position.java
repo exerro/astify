@@ -54,8 +54,9 @@ public final class Position {
         return new Position(source, line2, char2 + n);
     }
 
-    public boolean isAfter(Position otherToken) {
-        return source.equals(otherToken.source) && line1 == otherToken.line2 && char1 == otherToken.char2 + 1;
+    // returns true if this position is directly after the first parameter's position
+    public boolean isAfter(Position otherPosition) {
+        return source.equals(otherPosition.source) && line1 == otherPosition.line2 && char1 == otherPosition.char2 + 1;
     }
 
     public String getLineAndCaret() {
