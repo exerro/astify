@@ -1,12 +1,9 @@
 package astify;
 
-import astify.core.Position;
 import astify.token.TokenType;
 
 import java.util.List;
 import java.util.Set;
-
-import static java.util.Objects.hash;
 
 abstract class ParserFailure {
     final List<String> sources;
@@ -16,6 +13,7 @@ abstract class ParserFailure {
     }
 
     abstract String getExpected();
+    abstract String getError();
 
     String getSources() {
         if (sources.size() == 0) return "";
@@ -51,6 +49,23 @@ abstract class ParserFailure {
             if (!allMatch) break;
         }
 
+        for (ParserFailure failure : failures) {
+            for (int i = failure.sources.size() - 1; i > 0; --i) {
+                String s1 = failure.sources.get(i);
+                String s2 = failure.sources.get(i - 1);
+
+                if (s1.equals(s2) || s1.equals(s2 + "*")) {
+                    failure.sources.remove(i);
+                    failure.sources.set(i - 1, s2 + "*");
+                }
+            }
+
+            for (boolean set = true; failure.sources.size() > 3; set = false) {
+                failure.sources.remove(failure.sources.size() - 1);
+                if (set) failure.sources.set(2, "..." + failure.sources.get(2));
+            }
+        }
+
         return failures;
     }
 
@@ -65,8 +80,12 @@ abstract class ParserFailure {
             this.expectedValue = expectedValue;
         }
 
-        String getExpected() {
+        @Override String getExpected() {
             return expectedValue == null ? expectedType.toString() : expectedType.toString() + " \"" + expectedValue + "\"";
+        }
+
+        @Override String getError() {
+            return "Expected " + getExpected();
         }
 
         @Override public boolean equals(Object o) {
@@ -99,6 +118,10 @@ abstract class ParserFailure {
             return "'" + expectedValue + "'";
         }
 
+        @Override String getError() {
+            return "Expected " + getExpected();
+        }
+
         @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
@@ -110,6 +133,39 @@ abstract class ParserFailure {
 
         @Override public int hashCode() {
             return expectedValue.hashCode();
+        }
+    }
+
+    static class PredicateFailure extends ParserFailure {
+        private final String predicateFailure;
+
+        PredicateFailure(List<String> sources, String predicateFailure) {
+            super(sources);
+            assert predicateFailure != null;
+            this.predicateFailure = predicateFailure;
+        }
+
+        @Override String getExpected() {
+            return null;
+        }
+
+        @Override String getError() {
+            return predicateFailure;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            PredicateFailure that = (PredicateFailure) o;
+
+            return predicateFailure.equals(that.predicateFailure);
+        }
+
+        @Override
+        public int hashCode() {
+            return predicateFailure.hashCode();
         }
     }
 }

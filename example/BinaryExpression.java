@@ -34,13 +34,11 @@ public class BinaryExpression extends Expression {
         assert captures.get(1) instanceof Capture.TokenCapture : "Operator is not a token";
         assert captures.get(2) instanceof Capture.ObjectCapture : "Right operand is not an object";
 
-        Capture.ObjectCapture leftOperand = (Capture.ObjectCapture) captures.get(0);
-        Capture.ObjectCapture rightOperand = (Capture.ObjectCapture) captures.get(2);
+        Expression leftOperand = (Expression) captures.get(0);
+        Expression rightOperand = (Expression) captures.get(2);
         Capture.TokenCapture operator = (Capture.TokenCapture) captures.get(1);
 
-        BinaryExpression expression = new BinaryExpression((Expression) leftOperand.get(), (Expression) rightOperand.get(), operator.token.value);
-
-        return new Capture.ObjectCapture<>(expression, expression.getPosition());
+        return new BinaryExpression(leftOperand, rightOperand, operator.token.value);
     }
 
     @Override public String toString() {

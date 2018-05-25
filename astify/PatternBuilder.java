@@ -1,5 +1,6 @@
 package astify;
 
+import astify.token.Token;
 import astify.token.TokenType;
 
 import java.util.*;
@@ -24,110 +25,190 @@ public class PatternBuilder {
         return keywords;
     }
 
-    public Pattern token(TokenType type) {
+    // a token with the given type
+    public Pattern.TokenPattern token(TokenType type) {
         assert type != null;
         return new Pattern.TokenPattern(type);
     }
 
-    public Pattern token(TokenType type, String value) {
+    // a token with the given type and value
+    public Pattern.TokenPattern token(TokenType type, String value) {
         assert type != null;
         assert value != null;
         return new Pattern.TokenPattern(type, value);
     }
 
-    public Pattern keyword(String word) {
-        assert word != null;
-        keywords.add(word);
-        return new Pattern.TokenPattern(TokenType.Keyword, word);
-    }
-
-    public Pattern symbol(String symbol) {
-        assert symbol != null;
-        return new Pattern.TokenPattern(TokenType.Symbol, symbol);
-    }
-
-    public Pattern token(String name, TokenType type) {
+    // token(TokenType) but defines the resulting pattern using the given name
+    public Pattern.SequencePattern token(String name, TokenType type) {
         assert name != null;
         assert type != null;
         return define(name, token(type));
     }
 
-    public Pattern token(String name, TokenType type, String value) {
+    // token(TokenType, String) but defines the resulting pattern using the given name
+    public Pattern.SequencePattern token(String name, TokenType type, String value) {
         assert name != null;
         assert type != null;
         assert value != null;
         return define(name, token(type, value));
     }
 
-    public Pattern optional(Pattern opt) {
+    // a token with type Keyword and the given word value
+    public astify.Pattern.TokenPattern keyword(String word) {
+        assert word != null;
+        keywords.add(word);
+        return new Pattern.TokenPattern(TokenType.Keyword, word);
+    }
+
+    // a token with the type Symbol and the given symbol value
+    public Pattern.TokenPattern symbol(String symbol) {
+        assert symbol != null;
+        return new Pattern.TokenPattern(TokenType.Symbol, symbol);
+    }
+
+    // a sequence of consecutive symbols (with no spaces) matching the characters of the given symbol
+    public Pattern operator(String symbol) {
+        if (symbol.length() == 1) return symbol(symbol);
+        List<Pattern> patterns = new ArrayList<>();
+
+        patterns.add(symbol(symbol.substring(0, 1)));
+
+        for (int i = 1; i < symbol.length(); ++i) {
+            patterns.add(symbol(symbol.substring(i, i + 1)).addPredicate(MatchPredicate.noSpace()));
+        }
+
+        return new Pattern.SequencePattern(null, patterns, (captures) -> new Capture.TokenCapture(new Token(
+                Symbol,
+                symbol,
+                captures.get(0).spanningPosition.to(captures.get(captures.size() - 1).spanningPosition)
+        )));
+    }
+
+    // matches either the pattern given or nothing
+    public Pattern.OptionalPattern optional(Pattern opt) {
         assert opt != null;
         return new Pattern.OptionalPattern(opt);
     }
 
-    public Pattern optional(String name, Pattern opt) {
+    // optional(Pattern) but defines the resulting pattern using the given name
+    public Pattern.SequencePattern optional(String name, Pattern opt) {
         assert name != null;
         assert opt != null;
         return define(name, optional(opt));
     }
 
-    public Pattern list(Pattern pattern) {
+    // matches 0 or more occurrences of the pattern given, greedily
+    public Pattern.ListPattern list(Pattern pattern) {
         assert pattern != null;
         return new Pattern.ListPattern(pattern);
     }
 
-    public Pattern list(String name, Pattern pattern) {
+    // list(Pattern) but defines the resulting pattern using the given name
+    public Pattern.SequencePattern list(String name, Pattern pattern) {
         assert name != null;
         assert pattern != null;
         return define(name, list(pattern));
     }
 
-    public Pattern sequence(String name, CaptureGenerator generator, Pattern... parts) {
+    // matches the pattern followed by a list of 0 or more (the delimiter followed by the pattern)
+    public Pattern.DelimitedPattern delim(Pattern pattern, Pattern delim) {
+        assert pattern != null;
+        return new Pattern.DelimitedPattern(pattern, delim);
+    }
+
+    // delim(Pattern, Pattern) but defines the resulting pattern using the given name
+    public Pattern.SequencePattern delim(String name, Pattern pattern, Pattern delim) {
+        assert name != null;
+        assert pattern != null;
+        return define(name, delim(pattern, delim));
+    }
+
+    // matches a sequence of the patterns given
+    // creates a capture based on the capture generator
+    public Pattern.SequencePattern sequence(CaptureGenerator generator, Pattern... parts) {
+        assert generator != null;
+        assert parts.length > 0;
+        return new Pattern.SequencePattern(null, Arrays.asList(parts), generator);
+    }
+
+    // sequence(CaptureGenerator, Pattern...) but defines the resulting pattern using the given name
+    public Pattern.SequencePattern sequence(String name, CaptureGenerator generator, Pattern... parts) {
         assert name != null;
         assert generator != null;
         assert parts.length > 0;
         return define(name, new Pattern.SequencePattern(name, Arrays.asList(parts), generator));
     }
 
-    public Pattern sequence(CaptureGenerator generator, Pattern... parts) {
-        assert generator != null;
+    // sequence(CaptureGenerator, Pattern...) but creates a list capture containing all sub-captures
+    public Pattern.SequencePattern sequence(Pattern... parts) {
         assert parts.length > 0;
-        return new Pattern.SequencePattern(null, Arrays.asList(parts), generator);
+        return sequence(Capture.ListCapture::createFrom, parts);
     }
 
+    // sequence(Pattern...) but defines the resulting pattern using the given name
+    public Pattern.SequencePattern sequence(String name, Pattern... parts) {
+        assert name != null;
+        assert parts.length > 0;
+        return sequence(name, Capture.ListCapture::createFrom, parts);
+    }
+
+    // matches any number of the given patterns
+    // note that this can lead to syntax ambiguity, resulting in many distinct matches for the same token stream
     public Pattern one_of(Pattern... options) {
         assert options.length > 0;
+        if (options.length == 1) return options[0];
         return new Pattern.BranchPattern(Arrays.asList(options));
     }
 
-    public Pattern one_of(String name, Pattern... options) {
+    // one_of(Pattern...) but defines the resulting pattern using the given name
+    public Pattern.SequencePattern one_of(String name, Pattern... options) {
         assert name != null;
         assert options.length > 0;
         return define(name, one_of(options));
     }
 
-    public Pattern ref(String name) {
+    // matches the pattern defined using the given name
+    public Pattern.GeneratorPattern ref(String name) {
         assert name != null;
         return new Pattern.GeneratorPattern(() -> lookup(name).getMatcher());
     }
 
-    public Pattern eof() {
+    // matches the end of the file
+    public Pattern.TokenPattern eof() {
         return token(TokenType.EOF);
     }
 
-    public Pattern define(String name, Pattern pattern) {
+    // creates an empty capture dependent on the given predicate
+    public Pattern predicate(MatchPredicate predicate) {
+        return new Pattern.NothingPattern().addPredicate(predicate);
+    }
+
+    // defines a pattern such that it behaves as if inline when referred to
+    // see define() for contrast
+    public <T extends Pattern> T defineInline(String name, T pattern) {
         assert name != null;
         assert pattern != null;
         assert !environment.containsKey(name) : "Redefinition of " + name;
-
-        if (!(pattern instanceof Pattern.SequencePattern)) {
-            pattern = new Pattern.SequencePattern(name, Arrays.asList(pattern), Capture.nth(0));
-        }
 
         environment.put(name, pattern);
 
         return pattern;
     }
 
+    // defines a pattern such that it will show `name` in the matcher stack of any parser exceptions
+    public <T extends Pattern> Pattern.SequencePattern define(String name, T pattern) {
+        assert name != null;
+        assert pattern != null;
+
+        if (!(pattern instanceof Pattern.SequencePattern)) {
+            return defineInline(name, new Pattern.SequencePattern(name, Collections.singletonList(pattern), Capture.nth(0)));
+        }
+        else {
+            return defineInline(name, (Pattern.SequencePattern) pattern);
+        }
+    }
+
+    // looks up a pattern with the given name
     public Pattern lookup(String name) {
         assert name != null;
         assert environment.containsKey(name) : "Lookup of " + name + " failed";

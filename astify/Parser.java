@@ -9,8 +9,24 @@ import astify.token.TokenType;
 import java.util.*;
 
 public class Parser {
-    private final List<Matcher> matchers;
-    private final List<MatcherSequence> sequences;
+    private static final boolean debugPrint = true;
+
+    private static class PartialResult {
+        private final Capture result;
+        private final List<MatchPredicate> predicates;
+        private final List<String> sources;
+
+        private PartialResult(Capture result, List<MatchPredicate> predicates, List<String> sources) {
+            this.result = result;
+            this.predicates = predicates;
+            this.sources = sources;
+        }
+    }
+
+    private final List<Matcher> matchers = new ArrayList<>();
+    private final List<MatcherSequence> sequences = new ArrayList<>();
+    private final List<List<MatchPredicate>> predicates = new ArrayList<>();
+    private final List<PartialResult> partialResults = new ArrayList<>();
 
     private boolean finished = false;
     private List<Capture> results;
@@ -18,24 +34,29 @@ public class Parser {
     private List<ParserException> exceptions;
 
     public Parser() {
-        matchers = new ArrayList<>();
-        sequences = new ArrayList<>();
+        exceptions = new ArrayList<>();
+        results = new ArrayList<>();
     }
 
     public void setup(Pattern pattern, Position begin) {
+        assert pattern != null;
+        assert begin != null;
+
         Matcher.SequenceMatcher sequenceMatcher = pattern.getMatcher() instanceof Matcher.SequenceMatcher
                 ? (Matcher.SequenceMatcher) pattern.getMatcher()
                 : new Matcher.SequenceMatcher(null, Collections.singletonList(pattern.getMatcher()), (captures) -> captures.get(0));
 
         matchers.clear();
         sequences.clear();
+        predicates.clear();
 
         sequences.add(new MatcherSequence(null, sequenceMatcher));
         matchers.add(pattern.getMatcher());
-        finished = false;
+        predicates.add(new ArrayList<>());
         results = new ArrayList<>();
         exceptions = new ArrayList<>();
         lastPosition = begin;
+        finished = false;
     }
 
     public List<Capture> getResults() {
@@ -48,7 +69,9 @@ public class Parser {
         while ((token = generator.getNext()).type != TokenType.EOF) {
             feedToken(token);
 
-            if (hasError()) return;
+            if (hasError()) {
+                return;
+            }
         }
 
         finish();
@@ -57,26 +80,59 @@ public class Parser {
     public void feedToken(Token token) {
         Set<ParserFailure> failures = new HashSet<>();
 
-        lastPosition = token.position;
-
         if (sequences.size() == 0) return;
 
         prepare();
 
+        for (PartialResult partial : partialResults) {
+            for (MatchPredicate predicate : partial.predicates) {
+                MatchPredicate.State state = new MatchPredicate.State(token, lastPosition, partial.sources);
+
+                if (predicate.test(state)) {
+                    results.add(partial.result);
+                }
+                else {
+                    failures.add(predicate.getError(state));
+                }
+            }
+        }
+
+        partialResults.clear();
+
         for (int i = matchers.size() - 1; i >= 0; --i) {
             Matcher.TokenMatcher matcher = (Matcher.TokenMatcher) matchers.get(i);
             MatcherSequence sequence = sequences.get(i);
+            MatchPredicate.State predicateState = new MatchPredicate.State(token, lastPosition, getSources(sequence));
+            boolean failed = false;
 
             if (matcher.matches(token)) {
                 sequences.set(i, sequence.addCapture(new Capture.TokenCapture(token)));
             }
             else {
+                failed = true;
+                failures.add(matcher.getError(token, predicateState.sources));
+            }
+
+            if (!failed) {
+                for (MatchPredicate predicate : predicates.get(i)) {
+                    if (!predicate.test(predicateState)) {
+                        failed = true;
+                        failures.add(predicate.getError(predicateState));
+                    }
+                }
+            }
+
+            if (failed) {
                 matchers.remove(i);
                 sequences.remove(i);
-
-                failures.add(matcher.getError(token, getSources(sequence)));
+                predicates.remove(i);
+            }
+            else {
+                predicates.get(i).clear();
             }
         }
+
+        lastPosition = token.position;
 
         if (sequences.size() == 0) {
             exceptions = ParserException.generateFrom(failures, token);
@@ -114,7 +170,7 @@ public class Parser {
     private void prepare() {
         assert !finished;
 
-        // System.out.println("prepare()");
+        if (debugPrint) System.out.println("prepare()");
 
         for (int i = sequences.size() - 1; i >= 0; --i) {
             updateMatcher(i);
@@ -123,16 +179,18 @@ public class Parser {
         for (int i = sequences.size() - 1; i >= 0; --i) {
             boolean first = true;
 
-            // System.out.print(i + " / " + (sequences.size() - 1) + " :: ");
+            if (debugPrint) System.out.print(i + " / " + (sequences.size() - 1) + " :: ");
 
             while (true) {
                 MatcherSequence sequence = sequences.get(i);
                 Matcher matcher = matchers.get(i);
 
-                if (!first) { /* System.out.print(" -> "); */ }
+                predicates.get(i).addAll(matcher.getPredicates());
+
+                if (!first) { if (debugPrint) System.out.print(" -> "); }
                 else first = false;
 
-                // System.out.print(matcher.toString());
+                if (debugPrint) System.out.print(matcher.toString() + " [" + matcher.getPredicates().size() + "/" + predicates.get(i).size() + "]");
 
                 if (matcher instanceof Matcher.NothingMatcher) {
                     sequences.set(i, sequence.addCapture(new Capture.EmptyCapture(new Position(lastPosition.source, lastPosition.line2, lastPosition.char2))));
@@ -141,13 +199,16 @@ public class Parser {
                 }
                 else if (matcher instanceof Matcher.BranchMatcher) {
                     Matcher.BranchMatcher branchMatcher = (Matcher.BranchMatcher) matcher;
+                    List<MatchPredicate> predicateList = predicates.get(i);
                     sequence.notifyBranch(branchMatcher.getBranchCount());
                     sequences.remove(i);
                     matchers.remove(i);
+                    predicates.remove(i);
 
                     for (int j = 0; j < branchMatcher.getBranchCount(); ++j) {
                         sequences.add(i + j, sequence);
                         matchers.add(i + j, branchMatcher.getBranch(j));
+                        predicates.add(i + j, new ArrayList<>(predicateList));
                     }
 
                     i += branchMatcher.getBranchCount();
@@ -170,7 +231,7 @@ public class Parser {
                 }
             }
 
-            // System.out.println();
+            if (debugPrint) System.out.println();
         }
     }
 
@@ -181,9 +242,17 @@ public class Parser {
             MatcherSequence.CompletionPair pair = sequence.complete();
 
             if (pair.sequence == null) {
+
+                if (predicates.get(i).size() > 0) {
+                    partialResults.add(new PartialResult(pair.result, predicates.get(i), getSources(sequence)));
+                }
+                else {
+                    results.add(pair.result);
+                }
+
                 sequences.remove(i);
                 matchers.remove(i);
-                results.add(pair.result);
+                predicates.remove(i);
 
                 return true;
             }

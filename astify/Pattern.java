@@ -8,9 +8,24 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class Pattern {
+    private List<MatchPredicate> predicates = new ArrayList<>();
+
+    public Pattern addPredicate(MatchPredicate predicate) {
+        predicates.add(predicate);
+        return this;
+    }
+
+    Matcher addPredicates(Matcher matcher) {
+        for (MatchPredicate predicate : predicates) {
+            matcher.addPredicate(predicate);
+        }
+
+        return matcher;
+    }
+
     abstract Matcher getMatcher();
 
-    static class TokenPattern extends Pattern {
+    public static final class TokenPattern extends Pattern {
         private final TokenType type;
         private final String value;
 
@@ -28,21 +43,21 @@ public abstract class Pattern {
         }
 
         @Override Matcher getMatcher() {
-            return value == null ? new Matcher.TokenMatcher(type) : new Matcher.TokenMatcher(type, value);
+            return addPredicates(value == null ? new Matcher.TokenMatcher(type) : new Matcher.TokenMatcher(type, value));
         }
     }
 
-    static class NothingPattern extends Pattern {
+    public static final class NothingPattern extends Pattern {
         NothingPattern() {
             // empty
         }
 
         @Override Matcher getMatcher() {
-            return new Matcher.NothingMatcher();
+            return addPredicates(new Matcher.NothingMatcher());
         }
     }
 
-    static class SequencePattern extends Pattern {
+    public final static class SequencePattern extends Pattern {
         final String name;
         private final List<Pattern> patterns;
         private final CaptureGenerator generator;
@@ -62,11 +77,11 @@ public abstract class Pattern {
                 matchers.add(pattern.getMatcher());
             }
 
-            return new Matcher.SequenceMatcher(name, matchers, generator);
+            return addPredicates(new Matcher.SequenceMatcher(name, matchers, generator));
         }
     }
 
-    static class BranchPattern extends Pattern {
+    public static final class BranchPattern extends Pattern {
         private final List<Pattern> branches;
 
         BranchPattern(List<Pattern> branches) {
@@ -81,11 +96,11 @@ public abstract class Pattern {
                 matchers.add(pattern.getMatcher());
             }
 
-            return new Matcher.BranchMatcher(matchers);
+            return addPredicates(new Matcher.BranchMatcher(matchers));
         }
     }
 
-    static class GeneratorPattern extends Pattern {
+    public static final class GeneratorPattern extends Pattern {
         private final Matcher.GeneratorMatcher.MatcherGenerator generator;
 
         GeneratorPattern(Matcher.GeneratorMatcher.MatcherGenerator generator) {
@@ -93,12 +108,12 @@ public abstract class Pattern {
             this.generator = generator;
         }
 
-        @Override  Matcher getMatcher() {
-            return new Matcher.GeneratorMatcher(generator);
+        @Override Matcher getMatcher() {
+            return addPredicates(new Matcher.GeneratorMatcher(generator));
         }
     }
 
-    static class OptionalPattern extends Pattern {
+    public static final class OptionalPattern extends Pattern {
         private final Pattern pattern;
         private final CaptureGenerator generator;
 
@@ -114,14 +129,14 @@ public abstract class Pattern {
         }
 
         @Override Matcher getMatcher() {
-            return new Matcher.BranchMatcher(Arrays.asList(
+            return addPredicates(new Matcher.BranchMatcher(Arrays.asList(
                 pattern.getMatcher(),
                 generator == null ? new Matcher.NothingMatcher() : new Matcher.SequenceMatcher(null, Collections.singletonList(new Matcher.NothingMatcher()), generator)
-            ));
+            )));
         }
     }
 
-    static class ListPattern extends Pattern {
+    public static final class ListPattern extends Pattern {
         private final Pattern pattern;
 
         ListPattern(Pattern pattern) {
@@ -129,6 +144,7 @@ public abstract class Pattern {
             this.pattern = pattern;
         }
 
+        // unwraps a list of `captures`, adds `capture` to the beginning, and returns the resulting list
         static Capture generateFromList(Capture capture, Capture captures) {
             assert captures instanceof Capture.ListCapture;
 
@@ -141,11 +157,16 @@ public abstract class Pattern {
             return Capture.ListCapture.createFrom(allCaptures);
         }
 
+        static Capture generateFromList(List<Capture> captures) {
+            assert captures.size() == 2;
+            return generateFromList(captures.get(0), captures.get(1));
+        }
+
         Matcher generateMatcher() {
             return new OptionalPattern(
                     new Pattern.SequencePattern(null,
                             Arrays.asList(pattern, new GeneratorPattern(this::generateMatcher)),
-                            captures -> ListPattern.generateFromList(captures.get(0), captures.get(1))
+                            ListPattern::generateFromList
                     ),
                     (captures) -> Capture.ListCapture.createEmpty(captures.get(0).spanningPosition)
             ).getMatcher();
@@ -153,7 +174,25 @@ public abstract class Pattern {
 
         @Override public Matcher getMatcher() {
             Matcher matcher = pattern.getMatcher();
-            return generateMatcher();
+            return addPredicates(generateMatcher());
+        }
+    }
+
+    public static final class DelimitedPattern extends Pattern {
+        private final Pattern pattern, delim;
+
+        DelimitedPattern(Pattern pattern, Pattern delim) {
+            assert pattern != null;
+            assert delim != null;
+            this.pattern = pattern;
+            this.delim = delim;
+        }
+
+        @Override public Matcher getMatcher() {
+            return addPredicates(new Matcher.SequenceMatcher(null, Arrays.asList(
+                    pattern.getMatcher(),
+                    new ListPattern(new SequencePattern(null, Arrays.asList(delim, pattern), Capture.nth(1))).getMatcher()
+            ), ListPattern::generateFromList));
         }
     }
 }

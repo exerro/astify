@@ -16,6 +16,8 @@ public abstract class Capture implements Positioned {
         this.spanningPosition = spanningPosition;
     }
 
+    // return a callback to return the nth capture of a list of captures
+    // for example `sequence(Capture.nth(0), ref('something'), symbol(';'))` to get the `something` and ignore the ';'
     public static CaptureGenerator nth(int index) {
         return captures -> captures.get(index);
     }
@@ -24,7 +26,18 @@ public abstract class Capture implements Positioned {
         return spanningPosition;
     }
 
-    public static class TokenCapture extends Capture {
+    // base class to inherit custom capture types from
+    public static abstract class ObjectCapture extends Capture {
+        protected ObjectCapture(Position spanningPosition) {
+            super(spanningPosition);
+        }
+
+        @Override public String toString() {
+            return "<object-capture>";
+        }
+    }
+
+    public static final class TokenCapture extends Capture {
         public final Token token;
 
         public TokenCapture(Token token) {
@@ -45,8 +58,8 @@ public abstract class Capture implements Positioned {
         }
     }
 
-    public static class EmptyCapture extends Capture {
-        protected EmptyCapture(Position spanningPosition) {
+    public static final class EmptyCapture extends Capture {
+        public EmptyCapture(Position spanningPosition) {
             super(spanningPosition);
         }
 
@@ -93,16 +106,20 @@ public abstract class Capture implements Positioned {
             };
         }
 
+        // creates an empty list capture spanning the given position
         public static<T> ListCapture<T> createEmpty(Position spanningPosition) {
             return new ListCapture<>(spanningPosition, new ArrayList<>());
         }
 
+        // returns a list capture containing all given elements, spanning the position defined by the first and last element given
         public static<T extends Positioned> ListCapture<T> createFrom(List<T> elements) {
             assert elements != null;
             assert !elements.isEmpty();
+
             return new ListCapture<>(elements.get(0).getPosition().to(elements.get(elements.size() - 1).getPosition()), elements);
         }
 
+        // returns an empty list capture spanning the given position if elements is empty, otherwise returns createFrom(elements)
         public static<T extends Positioned> ListCapture createFrom(List<T> elements, Position spanningPosition) {
             return elements.isEmpty() ? createEmpty(spanningPosition) : createFrom(elements);
         }
@@ -117,28 +134,6 @@ public abstract class Capture implements Positioned {
             }
 
             return builder.append(">").toString();
-        }
-    }
-
-    public static class ObjectCapture<T> extends Capture {
-        private final T object;
-
-        public ObjectCapture(T object, Position spanningPosition) {
-            super(spanningPosition);
-            assert object != null;
-            this.object = object;
-        }
-
-        public T get() {
-            return object;
-        }
-
-        public static<T extends Positioned> ObjectCapture<T> create(T object) {
-            return new ObjectCapture<>(object, object.getPosition());
-        }
-
-        @Override public String toString() {
-            return "<object-capture " + object.toString() + ">";
         }
     }
 }

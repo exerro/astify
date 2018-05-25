@@ -54,6 +54,7 @@ class MatcherSequence {
 
     MatcherSequence addCapture(Capture capture) {
         assert captures.size() < matcher.getMatcherCount() : matcher.name;
+        assert capture != null;
 
         MatcherSequence self = this;
 

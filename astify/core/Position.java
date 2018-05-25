@@ -54,19 +54,25 @@ public final class Position {
         return new Position(source, line2, char2 + n);
     }
 
+    // returns true if this position is directly after the first parameter's position
+    public boolean isAfter(Position otherPosition) {
+        return source.equals(otherPosition.source) && line1 == otherPosition.line2 && char1 == otherPosition.char2 + 1;
+    }
+
+    // returns a string representation of the position, showing its source lines and pointers to the characters it spans
     public String getLineAndCaret() {
-        int lineNumberLength = Math.max(3, getLength(line1, line2));
+        int lineNumberLength = Math.max(1, getLength(line1, line2));
 
         if (line1 == line2) {
-            return formatNumber(line1, lineNumberLength) + " " + source.getLine(line1) + "\n"
-                    + rep(" ", lineNumberLength + char1) + rep("^", char2 - char1 + 1);
+            return formatNumber(line1, lineNumberLength) + " | " + source.getLine(line1) + "\n"
+                    + rep(" ", lineNumberLength + char1 + 2) + rep("^", char2 - char1 + 1);
         }
         else {
             String l1 = source.getLine(line1), l2 = source.getLine(line2);
-            return formatNumber(line1, lineNumberLength) + " " + l1 + "\n"
-                    + rep(" ", lineNumberLength + char1) + rep("^", l1.length() - char1 + 1) + " ...\n"
-                    + formatNumber(line2, lineNumberLength) + " " + l2 + "\n"
-                    + rep(" ", lineNumberLength - 3) + "... " + rep("^", char2);
+            return formatNumber(line1, lineNumberLength) + " | " + l1 + "\n"
+                    + rep(" ", lineNumberLength + char1 + 2) + rep("^", l1.length() - char1 + 1) + " ...\n"
+                    + formatNumber(line2, lineNumberLength) + " | " + l2 + "\n"
+                    + rep(" ", lineNumberLength - 1) + "... " + rep("^", char2);
         }
     }
 

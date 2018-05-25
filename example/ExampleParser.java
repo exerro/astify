@@ -17,7 +17,7 @@ public class ExampleParser {
         TokenGenerator generator = new DefaultTokenGenerator(source, builder.getKeywords());
         Parser parser = new Parser();
 
-        parser.setup(builder.lookup("main"), generator.getStartingPosition());
+        parser.setup(builder.lookup("example"), generator.getStartingPosition());
         parser.parse(generator);
 
         if (parser.hasError()) {
