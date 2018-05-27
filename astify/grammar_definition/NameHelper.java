@@ -18,13 +18,17 @@ public class NameHelper {
             }
         }
 
-        names.add(name);
-
         return name;
     }
 
     void define(String name) {
         names.add(name);
+    }
+
+    String getNameAndDefine(String name) {
+        name = getName(name);
+        define(name);
+        return name;
     }
 
     static String toUpperCamelCase(String name) {

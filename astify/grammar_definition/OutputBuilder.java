@@ -153,6 +153,17 @@ public class OutputBuilder {
         output.write("super(spanningPosition);");
 
         for (Definition.Property property : definition.getProperties()) {
+            if (!property.getType().isOptional()) {
+                output.writeLine();
+                output.writeWord("assert");
+                output.writeWord(property.getName());
+                output.writeOperator("!=");
+                output.write("null");
+                output.write(" : \"" + property.getName() + " is null\";");
+            }
+        }
+
+        for (Definition.Property property : definition.getProperties()) {
             output.writeLine();
             output.write("this.");
             output.write(property.getName());
@@ -200,11 +211,47 @@ public class OutputBuilder {
                     propertyToString = "\"[\" + Util.concatList(" + property.getName() + ") + \"]\"";
                 }
 
-                output.writeLine(builderName + ".append(\"\\n\" + " + propertyToString + ");");
+                output.writeLine(builderName + ".append(\"\\n\\t\" + " + propertyToString + ");");
             }
 
             output.writeLine(builderName + (definition.getProperties().size() > 0 ? ".append(\"\\n>\");" : ".append(\">\");"));
             output.write("return " + builderName + ".toString();");
+
+        output.exitBlock();
+
+        // equals()
+        String objectName = helper.getName("this" + definition.getStructName());
+        String paramName = helper.getName("object");
+
+        output.writeLine();
+        output.writeLine();
+        output.write("@Override public boolean equals(Object " + paramName + ")");
+        output.enterBlock(); output.writeLine();
+
+            output.writeLine("if (!(" + paramName + " instanceof " + definition.getStructName() + ")) return false;");
+            output.writeLine(definition.getStructName() + " " + objectName + " = (" + definition.getStructName() + ") object;");
+
+            for (Definition.Property property : definition.getProperties()) {
+                output.writeLine("if (!(" + property.getName() + ".equals(" + objectName + "." + property.getName() + "))) return false;");
+            }
+
+            output.write("return true;");
+
+        output.exitBlock();
+
+        // hashCode()
+        List<String> propertyNames = new ArrayList<>();
+
+        output.writeLine();
+        output.writeLine();
+        output.write("@Override public int hashCode()");
+        output.enterBlock(); output.writeLine();
+
+            for (Definition.Property property : definition.getProperties()) {
+                propertyNames.add(property.getName());
+            }
+
+            output.write(propertyNames.size() > 0 ? "return hash(" + String.join(", ", propertyNames) + ");" : "return 0;");
 
         output.exitBlock();
     }
@@ -243,6 +290,10 @@ public class OutputBuilder {
         output.writeLine("import java.util.ArrayList;");
         output.writeLine("import java.util.Iterator;");
         output.writeLine("import java.util.List;");
+
+
+        output.writeLine();
+        output.writeLine("import static java.util.Objects.hash;");
 
         output.writeLine();
         buildTypeDefinition(mainDefinition);
