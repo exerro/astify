@@ -29,8 +29,8 @@ public class GrammarDefinition {
             ClassLoader classLoader = GrammarDefinition.class.getClassLoader();
 
             try {
-                // Class c = classLoader.loadClass("out.ASTifyGrammarPatternBuilder");
-                PatternBuilder testBuilder = new out.ASTifyGrammarPatternBuilder(); // (PatternBuilder) c.newInstance();
+                Class c = classLoader.loadClass("out.ASTifyGrammarPatternBuilder");
+                PatternBuilder testBuilder = (PatternBuilder) c.newInstance();
 
                 TokenGenerator testGenerator = new ASTifyGrammarTokenGenerator(source, testBuilder.getKeywords());
                 Parser testParser = new Parser();
@@ -56,8 +56,8 @@ public class GrammarDefinition {
             /*catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }*/
-            catch (Exception ignored) {
-
+            catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }

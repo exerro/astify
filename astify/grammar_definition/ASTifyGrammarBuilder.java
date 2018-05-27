@@ -50,6 +50,11 @@ public class ASTifyGrammarBuilder extends PatternBuilder {
                 ))
         );
 
+        sequence("type-reference", ASTifyGrammar.TypeReference::create,
+                symbol("@"),
+                token(Word)
+        );
+
         sequence("terminal", ASTifyGrammar.Terminal::create,
                 token(String)
         );
@@ -83,6 +88,7 @@ public class ASTifyGrammarBuilder extends PatternBuilder {
 
         define("pattern", one_of(
                 ref("parameter-reference"),
+                ref("type-reference"),
                 ref("terminal"),
                 ref("optional")
         ));

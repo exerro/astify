@@ -3,6 +3,7 @@ package astify.grammar_definition;
 import astify.Capture;
 import astify.core.Position;
 import astify.core.Positioned;
+import astify.token.Token;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -39,64 +40,50 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
         return new ASTifyGrammar(position, grammar, definitions);
     }
 
-    @Override public String toString() {
-        List<String> definitionStrings = new ArrayList<>();
-
-        for (Definition definition : definitions) {
-            definitionStrings.add(definition.toString());
-        }
-
-        return "<ASTify-grammar " + grammar.toString() + ", " + String.join(", ", definitionStrings) + ">";
-    }
-
     public static class Union extends Capture.ObjectCapture implements Definition {
-        private final String typename;
-        private final List<String> subtypes;
+        private final Token typename;
+        private final List<Token> subtypes;
 
-        public Union(Position spanningPosition, String typename, List<String> subtypes) {
+        public Union(Position spanningPosition, Token typename, List<Token> subtypes) {
             super(spanningPosition);
             this.typename = typename;
             this.subtypes = subtypes;
         }
 
-        public String getTypename() {
+        public Token getTypename() {
             return typename;
         }
 
-        public List<String> getSubtypes() {
+        public List<Token> getSubtypes() {
             return subtypes;
         }
 
         public static Capture create(List<Capture> captures) {
-            TokenCapture typenameCapture = (TokenCapture) captures.get(1);
+            Token typename = ((TokenCapture) captures.get(1)).token;
             ListCapture subtypesCaptures = (ListCapture) captures.get(3);
-            List<String> subtypes = new ArrayList<>();
+            List<Token> subtypes = new ArrayList<>();
             Position position = captures.get(0).spanningPosition.to(captures.get(3).spanningPosition);
 
             for (Iterator it = subtypesCaptures.iterator(); it.hasNext(); ) {
-                subtypes.add(((TokenCapture) it.next()).getValue());
+                subtypes.add(((TokenCapture) it.next()).token);
             }
 
-            return new Union(position, typenameCapture.getValue(), subtypes);
-        }
-
-        @Override public String toString() {
-            return "<Union " + typename + ", " + String.join(", ", subtypes) + ">";
+            return new Union(position, typename, subtypes);
         }
     }
 
     public static class Type extends Capture.ObjectCapture {
-        private final String name;
+        private final Token name;
         private final boolean optional, list;
 
-        public Type(Position spanningPosition, String name, boolean optional, boolean list) {
+        public Type(Position spanningPosition, Token name, boolean optional, boolean list) {
             super(spanningPosition);
             this.name = name;
             this.optional = optional;
             this.list = list;
         }
 
-        public String getName() {
+        public Token getName() {
             return name;
         }
 
@@ -109,24 +96,20 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
         }
 
         public static Capture create(List<Capture> captures) {
-            TokenCapture nameCapture = (TokenCapture) captures.get(0);
+            Token name = ((TokenCapture) captures.get(0)).token;
             boolean optional = !(captures.get(1) instanceof EmptyCapture);
             boolean list = !(captures.get(2) instanceof EmptyCapture);
             Position position = captures.get(0).spanningPosition.to(captures.get(1).spanningPosition);
 
-            return new Type(position, nameCapture.getValue(), optional, list);
-        }
-
-        @Override public String toString() {
-            return "<Type " + name + (optional ? "?" : "") + (list ? "[]" : "") + ">";
+            return new Type(position, name, optional, list);
         }
     }
 
     public static class TypedName extends Capture.ObjectCapture {
         private final Type type;
-        private final String name;
+        private final Token name;
 
-        public TypedName(Position spanningPosition, Type type, String name) {
+        public TypedName(Position spanningPosition, Type type, Token name) {
             super(spanningPosition);
             this.type = type;
             this.name = name;
@@ -136,34 +119,30 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             return type;
         }
 
-        public String getName() {
+        public Token getName() {
             return name;
         }
 
         public static Capture create(List<Capture> captures) {
             Type type = (Type) captures.get(0);
-            TokenCapture nameCapture = (TokenCapture) captures.get(1);
+            Token name = ((TokenCapture) captures.get(1)).token;
             Position position = captures.get(0).spanningPosition.to(captures.get(1).spanningPosition);
 
-            return new TypedName(position, type, nameCapture.getValue());
-        }
-
-        @Override public String toString() {
-            return "<TypedName " + type.toString() + ", " + name + ">";
+            return new TypedName(position, type, name);
         }
     }
 
     public static class NamedPropertyList extends Capture.ObjectCapture {
-        private final String name;
+        private final Token name;
         private final List<TypedName> properties;
 
-        public NamedPropertyList(Position spanningPosition, String name, List<TypedName> properties) {
+        public NamedPropertyList(Position spanningPosition, Token name, List<TypedName> properties) {
             super(spanningPosition);
             this.name = name;
             this.properties = properties;
         }
 
-        public String getName() {
+        public Token getName() {
             return name;
         }
 
@@ -172,7 +151,7 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
         }
 
         public static Capture create(List<Capture> captures) {
-            TokenCapture nameCapture = (TokenCapture) captures.get(0);
+            Token name = ((TokenCapture) captures.get(0)).token;
             List<TypedName> properties = new ArrayList<>();
             Position position = captures.get(0).spanningPosition.to(captures.get(3).spanningPosition);
 
@@ -184,17 +163,7 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
                 }
             }
 
-            return new NamedPropertyList(position, nameCapture.getValue(), properties);
-        }
-
-        @Override public String toString() {
-            List<String> propertyStrings = new ArrayList<>();
-
-            for (TypedName property : properties) {
-                propertyStrings.add(property.toString());
-            }
-
-            return "<NamedPropertyList " + name + ", " + String.join(", ", propertyStrings) + ">";
+            return new NamedPropertyList(position, name, properties);
         }
     }
 
@@ -216,23 +185,19 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
 
             return new AbstractTypeDefinition(position, properties);
         }
-
-        @Override public String toString() {
-            return "<AbstractTypeDefinition " + properties.toString() + ">";
-        }
     }
 
     public static class ParameterReference extends Capture.ObjectCapture implements Pattern {
-        private final String parameter;
+        private final Token parameter;
         private final List<Pattern> delimiter;
 
-        public ParameterReference(Position spanningPosition, String parameter, List<Pattern> delimiter) {
+        public ParameterReference(Position spanningPosition, Token parameter, List<Pattern> delimiter) {
             super(spanningPosition);
             this.parameter = parameter;
             this.delimiter = delimiter;
         }
 
-        public String getParameter() {
+        public Token getParameter() {
             return parameter;
         }
 
@@ -241,7 +206,7 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
         }
 
         public static Capture create(List<Capture> captures) {
-            TokenCapture parameterCapture = (TokenCapture) captures.get(1);
+            Token parameter = ((TokenCapture) captures.get(1)).token;
             List<Pattern> delimiter = new ArrayList<>();
             Position position = captures.get(0).spanningPosition.to(captures.get(2).spanningPosition);
 
@@ -253,41 +218,47 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
                 }
             }
 
-            return new ParameterReference(position, parameterCapture.getValue(), delimiter);
+            return new ParameterReference(position, parameter, delimiter);
+        }
+    }
+
+    public static class TypeReference extends Capture.ObjectCapture implements Pattern {
+        private final Token type;
+
+        public TypeReference(Position spanningPosition, Token type) {
+            super(spanningPosition);
+            this.type = type;
         }
 
-        @Override public String toString() {
-            List<String> patternStrings = new ArrayList<>();
+        public Token getType() {
+            return type;
+        }
 
-            for (Pattern part : delimiter) {
-                patternStrings.add(part.toString());
-            }
+        public static Capture create(List<Capture> captures) {
+            Token type = ((TokenCapture) captures.get(1)).token;
+            Position position = captures.get(0).spanningPosition;
 
-            return "<ParameterReference " + parameter + ", " + String.join(", ", patternStrings) + ">";
+            return new TypeReference(position, type);
         }
     }
 
     public static class Terminal extends Capture.ObjectCapture implements Pattern {
-        private final String terminal;
+        private final Token terminal;
 
-        public Terminal(Position spanningPosition, String terminal) {
+        public Terminal(Position spanningPosition, Token terminal) {
             super(spanningPosition);
             this.terminal = terminal;
         }
 
-        public String getTerminal() {
+        public Token getTerminal() {
             return terminal;
         }
 
         public static Capture create(List<Capture> captures) {
-            TokenCapture terminalCapture = (TokenCapture) captures.get(0);
-            Position position = terminalCapture.getPosition();
+            Token terminal = ((TokenCapture) captures.get(0)).token;
+            Position position = terminal.getPosition();
 
-            return new Terminal(position, terminalCapture.getValue());
-        }
-
-        @Override public String toString() {
-            return "<Terminal " + terminal + ">";
+            return new Terminal(position, terminal);
         }
     }
 
@@ -314,16 +285,6 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
 
             return new Optional(position, patterns);
         }
-
-        @Override public String toString() {
-            List<String> patternStrings = new ArrayList<>();
-
-            for (Pattern part : patterns) {
-                patternStrings.add(part.toString());
-            }
-
-            return "<Optional " + String.join(", ", patternStrings) + ">";
-        }
     }
 
     public static class PatternList extends Capture.ObjectCapture {
@@ -348,16 +309,6 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             }
 
             return new PatternList(position, patterns);
-        }
-
-        @Override public String toString() {
-            List<String> patternStrings = new ArrayList<>();
-
-            for (Pattern part : patterns) {
-                patternStrings.add(part.toString());
-            }
-
-            return "<PatternList " + String.join(", ", patternStrings) + ">";
         }
     }
 
@@ -391,35 +342,25 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
 
             return new TypeDefinition(position, properties, patterns);
         }
-
-        @Override public String toString() {
-            List<String> patternStrings = new ArrayList<>();
-
-            for (PatternList part : patterns) {
-                patternStrings.add(part.toString());
-            }
-
-            return "<TypeDefinition " + properties.toString() + ", " + String.join(", ", patternStrings) + ">";
-        }
     }
 
     public static class Grammar extends Capture.ObjectCapture {
-        private final String name;
+        private final Token name;
 
-        public Grammar(Position spanningPosition, String name) {
+        public Grammar(Position spanningPosition, Token name) {
             super(spanningPosition);
             this.name = name;
         }
 
-        public String getName() {
+        public Token getName() {
             return name;
         }
 
         public static Capture create(List<Capture> captures) {
-            TokenCapture nameCapture = (TokenCapture) captures.get(1);
+            Token name = ((TokenCapture) captures.get(1)).token;
             Position position = captures.get(0).spanningPosition.to(captures.get(1).spanningPosition);
 
-            return new Grammar(position, nameCapture.getValue());
+            return new Grammar(position, name);
         }
 
         @Override public String toString() {

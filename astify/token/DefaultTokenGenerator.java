@@ -83,10 +83,10 @@ public class DefaultTokenGenerator implements TokenGenerator {
 
                     Token exponent = consumeInteger();
 
-                    return new Token(TokenType.Float, integer.value + "." + decimal.value + "e" + expSign + exponent.value, integer.position.to(exponent.position));
+                    return new Token(TokenType.Float, integer.getValue() + "." + decimal.getValue() + "e" + expSign + exponent.getValue(), integer.getPosition().to(exponent.getPosition()));
                 }
 
-                return new Token(TokenType.Float, integer.value + "." + decimal.value, integer.position.to(decimal.position));
+                return new Token(TokenType.Float, integer.getValue() + "." + decimal.getValue(), integer.getPosition().to(decimal.getPosition()));
             }
 
             return integer;

@@ -1,25 +1,28 @@
 
-grammar ASTify-grammar
+grammar test
 
-Union(string typename, string[] subtypes)
+Union(Word typename, Word[] subtypes)
 : 'union' .typename ':' .subtypes(':')
 
-Type(string name, bool optional, bool lst)
+Type(Word name, bool optional, bool lst)
 : .name .optional('?') .lst('[' ']')
 
-TypedName(Type type, string name)
+TypedName(Type type, Word name)
 : .type .name
 
-NamedPropertyList(string name, TypedName[] properties)
+NamedPropertyList(Word name, TypedName[] properties)
 : .name '(' [.properties(',')] ')'
 
 AbstractTypeDefinition(NamedPropertyList properties)
 : 'abstract' .properties
 
-ParameterReference(string parameter, Pattern[] delimiter)
-: '.' .parameter ['(' .delimiter ')']
+PropertyReference(Word property, Pattern[] delimiter)
+: '.' .property ['(' .delimiter ')']
 
-Terminal(string terminal)
+TypeReference(Word type)
+: '@' .type
+
+Terminal(String terminal)
 : .terminal
 
 Optional(Pattern[] patterns)
@@ -31,14 +34,18 @@ PatternList(Pattern[] patterns)
 TypeDefinition(NamedPropertyList properties, PatternList[] patterns)
 : .properties ':' .patterns(':')
 
-Grammar(string name)
+Grammar(Word name)
 : 'grammar' .name
 
 ASTify-grammar(Grammar _grammar, Definition[] definitions)
-: ._grammar .definitions
+: ._grammar .definitions @EOF
+
+test()
+: @ASTify-grammar
 
 union Pattern
-: ParameterReference
+: PropertyReference
+: TypeReference
 : Terminal
 : Optional
 

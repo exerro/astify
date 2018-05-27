@@ -19,7 +19,7 @@ public class PrimaryExpression extends Expression {
     }
 
     static Capture create(Capture.TokenCapture capture) {
-        return new PrimaryExpression(capture.token.value, capture.getPosition());
+        return new PrimaryExpression(capture.getValue(), capture.getPosition());
     }
 
     static Capture callback(List<Capture> captures) {

@@ -33,6 +33,10 @@ public class Type {
     @Override public String toString() {
         String str = definition.getName();
 
+        if (definition instanceof Definition.TokenTypeDefinition) {
+            str = "Token";
+        }
+
         if (isList()) {
             str = "List<" + str + ">";
         }

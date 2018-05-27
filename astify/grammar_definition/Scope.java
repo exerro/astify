@@ -1,5 +1,7 @@
 package astify.grammar_definition;
 
+import astify.token.TokenType;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +28,10 @@ public class Scope {
     }
 
     void defineNativeTypes() {
-        define("string", new Definition.NativeDefinition(Definition.NativeDefinition.NativeType.String));
         define("bool", new Definition.NativeDefinition(Definition.NativeDefinition.NativeType.Boolean));
+
+        for (TokenType type : TokenType.values()) {
+            define(type.toString(), new Definition.TokenTypeDefinition(type));
+        }
     }
 }

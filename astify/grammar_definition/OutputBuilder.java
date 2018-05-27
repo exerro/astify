@@ -1,5 +1,8 @@
 package astify.grammar_definition;
 
+import astify.Capture;
+import astify.token.Token;
+
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -35,7 +38,7 @@ public class OutputBuilder {
 
             for (ASTifyGrammar.Pattern pattern : patterns) {
                 if (pattern instanceof ASTifyGrammar.ParameterReference) {
-                    String parameterName = ((ASTifyGrammar.ParameterReference) pattern).getParameter();
+                    String parameterName = ((ASTifyGrammar.ParameterReference) pattern).getParameter().getValue();
 
                     if (definition.getProperty(parameterName) == null) throw new Exception("undefined reference to parameter '" + parameterName + "' in " + definition.getName());
                     if (referredPropertyNames.contains(parameterName)) throw new Exception("multiple references to parameter '" + parameterName + "' in " + definition.getName());
@@ -61,15 +64,15 @@ public class OutputBuilder {
 
             if (definition instanceof ASTifyGrammar.AbstractTypeDefinition) {
                 ASTifyGrammar.AbstractTypeDefinition def = (ASTifyGrammar.AbstractTypeDefinition) definition;
-                d = new Definition.TypeDefinition(def.getProperties().getName());
+                d = new Definition.TypeDefinition(def.getProperties().getName().getValue());
             }
             else if (definition instanceof ASTifyGrammar.TypeDefinition) {
                 ASTifyGrammar.TypeDefinition def = (ASTifyGrammar.TypeDefinition) definition;
-                d = new Definition.TypeDefinition(def.getProperties().getName());
+                d = new Definition.TypeDefinition(def.getProperties().getName().getValue());
             }
             else if (definition instanceof ASTifyGrammar.Union) {
                 ASTifyGrammar.Union def = (ASTifyGrammar.Union) definition;
-                d = new Definition.UnionDefinition(def.getTypename());
+                d = new Definition.UnionDefinition(def.getTypename().getValue());
             }
             else {
                 assert false : "oh no";
@@ -95,14 +98,14 @@ public class OutputBuilder {
                     patternLists = def.getPatterns();
                 }
 
-                definition = (Definition.TypeDefinition) scope.lookup(plist.getName());
+                definition = (Definition.TypeDefinition) scope.lookup(plist.getName().getValue());
 
                 for (ASTifyGrammar.TypedName propertyDescriptor : plist.getProperties()) {
                     ASTifyGrammar.Type propertyTypeDescriptor = propertyDescriptor.getType();
-                    String propertyName = propertyDescriptor.getName();
+                    String propertyName = propertyDescriptor.getName().getValue();
 
-                    if (scope.exists(propertyTypeDescriptor.getName())) {
-                        Type propertyType = new Type(scope.lookup(propertyTypeDescriptor.getName()), propertyTypeDescriptor.isOptional(), propertyTypeDescriptor.isList());
+                    if (scope.exists(propertyTypeDescriptor.getName().getValue())) {
+                        Type propertyType = new Type(scope.lookup(propertyTypeDescriptor.getName().getValue()), propertyTypeDescriptor.isOptional(), propertyTypeDescriptor.isList());
                         Definition.Property property = new Definition.Property(propertyType, propertyName);
                         definition.addProperty(property);
                     }
@@ -118,11 +121,11 @@ public class OutputBuilder {
             }
             else if (d instanceof ASTifyGrammar.Union) {
                 ASTifyGrammar.Union def = (ASTifyGrammar.Union) d;
-                Definition.UnionDefinition definition = (Definition.UnionDefinition) scope.lookup(def.getTypename());
+                Definition.UnionDefinition definition = (Definition.UnionDefinition) scope.lookup(def.getTypename().getValue());
 
-                for (String subtypeName : def.getSubtypes()) {
-                    if (scope.exists(subtypeName)) {
-                        Definition subtypeDefinition = scope.lookup(subtypeName);
+                for (Token subtypeName : def.getSubtypes()) {
+                    if (scope.exists(subtypeName.getValue())) {
+                        Definition subtypeDefinition = scope.lookup(subtypeName.getValue());
 
                         if (subtypeDefinition instanceof Definition.TypeDefinition) {
                             definition.addSubType((Definition.TypeDefinition) subtypeDefinition);
@@ -148,7 +151,7 @@ public class OutputBuilder {
     }
 
     private void validate(List<String> toBuild) throws Exception {
-        String grammarName = grammar.getGrammar().getName();
+        String grammarName = grammar.getGrammar().getName().getValue();
 
         if (toBuild.contains(grammarName)) {
             if (!(scope.lookup(grammarName) instanceof Definition.TypeDefinition)) {
@@ -256,8 +259,8 @@ public class OutputBuilder {
             for (Definition.Property property : definition.getProperties()) {
                 String propertyToString = property.getName() + ".toString()";
 
-                if (property.getType().isNative(Definition.NativeDefinition.NativeType.String)) {
-                    propertyToString = property.getName();
+                if (property.getType().getDefinition() instanceof Definition.TokenTypeDefinition) {
+                    propertyToString = property.getName() + ".getValue()";
                 }
 
                 if (property.getType().isOptional()) {
@@ -318,13 +321,14 @@ public class OutputBuilder {
     }
 
     private void buildAST(List<String> toBuild) {
-        String grammarName = grammar.getGrammar().getName();
+        String grammarName = grammar.getGrammar().getName().getValue();
         Definition.TypeDefinition mainDefinition = (Definition.TypeDefinition) scope.lookup(grammarName);
 
         outputAST.writeLine("package " + config.getPackage() + ";");
 
         outputAST.writeLine();
         outputAST.writeLine("import astify.Capture;");
+        outputAST.writeLine("import astify.token.Token;");
         outputAST.writeLine("import astify.core.Position;");
         outputAST.writeLine("import astify.core.Positioned;");
         outputAST.writeLine("import astify.grammar_definition.support.Util;");
@@ -372,7 +376,7 @@ public class OutputBuilder {
 
     private void buildPattern(ASTifyGrammar.Pattern pattern, Definition.TypeDefinition definition) throws Exception {
         if (pattern instanceof ASTifyGrammar.ParameterReference) {
-            String parameterName = ((ASTifyGrammar.ParameterReference) pattern).getParameter();
+            String parameterName = ((ASTifyGrammar.ParameterReference) pattern).getParameter().getValue();
             List<ASTifyGrammar.Pattern> listDelimiter = new ArrayList<>(), delimiter = ((ASTifyGrammar.ParameterReference) pattern).getDelimiter();
             Definition.Property property = definition.getProperty(parameterName);
 
@@ -382,18 +386,7 @@ public class OutputBuilder {
                 delimiter = new ArrayList<>();
             }
 
-            if (property.getType().isNative(Definition.NativeDefinition.NativeType.String)) {
-                if (delimiter.size() == 0) {
-                    outputPatterns.write("token(Word)");
-                }
-                else if (delimiter.size() == 1) {
-                    buildPattern(delimiter.get(0), definition);
-                }
-                else {
-                    throw new Exception("unexpected list of patterns in string parameter qualifier");
-                }
-            }
-            else if (property.getType().isNative(Definition.NativeDefinition.NativeType.Boolean)) {
+            if (property.getType().isNative(Definition.NativeDefinition.NativeType.Boolean)) {
                 outputPatterns.write("optional(sequence(");
                 outputPatterns.indent();
                 buildPatternSequence(delimiter, definition);
@@ -403,6 +396,9 @@ public class OutputBuilder {
             }
             else if (property.getType().isNative()) {
                 assert false;
+            }
+            else if (property.getType().getDefinition() instanceof Definition.TokenTypeDefinition) {
+                outputPatterns.writef("token(%s)", ((Definition.TokenTypeDefinition) property.getType().getDefinition()).getTokenType().toString());
             }
             else {
                 outputPatterns.writef("ref(\"%s\")", property.getType().getDefinition().getPatternName());
@@ -432,7 +428,7 @@ public class OutputBuilder {
         }
         else if (pattern instanceof ASTifyGrammar.Terminal) {
             boolean isWord = true;
-            String text = ((ASTifyGrammar.Terminal) pattern).getTerminal();
+            String text = ((ASTifyGrammar.Terminal) pattern).getTerminal().getValue();
 
             for (int i = 1; i < text.length() - 1; ++i) {
                 if (!Character.isLetterOrDigit(text.charAt(i))) {
@@ -451,6 +447,26 @@ public class OutputBuilder {
             outputPatterns.unindent();
             outputPatterns.writeLine();
             outputPatterns.write("))");
+        }
+        else if (pattern instanceof ASTifyGrammar.TypeReference) {
+            String reference = ((ASTifyGrammar.TypeReference) pattern).getType().getValue();
+
+            if (scope.exists(reference)) {
+                Definition referenceDefinition = scope.lookup(reference);
+
+                if (referenceDefinition instanceof Definition.TypeDefinition || referenceDefinition instanceof Definition.UnionDefinition) {
+                    outputPatterns.writef("ref(\"%s\")", referenceDefinition.getPatternName());
+                }
+                else if (referenceDefinition instanceof Definition.TokenTypeDefinition) {
+                    outputPatterns.writef("token(%s)", ((Definition.TokenTypeDefinition) referenceDefinition).getTokenType().toString());
+                }
+                else {
+                    assert false;
+                }
+            }
+            else {
+                throw new Exception("cannot find type '" + reference + "'\n" + ((ASTifyGrammar.TypeReference) pattern).getType().getPosition().getLineAndCaret());
+            }
         }
         else {
             assert false;
@@ -475,7 +491,7 @@ public class OutputBuilder {
     }
 
     private void buildPatternBuilder(List<String> toBuild) throws Exception {
-        String className = NameHelper.toUpperCamelCase(grammar.getGrammar().getName()) + "PatternBuilder";
+        String className = NameHelper.toUpperCamelCase(grammar.getGrammar().getName().getValue()) + "PatternBuilder";
 
         outputPatterns.writeLine("package " + config.getPackage() + ";");
 
@@ -557,7 +573,7 @@ public class OutputBuilder {
             outputPatterns.write("@Override public Pattern getMain()");
             outputPatterns.enterBlock(); outputPatterns.writeLine();
 
-                outputPatterns.writef("return lookup(\"%s\");", NameHelper.toLowerLispCase(grammar.getGrammar().getName()));
+                outputPatterns.writef("return lookup(\"%s\");", NameHelper.toLowerLispCase(grammar.getGrammar().getName().getValue()));
 
             outputPatterns.exitBlock();
 
@@ -577,8 +593,8 @@ public class OutputBuilder {
 
     boolean writeToDirectory() {
         String directoryPath = Paths.get(config.getPath(), config.getPackage().split("\\.")).toString();
-        String ASTFilename = NameHelper.toUpperCamelCase(grammar.getGrammar().getName()) + ".java";
-        String PatternBuilderFilename = NameHelper.toUpperCamelCase(grammar.getGrammar().getName()) + "PatternBuilder.java";
+        String ASTFilename = NameHelper.toUpperCamelCase(grammar.getGrammar().getName().getValue()) + ".java";
+        String PatternBuilderFilename = NameHelper.toUpperCamelCase(grammar.getGrammar().getName().getValue()) + "PatternBuilder.java";
 
         return outputAST.writeToFile(Paths.get(directoryPath, ASTFilename).toFile())
              & outputPatterns.writeToFile(Paths.get(directoryPath, PatternBuilderFilename).toFile());

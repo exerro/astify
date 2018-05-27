@@ -15,6 +15,10 @@ public class PatternBuilder {
     protected TokenType Float = TokenType.Float;
     protected TokenType Symbol = TokenType.Symbol;
     protected TokenType Keyword = TokenType.Keyword;
+    protected TokenType Boolean = TokenType.Boolean;
+    protected TokenType EOF = TokenType.EOF;
+    protected TokenType Special = TokenType.Special;
+    protected TokenType Other = TokenType.Other;
 
     public PatternBuilder() {
         environment = new HashMap<>();

@@ -38,7 +38,7 @@ public class BinaryExpression extends Expression {
         Expression rightOperand = (Expression) captures.get(2);
         Capture.TokenCapture operator = (Capture.TokenCapture) captures.get(1);
 
-        return new BinaryExpression(leftOperand, rightOperand, operator.token.value);
+        return new BinaryExpression(leftOperand, rightOperand, operator.getValue());
     }
 
     @Override public String toString() {

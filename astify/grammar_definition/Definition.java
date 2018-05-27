@@ -1,5 +1,7 @@
 package astify.grammar_definition;
 
+import astify.token.TokenType;
+
 import java.util.*;
 
 public class Definition {
@@ -100,11 +102,23 @@ public class Definition {
         }
     }
 
+    static class TokenTypeDefinition extends Definition {
+        private final TokenType tokenType;
+
+        TokenTypeDefinition(TokenType tokenType) {
+            super(tokenType.toString());
+            this.tokenType = tokenType;
+        }
+
+        TokenType getTokenType() {
+            return tokenType;
+        }
+    }
+
     static class NativeDefinition extends Definition {
         private final Definition.NativeDefinition.NativeType type;
 
         enum NativeType {
-            String,
             Boolean
         }
 
@@ -119,7 +133,6 @@ public class Definition {
 
         String getTypeString() {
             switch (type) {
-                case String: return "String";
                 case Boolean: return "Boolean";
             }
             return "";

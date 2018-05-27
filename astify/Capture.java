@@ -41,16 +41,16 @@ public abstract class Capture implements Positioned {
         public final Token token;
 
         public TokenCapture(Token token) {
-            super(token.position);
+            super(token.getPosition());
             this.token = token;
         }
 
         public TokenType getType() {
-            return token.type;
+            return token.getType();
         }
 
         public String getValue() {
-            return token.value;
+            return token.getValue();
         }
 
         @Override public String toString() {

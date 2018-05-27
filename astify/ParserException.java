@@ -82,11 +82,11 @@ public class ParserException extends Exception {
             }
 
             if (expected.size() > 0) {
-                results.add(new ParserException(token.position, message + ", got " + token.toString() + (includeSource ? " (in parse as " + sourceNames.get(group) + ")" : "")));
+                results.add(new ParserException(token.getPosition(), message + ", got " + token.toString() + (includeSource ? " (in parse as " + sourceNames.get(group) + ")" : "")));
             }
 
             for (ParserFailure failure : otherFailures) {
-                results.add(new ParserException(token.position, failure.getError() + (includeSource ? " (in parse as " + sourceNames.get(group) + ")" : "")));
+                results.add(new ParserException(token.getPosition(), failure.getError() + (includeSource ? " (in parse as " + sourceNames.get(group) + ")" : "")));
             }
         }
 
