@@ -13,7 +13,7 @@ TypedName(Type type, string name)
 NamedPropertyList(string name, TypedName[] properties)
 : @name '(' [@properties(',')] ')'
 
-AbstractTypeDefinition(NamedPropertyList properties)
+AbstractTypeDefinition(NamedPropertyList properties-doop)
 : 'abstract' @properties
 
 ParameterReference(string parameter, Pattern[] delimiter)
@@ -34,7 +34,7 @@ TypeDefinition(NamedPropertyList properties, PatternList[] patterns)
 Grammar(string name)
 : 'grammar' @name
 
-ASTIFY_grammar(Grammar _grammar, Definition[] definitions)
+ASTify-grammar(Grammar _grammar, Definition[] definitions)
 : @_grammar @definitions
 
 union Pattern

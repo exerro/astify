@@ -1,15 +1,12 @@
 package astify.grammar_definition;
 
-import astify.Capture;
 import astify.Parser;
 import astify.ParserException;
 import astify.core.Source;
-import astify.token.DefaultTokenGenerator;
-import astify.token.TokenException;
 import astify.token.TokenGenerator;
 
 public class GrammarDefinition {
-    public static void main(String[] args) throws TokenException, ParserException {
+    public static void main(String[] args) throws Exception {
         Source source = new Source.FileSource("astify/grammar_definition/ASTify-grammar.txt");
         ASTifyGrammarBuilder builder = new ASTifyGrammarBuilder();
         TokenGenerator generator = new ASTifyGrammarTokenGenerator(source, builder.getKeywords());
@@ -22,9 +19,11 @@ public class GrammarDefinition {
             throw ParserException.combine(parser.getExceptions());
         }
         else {
-            for (Capture result : parser.getResults()) {
-                System.out.println(result);
-            }
+            assert parser.getResults().size() == 1;
+            OutputBuilder outputBuilder = new OutputBuilder((ASTifyGrammar) parser.getResults().get(0), new BuildConfig("out"));
+
+            outputBuilder.build();
+            assert outputBuilder.writeToDirectory();
         }
     }
 }
