@@ -1,7 +1,6 @@
 package astify.grammar_definition;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class Definition {
     private final String name;
@@ -10,21 +9,31 @@ public class Definition {
         this.name = name;
     }
 
-    public String getName() {
+    String getName() {
         return name;
     }
 
-    public String getStructName() {
+    String getStructName() {
         return NameHelper.toUpperCamelCase(getName());
+    }
+
+   String getPatternName() {
+        return NameHelper.toLowerLispCase(getName());
     }
 
     static class Property {
         private final Type type;
         private final String name;
+        private final String rawName;
 
         Property(Type type, String name) {
             this.type = type;
             this.name = NameHelper.toLowerCamelCase(name);
+            this.rawName = name;
+        }
+
+        String getRawName() {
+            return rawName;
         }
 
         String getName() {
@@ -52,14 +61,16 @@ public class Definition {
     }
 
     static class TypeDefinition extends Definition {
-        private final Set<Property> properties = new HashSet<>();
+        private final List<Property> properties = new ArrayList<>();
         private final Set<UnionDefinition> superTypes = new HashSet<>();
+        private final List<ASTifyGrammar.PatternList> patternLists = new ArrayList<>();
+        private final Map<String, Property> propertyLookup = new HashMap<>();
 
         TypeDefinition(String name) {
             super(name);
         }
 
-        Set<Property> getProperties() {
+        List<Property> getProperties() {
             return properties;
         }
 
@@ -67,12 +78,25 @@ public class Definition {
             return superTypes;
         }
 
+        List<ASTifyGrammar.PatternList> getPatternLists() {
+            return patternLists;
+        }
+
         void addProperty(Property property) {
             properties.add(property);
+            propertyLookup.put(property.getRawName(), property);
+        }
+
+        Property getProperty(String name) {
+            return propertyLookup.get(name);
         }
 
         void addSuperType(UnionDefinition union) {
             superTypes.add(union);
+        }
+
+        void addPatternList(ASTifyGrammar.PatternList list) {
+            patternLists.add(list);
         }
     }
 

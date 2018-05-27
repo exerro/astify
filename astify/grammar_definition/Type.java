@@ -22,8 +22,12 @@ public class Type {
         return list;
     }
 
+    public boolean isNative() {
+        return definition instanceof Definition.NativeDefinition;
+    }
+
     public boolean isNative(Definition.NativeDefinition.NativeType t) {
-        return definition instanceof Definition.NativeDefinition && ((Definition.NativeDefinition) definition).getType() == t;
+        return isNative() && ((Definition.NativeDefinition) definition).getType() == t;
     }
 
     @Override public String toString() {

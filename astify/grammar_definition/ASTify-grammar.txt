@@ -2,40 +2,40 @@
 grammar ASTify-grammar
 
 Union(string typename, string[] subtypes)
-: 'union' @typename ':' @subtypes(':')
+: 'union' .typename ':' .subtypes(':')
 
 Type(string name, bool optional, bool lst)
-: @name @optional('?') @lst('[' ']')
+: .name .optional('?') .lst('[' ']')
 
 TypedName(Type type, string name)
-: @type @name
+: .type .name
 
 NamedPropertyList(string name, TypedName[] properties)
-: @name '(' [@properties(',')] ')'
+: .name '(' [.properties(',')] ')'
 
 AbstractTypeDefinition(NamedPropertyList properties)
-: 'abstract' @properties
+: 'abstract' .properties
 
 ParameterReference(string parameter, Pattern[] delimiter)
-: '@' @parameter ['(' @delimiter ')']
+: '.' .parameter ['(' .delimiter ')']
 
 Terminal(string terminal)
-: @terminal(@String)
+: .terminal
 
 Optional(Pattern[] patterns)
-: '[' @patterns ']'
+: '[' .patterns ']'
 
 PatternList(Pattern[] patterns)
-: @patterns
+: .patterns
 
 TypeDefinition(NamedPropertyList properties, PatternList[] patterns)
-: @properties ':' @patterns(':')
+: .properties ':' .patterns(':')
 
 Grammar(string name)
-: 'grammar' @name
+: 'grammar' .name
 
 ASTify-grammar(Grammar _grammar, Definition[] definitions)
-: @_grammar @definitions
+: ._grammar .definitions
 
 union Pattern
 : ParameterReference

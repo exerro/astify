@@ -2,6 +2,7 @@ package astify.grammar_definition;
 
 import astify.Parser;
 import astify.ParserException;
+import astify.PatternBuilder;
 import astify.core.Source;
 import astify.token.TokenGenerator;
 
@@ -24,6 +25,40 @@ public class GrammarDefinition {
 
             outputBuilder.build();
             assert outputBuilder.writeToDirectory();
+
+            ClassLoader classLoader = GrammarDefinition.class.getClassLoader();
+
+            try {
+                // Class c = classLoader.loadClass("out.ASTifyGrammarPatternBuilder");
+                PatternBuilder testBuilder = new out.ASTifyGrammarPatternBuilder(); // (PatternBuilder) c.newInstance();
+
+                TokenGenerator testGenerator = new ASTifyGrammarTokenGenerator(source, testBuilder.getKeywords());
+                Parser testParser = new Parser();
+
+                testParser.setup(testBuilder.getMain(), testGenerator.getStartingPosition());
+                testParser.parse(testGenerator);
+
+                if (testParser.hasError()) {
+                    throw ParserException.combine(testParser.getExceptions());
+                }
+                else {
+                    if (testParser.getResults().size() > 1) {
+                        for (int i = 0; i < testParser.getResults().size(); ++i) {
+                            System.out.println("Result " + i + " :: ");
+                            System.out.println(testParser.getResults().get(i));
+                        }
+                    }
+                    else {
+                        System.out.println("Successful parse!");
+                    }
+                }
+            }
+            /*catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }*/
+            catch (Exception ignored) {
+
+            }
         }
     }
 }

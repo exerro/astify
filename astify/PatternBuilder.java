@@ -214,4 +214,8 @@ public class PatternBuilder {
         assert environment.containsKey(name) : "Lookup of " + name + " failed";
         return environment.get(name);
     }
+
+    public Pattern getMain() {
+        return lookup("main");
+    }
 }

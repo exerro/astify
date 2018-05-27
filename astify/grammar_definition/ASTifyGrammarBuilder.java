@@ -41,7 +41,7 @@ public class ASTifyGrammarBuilder extends PatternBuilder {
         );
 
         sequence("parameter-reference", ASTifyGrammar.ParameterReference::create,
-                symbol("@"),
+                symbol("."),
                 token(Word),
                 optional(sequence(
                         symbol("("),
@@ -67,7 +67,7 @@ public class ASTifyGrammarBuilder extends PatternBuilder {
         sequence("type-definition", ASTifyGrammar.TypeDefinition::create,
                 ref("named-property-list"),
                 symbol(":"),
-                delim(ref("pattern-list"), symbol(","))
+                delim(ref("pattern-list"), symbol(":"))
         );
 
         sequence("grammar", ASTifyGrammar.Grammar::create,
@@ -94,7 +94,7 @@ public class ASTifyGrammarBuilder extends PatternBuilder {
         ));
     }
 
-    public Pattern getMain() {
+    @Override public Pattern getMain() {
         return lookup("ASTify-grammar");
     }
 }
