@@ -18,6 +18,14 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
         this.definitions = definitions;
     }
 
+    public Grammar getGrammar() {
+        return grammar;
+    }
+
+    public List<Definition> getDefinitions() {
+        return definitions;
+    }
+
     public static Capture create(List<Capture> captures) {
         Grammar grammar = (Grammar) captures.get(0);
         ListCapture definitionsCaptures = (ListCapture) captures.get(1);
@@ -51,6 +59,14 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             this.subtypes = subtypes;
         }
 
+        public String getTypename() {
+            return typename;
+        }
+
+        public List<String> getSubtypes() {
+            return subtypes;
+        }
+
         public static Capture create(List<Capture> captures) {
             TokenCapture typenameCapture = (TokenCapture) captures.get(1);
             ListCapture subtypesCaptures = (ListCapture) captures.get(3);
@@ -80,6 +96,18 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             this.list = list;
         }
 
+        public String getName() {
+            return name;
+        }
+
+        public boolean isOptional() {
+            return optional;
+        }
+
+        public boolean isList() {
+            return list;
+        }
+
         public static Capture create(List<Capture> captures) {
             TokenCapture nameCapture = (TokenCapture) captures.get(0);
             boolean optional = !(captures.get(1) instanceof EmptyCapture);
@@ -104,6 +132,14 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             this.name = name;
         }
 
+        public Type getType() {
+            return type;
+        }
+
+        public String getName() {
+            return name;
+        }
+
         public static Capture create(List<Capture> captures) {
             Type type = (Type) captures.get(0);
             TokenCapture nameCapture = (TokenCapture) captures.get(1);
@@ -125,6 +161,14 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             super(spanningPosition);
             this.name = name;
             this.properties = properties;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public List<TypedName> getProperties() {
+            return properties;
         }
 
         public static Capture create(List<Capture> captures) {
@@ -162,6 +206,10 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             this.properties = properties;
         }
 
+        public NamedPropertyList getProperties() {
+            return properties;
+        }
+
         public static Capture create(List<Capture> captures) {
             NamedPropertyList properties = (NamedPropertyList) captures.get(1);
             Position position = captures.get(0).spanningPosition.to(captures.get(1).spanningPosition);
@@ -182,6 +230,14 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             super(spanningPosition);
             this.parameter = parameter;
             this.delimiter = delimiter;
+        }
+
+        public String getParameter() {
+            return parameter;
+        }
+
+        public List<Pattern> getDelimiter() {
+            return delimiter;
         }
 
         public static Capture create(List<Capture> captures) {
@@ -219,6 +275,10 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             this.terminal = terminal;
         }
 
+        public String getTerminal() {
+            return terminal;
+        }
+
         public static Capture create(List<Capture> captures) {
             TokenCapture terminalCapture = (TokenCapture) captures.get(0);
             Position position = terminalCapture.getPosition();
@@ -237,6 +297,10 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
         public Optional(Position spanningPosition, List<Pattern> patterns) {
             super(spanningPosition);
             this.patterns = patterns;
+        }
+
+        public List<Pattern> getPatterns() {
+            return patterns;
         }
 
         public static Capture create(List<Capture> captures) {
@@ -268,6 +332,10 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
         public PatternList(Position spanningPosition, List<Pattern> patterns) {
             super(spanningPosition);
             this.patterns = patterns;
+        }
+
+        public List<Pattern> getPatterns() {
+            return patterns;
         }
 
         public static Capture create(List<Capture> captures) {
@@ -303,6 +371,14 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             this.patterns = patterns;
         }
 
+        public NamedPropertyList getProperties() {
+            return properties;
+        }
+
+        public List<PatternList> getPatterns() {
+            return patterns;
+        }
+
         public static Capture create(List<Capture> captures) {
             NamedPropertyList properties = (NamedPropertyList) captures.get(0);
             ListCapture patternsCaptures = (ListCapture) captures.get(2);
@@ -333,6 +409,10 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
         public Grammar(Position spanningPosition, String name) {
             super(spanningPosition);
             this.name = name;
+        }
+
+        public String getName() {
+            return name;
         }
 
         public static Capture create(List<Capture> captures) {
