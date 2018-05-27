@@ -124,16 +124,17 @@ public class OutputBuilder {
     }
 
     void buildType(Definition.TypeDefinition definition) {
+        NameHelper helper = new NameHelper();
+
         List<String> constructorParameterStrings = new ArrayList<>();
 
         constructorParameterStrings.add("Position spanningPosition");
 
         for (Definition.Property property : definition.getProperties()) {
             constructorParameterStrings.add(property.getParameterString());
-        }
+            helper.define(property.getName());
 
-        // properties
-        for (Definition.Property property : definition.getProperties()) {
+            // properties
             output.writeLine(property.getDefinitionString());
         }
 
@@ -177,6 +178,35 @@ public class OutputBuilder {
 
             output.exitBlock();
         }
+
+        // toString()
+        output.writeLine();
+        output.writeLine();
+        output.write("@Override public String toString()");
+        output.enterBlock(); output.writeLine();
+
+            String builderName = helper.getName("result");
+            output.writeLine("StringBuilder " + builderName + " = new StringBuilder();");
+            output.writeLine(builderName + ".append(\"<" + definition.getStructName() + "\");");
+
+            for (Definition.Property property : definition.getProperties()) {
+                String propertyToString = property.getName() + ".toString()";
+
+                if (property.getType().isOptional()) {
+                    propertyToString = property.getName() + " != null ? " + propertyToString + " : \"null\"";
+                }
+
+                if (property.getType().isList()) {
+                    propertyToString = "\"[\" + Util.concatList(" + property.getName() + ") + \"]\"";
+                }
+
+                output.writeLine(builderName + ".append(\"\\n\" + " + propertyToString + ");");
+            }
+
+            output.writeLine(builderName + (definition.getProperties().size() > 0 ? ".append(\"\\n>\");" : ".append(\">\");"));
+            output.write("return " + builderName + ".toString();");
+
+        output.exitBlock();
     }
 
     void build() throws Exception {
@@ -207,6 +237,7 @@ public class OutputBuilder {
         output.writeLine("import astify.Capture;");
         output.writeLine("import astify.core.Position;");
         output.writeLine("import astify.core.Positioned;");
+        output.writeLine("import astify.grammar_definition.support.Util;");
 
         output.writeLine();
         output.writeLine("import java.util.ArrayList;");

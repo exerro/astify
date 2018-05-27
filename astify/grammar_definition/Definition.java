@@ -31,6 +31,10 @@ public class Definition {
             return name;
         }
 
+        Type getType() {
+            return type;
+        }
+
         String getParameterString() {
             return type.toString() + " " + name;
         }

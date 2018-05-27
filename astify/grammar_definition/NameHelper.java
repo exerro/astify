@@ -23,6 +23,10 @@ public class NameHelper {
         return name;
     }
 
+    void define(String name) {
+        names.add(name);
+    }
+
     static String toUpperCamelCase(String name) {
         name = name.replace("_", "-");
         name = name.substring(0, 1).toUpperCase() + name.substring(1);
