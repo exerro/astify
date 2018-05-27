@@ -126,11 +126,12 @@ public abstract class Capture implements Positioned {
 
         @Override public String toString() {
             if (elements.isEmpty()) return "<list-capture>";
-            StringBuilder builder = new StringBuilder("<list-capture " + elements.get(0).toString());
+            StringBuilder builder = new StringBuilder("<list-capture\n");
 
-            for (int i = 1; i < elements.size(); ++i) {
-                builder.append(", ")
-                       .append(elements.get(i).toString());
+            for (int i = 0; i < elements.size(); ++i) {
+                builder.append("\t")
+                        .append(elements.get(i).toString().replace("\n", "\n\t"))
+                        .append("\n");
             }
 
             return builder.append(">").toString();

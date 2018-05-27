@@ -9,7 +9,7 @@ import astify.token.TokenType;
 import java.util.*;
 
 public class Parser {
-    private static final boolean debugPrint = true;
+    private static final boolean debugPrint = false;
 
     private static class PartialResult {
         private final Capture result;

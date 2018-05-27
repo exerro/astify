@@ -1,0 +1,48 @@
+
+grammar ASTify-grammar
+
+Union(string typename, string[] subtypes)
+: 'union' @typename ':' @subtypes(':')
+
+Type(string name, bool optional, bool list)
+: @name @optional('?') @list('[' ']')
+
+TypedName(Type type, string name)
+: @type @name
+
+NamedPropertyList(string name, TypedName[] properties)
+: @name '(' [@properties(',')] ')'
+
+AbstractTypeDefinition(NamedPropertyList properties)
+: 'abstract' @properties
+
+ParameterReference(string parameter, Pattern[] delimiter)
+: '@' @parameter ['(' @delimiter ')']
+
+Terminal(string terminal)
+: @terminal(@String)
+
+Optional(Pattern[] patterns)
+: '[' @patterns ']'
+
+PatternList(Pattern[] patterns)
+: @patterns
+
+TypeDefinition(NamedPropertyList properties, PatternList[] patterns)
+: @properties ':' @patterns(':')
+
+Grammar(string name)
+: 'grammar' @name
+
+ASTIFY_grammar(Grammar _grammar, Definition[] definitions)
+: @_grammar @definitions
+
+union Pattern
+: ParameterReference
+: Terminal
+: Optional
+
+union Definition
+: TypeDefinition
+: AbstractTypeDefinition
+: Union
