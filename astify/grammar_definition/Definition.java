@@ -45,7 +45,7 @@ public class Definition {
 
         String getGetterString() {
             Definition typeDefinition = type.getDefinition();
-            boolean isBoolean = (typeDefinition instanceof NativeDefinition) && ((NativeDefinition) typeDefinition).getType() == NativeDefinition.NativeType.Boolean;
+            boolean isBoolean = type.isNative(NativeDefinition.NativeType.Boolean);
 
             return "public " + type.toString() + " " + (isBoolean ? NameHelper.getBooleanGetterName(name) : NameHelper.getGetterName(name)) + "()";
         }

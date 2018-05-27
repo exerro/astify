@@ -1,10 +1,7 @@
 package astify.grammar_definition;
 
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class OutputBuilder {
     private final OutputHelper output = new OutputHelper();
@@ -18,8 +15,8 @@ public class OutputBuilder {
         scope.defineNativeTypes();
     }
 
-    Set<String> prepare() throws Exception {
-        Set<String> toBuild = new HashSet<>();
+    List<String> prepare() throws Exception {
+        List<String> toBuild = new ArrayList<>();
 
         for (ASTifyGrammar.Definition definition : grammar.getDefinitions()) {
             Definition d = null;
@@ -102,6 +99,8 @@ public class OutputBuilder {
             }
         }
 
+        toBuild.sort(String::compareTo);
+
         return toBuild;
     }
 
@@ -183,8 +182,7 @@ public class OutputBuilder {
             output.enterBlock(); output.writeLine();
 
             output.writeWord("return");
-            output.writeWord("this.");
-            output.write(property.getName());
+            output.writeWord(property.getName());
             output.write(";");
 
             output.exitBlock();
@@ -197,11 +195,14 @@ public class OutputBuilder {
         output.enterBlock(); output.writeLine();
 
             String builderName = helper.getName("result");
-            output.writeLine("StringBuilder " + builderName + " = new StringBuilder();");
-            output.writeLine(builderName + ".append(\"<" + definition.getStructName() + "\");");
+            output.writeLine("return \"<" + definition.getStructName() + "\"");
 
             for (Definition.Property property : definition.getProperties()) {
                 String propertyToString = property.getName() + ".toString()";
+
+                if (property.getType().isNative(Definition.NativeDefinition.NativeType.String)) {
+                    propertyToString = property.getName();
+                }
 
                 if (property.getType().isOptional()) {
                     propertyToString = property.getName() + " != null ? " + propertyToString + " : \"null\"";
@@ -211,17 +212,21 @@ public class OutputBuilder {
                     propertyToString = "\"[\" + Util.concatList(" + property.getName() + ") + \"]\"";
                 }
 
-                output.writeLine(builderName + ".append(\"\\n\\t\" + " + propertyToString + ");");
+                output.writeLine("+ " + ("\"\\n\\t" + property.getName() + ": \" + " + propertyToString).replace("\" + \"", ""));
             }
 
-            output.writeLine(builderName + (definition.getProperties().size() > 0 ? ".append(\"\\n>\");" : ".append(\">\");"));
-            output.write("return " + builderName + ".toString();");
+            output.write((definition.getProperties().size() > 0 ? "+ \"\\n>\";" : "+ \">\";"));
 
         output.exitBlock();
 
         // equals()
-        String objectName = helper.getName("this" + definition.getStructName());
         String paramName = helper.getName("object");
+        String objectName = helper.getName(paramName + definition.getStructName());
+        List<String> propertyEqualityChecks = new ArrayList<>();
+
+        for (Definition.Property property : definition.getProperties()) {
+            propertyEqualityChecks.add(property.getName() + ".equals(" + objectName + "." + property.getName() + ")");
+        }
 
         output.writeLine();
         output.writeLine();
@@ -231,11 +236,11 @@ public class OutputBuilder {
             output.writeLine("if (!(" + paramName + " instanceof " + definition.getStructName() + ")) return false;");
             output.writeLine(definition.getStructName() + " " + objectName + " = (" + definition.getStructName() + ") object;");
 
-            for (Definition.Property property : definition.getProperties()) {
-                output.writeLine("if (!(" + property.getName() + ".equals(" + objectName + "." + property.getName() + "))) return false;");
+            for (int i = 0; i < propertyEqualityChecks.size() - 1; ++i) {
+                output.writeLine("if (!(" + propertyEqualityChecks.get(i) + ")) return false;");
             }
 
-            output.write("return true;");
+            output.write(propertyEqualityChecks.size() == 0 ? "return true;" : "return " + propertyEqualityChecks.get(propertyEqualityChecks.size() - 1) + ";");
 
         output.exitBlock();
 
@@ -257,7 +262,7 @@ public class OutputBuilder {
     }
 
     void build() throws Exception {
-        Set<String> toBuild = prepare();
+        List<String> toBuild = prepare();
 
         String grammarName = grammar.getGrammar().getName();
         Definition.TypeDefinition mainDefinition;

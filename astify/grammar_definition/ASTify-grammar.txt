@@ -4,8 +4,8 @@ grammar ASTify-grammar
 Union(string typename, string[] subtypes)
 : 'union' @typename ':' @subtypes(':')
 
-Type(string name, bool optional, bool list)
-: @name @optional('?') @list('[' ']')
+Type(string name, bool optional, bool lst)
+: @name @optional('?') @lst('[' ']')
 
 TypedName(Type type, string name)
 : @type @name
@@ -13,7 +13,7 @@ TypedName(Type type, string name)
 NamedPropertyList(string name, TypedName[] properties)
 : @name '(' [@properties(',')] ')'
 
-AbstractTypeDefinition(NamedPropertyList properties-doop)
+AbstractTypeDefinition(NamedPropertyList properties)
 : 'abstract' @properties
 
 ParameterReference(string parameter, Pattern[] delimiter)
