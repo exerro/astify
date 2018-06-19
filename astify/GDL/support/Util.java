@@ -1,4 +1,4 @@
-package astify.grammar_definition.support;
+package astify.GDL.support;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,17 +1,17 @@
-package astify.grammar_definition;
+package astify.GDL;
 
-public abstract class Type {
+abstract class Type {
     abstract String getName();
     abstract String getReferenceName();
 
-    public static class DefinedType extends Type {
+    static class DefinedType extends Type {
         private final Definition definition;
 
-        public DefinedType(Definition definition) {
+        DefinedType(Definition definition) {
             this.definition = definition;
         }
 
-        public Definition getDefinition() {
+        Definition getDefinition() {
             return definition;
         }
 
@@ -24,14 +24,14 @@ public abstract class Type {
         }
     }
 
-    public static class TokenType extends Type {
+    static class TokenType extends Type {
         private final astify.token.TokenType tokenType;
 
-        public TokenType(astify.token.TokenType tokenType) {
+        TokenType(astify.token.TokenType tokenType) {
             this.tokenType = tokenType;
         }
 
-        public astify.token.TokenType getTokenType() {
+        astify.token.TokenType getTokenType() {
             return tokenType;
         }
 
@@ -44,19 +44,19 @@ public abstract class Type {
         }
     }
 
-    public static class BuiltinType extends Type {
-        public enum Types {
+    static class BuiltinType extends Type {
+        enum Types {
             String,
             Boolean
         }
 
         private final Types type;
 
-        public BuiltinType(Types type) {
+        BuiltinType(Types type) {
             this.type = type;
         }
 
-        public Types getType() {
+        Types getType() {
             return type;
         }
 

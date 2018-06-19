@@ -1,6 +1,4 @@
-package astify.grammar_definition;
-
-import astify.grammar_definition.support.ClassBuilder;
+package astify.GDL;
 
 import java.nio.file.Paths;
 

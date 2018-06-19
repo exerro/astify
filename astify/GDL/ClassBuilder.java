@@ -1,15 +1,14 @@
-package astify.grammar_definition.support;
+package astify.GDL;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClassBuilder {
-
-    public interface Builder {
+class ClassBuilder {
+    interface Builder {
         void build(OutputHelper helper);
     }
 
-    public enum ClassType {
+    enum ClassType {
         Class,
         Interface
     }
@@ -37,11 +36,11 @@ public class ClassBuilder {
     private int extendsCount = 0, implementsCount = 0;
     private String constructorAccess = "public", getterAccess = "public";
 
-    public static final int
+    static final int
             ENABLE_CONSTRUCTOR = 1,
             ENABLE_METHODS = 2;
 
-    public ClassBuilder(String className) {
+    ClassBuilder(String className) {
         this.className = className;
 
         toStringBody.write("return \"(" + className + "\"");
@@ -49,45 +48,45 @@ public class ClassBuilder {
         hashCodeBody.write("return ");
     }
 
-    public String getClassName() {
+    String getClassName() {
         return className;
     }
 
-    public static boolean validateAccessModifier(String access) {
+    static boolean validateAccessModifier(String access) {
         return access.equals("public") || access.equals("protected") || access.equals("default");
     }
 
-    public void setGetterAccess(String access) {
+    void setGetterAccess(String access) {
         assert validateAccessModifier(access);
         if (access.equals("default")) access = "";
         getterAccess = access;
     }
 
-    public void setConstructorAccess(String access) {
+    void setConstructorAccess(String access) {
         assert validateAccessModifier(access);
         if (access.equals("default")) access = "";
         constructorAccess = access;
     }
 
-    public void addExtends(String name) {
+    void addExtends(String name) {
         if (extendsCount == 0) extendsList.write("extends");
         else extendsList.write(", ");
         extendsList.writeWord(name);
         ++extendsCount;
     }
 
-    public void addImplements(String name) {
+    void addImplements(String name) {
         if (implementsCount == 0) implementsList.write("implements");
         else implementsList.write(", ");
         implementsList.writeWord(name);
         ++implementsCount;
     }
 
-    public void addField(String type, String name, boolean isOptional, boolean isMutable) {
+    void addField(String type, String name, boolean isOptional) {
         boolean isPrimitiveType = type.charAt(0) >= 'a' && type.charAt(0) <= 'z'; // assuming lower case first character -> primitive
 
         fields.ensureLines(1);
-        fields.write("private " + (isMutable ? " " : "final ") + type + " " + name + ";");
+        fields.write("private final " + type + " " + name + ";");
 
         constructorParameters.write(((fieldCount + constructorFieldCount) == 0 ? "" : ", ") + type + " " + name);
 
@@ -125,64 +124,39 @@ public class ClassBuilder {
         ++fieldCount;
     }
 
-    public void addAbstractGetter(String type, String name) {
+    void addAbstractGetter(String type, String name) {
         getters.write(getterAccess.equals("") ? "" : getterAccess + " ");
         getters.write(type + " " + NameHelper.getGetterName(name, type.equals("boolean")) + "();");
         getters.writeLine();
         getters.writeLine();
     }
 
-    public void addField(String type, String name, boolean isOptional) {
-        addField(type, name, isOptional, false);
-    }
-
-    public void addConstructorField(String type, String name) {
+    void addConstructorField(String type, String name) {
         superList.write((constructorFieldCount == 0 ? "" : ", ") + name);
         constructorParameters.write(((fieldCount + constructorFieldCount) == 0 ? "" : ", ") + type + " " + name);
         ++constructorFieldCount;
     }
 
-    public void addCustomField(Builder builder) {
-        fieldBuilders.add(builder);
-    }
-
-    public void addMethod(Builder builder) {
+    void addMethod(Builder builder) {
         methodBuilders.add(builder);
     }
 
-    public void addClass(ClassBuilder builder) {
-        classBuilders.add((result) -> buildToModified(result, "static"));
-    }
-
-    public void addClass(ClassBuilder builder, String modifier) {
+    void addClass(ClassBuilder builder, String modifier) {
         classBuilders.add((result) -> builder.buildToModified(result, (modifier.equals("") ? "" : modifier + " ") + "static"));
     }
 
-    public void setFlag(int flag, boolean state) {
+    void setFlag(int flag, boolean state) {
         flags = state ? flags | flag : flags & ~flag;
     }
 
-    public void setFlag(int flag) {
-        setFlag(flag, true);
-    }
-
-    public void setClassType(ClassType type) {
+    void setClassType(ClassType type) {
         this.type = type;
     }
 
-    public OutputHelper buildTo(OutputHelper result) {
-        result.ensureLines(2);
-        return buildToInternal(result);
-    }
-
-    public OutputHelper buildToModified(OutputHelper result, String modifier) {
+    OutputHelper buildToModified(OutputHelper result, String modifier) {
         result.ensureLines(2);
         result.write(modifier.replace("default", ""));
         return buildToInternal(result);
-    }
-
-    public String getResult() {
-        return buildTo(new OutputHelper()).getResult();
     }
 
     private OutputHelper buildToInternal(OutputHelper result) {

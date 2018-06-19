@@ -1,4 +1,4 @@
-package astify.grammar_definition;
+package astify.GDL;
 
 import astify.core.Position;
 import astify.core.Source;
@@ -8,8 +8,8 @@ import astify.token.TokenType;
 
 import java.util.Set;
 
-public class ASTifyGrammarTokenGenerator extends DefaultTokenGenerator {
-    public ASTifyGrammarTokenGenerator(Source source, Set<String> keywords) {
+class ASTifyGrammarTokenGenerator extends DefaultTokenGenerator {
+    ASTifyGrammarTokenGenerator(Source source, Set<String> keywords) {
         super(source, keywords);
     }
 

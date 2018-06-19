@@ -1,10 +1,10 @@
-package astify.grammar_definition;
+package astify.GDL;
 
 import astify.Capture;
 import astify.token.Token;
 import astify.core.Position;
 import astify.core.Positioned;
-import astify.grammar_definition.support.Util;
+import astify.GDL.support.Util;
 
 import java.util.List;
 

@@ -1,16 +1,11 @@
-package astify.grammar_definition;
+package astify.GDL;
 
-import astify.grammar_definition.support.ClassBuilder;
-import astify.grammar_definition.support.NameHelper;
-import astify.grammar_definition.support.OutputHelper;
-
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public class Builder {
+class Builder {
     private final Scope scope = new Scope();
     private final OutputHelper ASTDefinition = new OutputHelper();
     private final OutputHelper patternBuilder = new OutputHelper();
@@ -20,7 +15,7 @@ public class Builder {
     private final String grammarName;
     private final BuildConfig buildConfig;
 
-    public Builder(String grammarName, BuildConfig buildConfig) {
+    Builder(String grammarName, BuildConfig buildConfig) {
         this.grammarName = grammarName;
         this.buildConfig = buildConfig;
         scope.defineNativeTypes();
@@ -70,14 +65,14 @@ public class Builder {
             helper.write("@Override\npublic Pattern getMain()");
             helper.enterBlock();
 
-            helper.write("return lookup(\"" + grammarName + "\");");
+            helper.write("return lookup(\"" + NameHelper.toLowerLispCase(grammarName) + "\");");
 
             helper.exitBlock();
         });
 
     }
 
-    public void registerDefinition(ASTifyGrammar.Definition definition) {
+    void registerDefinition(ASTifyGrammar.Definition definition) {
         Definition d;
 
         if (definition instanceof ASTifyGrammar.AbstractTypeDefinition) {
@@ -99,7 +94,7 @@ public class Builder {
         d.getClassBuilder().setGetterAccess(buildConfig.getGetterAccess());
     }
 
-    public void buildDefinition(ASTifyGrammar.Definition sourceDefinition) {
+    void buildDefinition(ASTifyGrammar.Definition sourceDefinition) {
         String name = null;
 
         if (sourceDefinition instanceof ASTifyGrammar.AbstractTypeDefinition) name = ((ASTifyGrammar.AbstractTypeDefinition) sourceDefinition).getProperties().getName().getValue();
@@ -146,7 +141,7 @@ public class Builder {
         }
     }
 
-    public void build() {
+    void build() {
         assert definedTypes.contains(NameHelper.toUpperCamelCase(grammarName));
         assert scope.lookupDefinition(NameHelper.toUpperCamelCase(grammarName)) instanceof Definition.TypeDefinition;
 
@@ -165,16 +160,12 @@ public class Builder {
         patternBuilderClass.buildToModified(patternBuilder, buildConfig.getPatternBuilderConstructorAccess());
     }
 
-    public void createFiles() throws IOException {
-        FileWriter ASTDefinitionWriter = new FileWriter(buildConfig.getFullPath() + "/" + NameHelper.toUpperCamelCase(grammarName) + ".java");
-        ASTDefinitionWriter.write(ASTDefinition.getResult());
-        ASTDefinitionWriter.flush();
-        ASTDefinitionWriter.close();
+    void createFiles() {
+        String patternBuilderFile = buildConfig.getFullPath() + "/" + patternBuilderClass.getClassName() + ".java";
+        String ASTDefinitionPath = buildConfig.getFullPath() + "/" + NameHelper.toUpperCamelCase(grammarName) + ".java";
 
-        FileWriter patternBuilderWriter = new FileWriter(buildConfig.getFullPath() + "/" + patternBuilderClass.getClassName() + ".java");
-        patternBuilderWriter.write(patternBuilder.getResult());
-        patternBuilderWriter.flush();
-        patternBuilderWriter.close();
+        ASTDefinition.writeToFile(new File(ASTDefinitionPath));
+        patternBuilder.writeToFile(new File(patternBuilderFile));
     }
 
     private void addTypeProperties(Definition.TypeDefinition definition, ASTifyGrammar.NamedPropertyList properties) {

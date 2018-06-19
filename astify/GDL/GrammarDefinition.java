@@ -1,4 +1,4 @@
-package astify.grammar_definition;
+package astify.GDL;
 
 import astify.Parser;
 import astify.ParserException;
@@ -6,14 +6,17 @@ import astify.core.Source;
 import astify.token.TokenException;
 import astify.token.TokenGenerator;
 
-import java.io.IOException;
+import java.io.File;
 
 public class GrammarDefinition {
-    public static void main(String[] args) throws Exception {
-        ASTifyGrammar grammar = parse("astify/grammar_definition/ASTify-grammar.txt");
-        IOException err = buildOutput(grammar, new BuildConfig("out"));
+    public static void parseAndBuild(String filename, BuildConfig config) throws TokenException, ParserException {
+        ASTifyGrammar grammar = parse(filename);
+        buildOutput(grammar, config);
+    }
 
-        if (err != null) throw err;
+    public static void parseAndBuild(String filename) throws TokenException, ParserException {
+        BuildConfig config = new BuildConfig(new File(filename).getParent().replace("/", "."));
+        parseAndBuild(filename, config);
     }
 
     public static ASTifyGrammar parse(String filename) throws TokenException, ParserException {
@@ -34,7 +37,7 @@ public class GrammarDefinition {
         }
     }
 
-    public static IOException buildOutput(ASTifyGrammar grammar, BuildConfig config) {
+    public static void buildOutput(ASTifyGrammar grammar, BuildConfig config) {
         Builder outputBuilder = new Builder(grammar.getGrammar().getName().getValue(), config);
 
         for (ASTifyGrammar.Definition definition : grammar.getDefinitions()) {
@@ -46,14 +49,6 @@ public class GrammarDefinition {
         }
 
         outputBuilder.build();
-
-        try {
-            outputBuilder.createFiles();
-        }
-        catch (IOException e) {
-            return e;
-        }
-
-        return null;
+        outputBuilder.createFiles();
     }
 }

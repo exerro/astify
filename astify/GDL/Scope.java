@@ -1,11 +1,11 @@
-package astify.grammar_definition;
+package astify.GDL;
 
 import astify.token.TokenType;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Scope {
+class Scope {
     private final Map<String, Type> scope = new HashMap<>();
 
     boolean exists(String name) {
@@ -33,7 +33,7 @@ public class Scope {
 
     void define(Type value) {
         assert !exists(value.getName()) : value.getName();
-        scope.put(value.getName(), value);
+        define(value.getName(), value);
     }
 
     void defineNativeTypes() {

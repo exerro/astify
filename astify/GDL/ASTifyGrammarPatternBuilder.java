@@ -1,4 +1,4 @@
-package astify.grammar_definition;
+package astify.GDL;
 
 import astify.Capture;
 import astify.Pattern;
@@ -9,13 +9,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ASTifyGrammarPatternBuilder extends PatternBuilder {
-    public ASTifyGrammarPatternBuilder() {
+class ASTifyGrammarPatternBuilder extends PatternBuilder {
+    ASTifyGrammarPatternBuilder() {
         super();
-        define();
-    }
 
-    protected void define() {
         sequence("type", ASTifyGrammarPatternBuilder::createType,
                 token(Word),
                 optional(symbol("?")),

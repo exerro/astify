@@ -1,23 +1,22 @@
-package astify.grammar_definition;
+package astify.GDL;
 
 import astify.token.Token;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class Pattern {
+abstract class Pattern {
     abstract String getPatternBuilderTerm();
 
-    public static class Optional extends Pattern {
+    static class Optional extends Pattern {
         private final List<Pattern> optionalParts;
 
-        public Optional(List<Pattern> optionalParts) {
+        Optional(List<Pattern> optionalParts) {
             this.optionalParts = optionalParts;
         }
 
-        public List<Pattern> getPatterns() {
+        List<Pattern> getPatterns() {
             return optionalParts;
         }
 
@@ -30,20 +29,20 @@ public abstract class Pattern {
         }
     }
 
-    public static class ListType extends Pattern {
+    static class ListType extends Pattern {
         private final Pattern item;
         private final List<Pattern> separator;
 
-        public ListType(Pattern item, List<Pattern> separator) {
+        ListType(Pattern item, List<Pattern> separator) {
             this.item = item;
             this.separator = separator;
         }
 
-        public ListType(Pattern item, Pattern pattern) {
-            this(pattern, Collections.singletonList(pattern));
+        ListType(Pattern item, Pattern pattern) {
+            this(item, Collections.singletonList(pattern));
         }
 
-        public ListType(Pattern pattern) {
+        ListType(Pattern pattern) {
             this(pattern, new ArrayList<>());
         }
 
@@ -56,10 +55,10 @@ public abstract class Pattern {
         }
     }
 
-    public static class Terminal extends Pattern {
+    static class Terminal extends Pattern {
         private final String value;
 
-        public Terminal(String value) {
+        Terminal(String value) {
             this.value = value;
         }
 
@@ -78,10 +77,10 @@ public abstract class Pattern {
         }
     }
 
-    public static class TypeReference extends Pattern {
+    static class TypeReference extends Pattern {
         private final Type reference;
 
-        public TypeReference(Type reference) {
+        TypeReference(Type reference) {
             this.reference = reference;
         }
 
@@ -100,20 +99,20 @@ public abstract class Pattern {
         }
     }
 
-    public static class Matcher extends Pattern {
+    static class Matcher extends Pattern {
         private final Pattern source;
         private final String target;
 
-        public Matcher(Pattern source, String target) {
+        Matcher(Pattern source, String target) {
             this.source = source;
             this.target = target;
         }
 
-        public Pattern getSource() {
+        Pattern getSource() {
             return source;
         }
 
-        public String getTarget() {
+        String getTarget() {
             return target;
         }
 
@@ -126,7 +125,27 @@ public abstract class Pattern {
         }
     }
 
-    public static Pattern createFrom(ASTifyGrammar.RootPattern sourcePattern, Definition.TypeDefinition definition, Scope scope) {
+    static<T extends ASTifyGrammar.RootPattern> List<Pattern> createFromList(List<T> sourcePatterns, Definition.TypeDefinition definition, Scope scope) {
+        List<Pattern> result = new ArrayList<>();
+
+        for (ASTifyGrammar.RootPattern pattern : sourcePatterns) {
+            result.add(createFrom(pattern, definition, scope));
+        }
+
+        return result;
+    }
+
+    static<T, R> List<R> map(List<T> list, java.util.function.Function<T, R> f) {
+        List<R> result = new ArrayList<>();
+
+        for (T elem : list) {
+            result.add(f.apply(elem));
+        }
+
+        return result;
+    }
+
+    private static Pattern createFrom(ASTifyGrammar.RootPattern sourcePattern, Definition.TypeDefinition definition, Scope scope) {
         if (sourcePattern instanceof ASTifyGrammar.TypeReference) {
             Token sourceType = ((ASTifyGrammar.TypeReference) sourcePattern).getType();
 
@@ -148,16 +167,15 @@ public abstract class Pattern {
                 parameters.add(createFrom(pat, definition, scope));
             }
 
-            if (name.equals("list")) {
-                if (parameters.size() != 1) throw new Error("TODO");
-                return new ListType(parameters.get(0));
-            }
-            else if (name.equals("delim")) {
-                if (parameters.size() != 2) throw new Error("TODO");
-                return new ListType(parameters.get(0), parameters.get(1));
-            }
-            else {
-                throw new Error("TODO");
+            switch (name) {
+                case "list":
+                    if (parameters.size() != 1) throw new Error("TODO");
+                    return new ListType(parameters.get(0));
+                case "delim":
+                    if (parameters.size() != 2) throw new Error("TODO");
+                    return new ListType(parameters.get(0), parameters.get(1));
+                default:
+                    throw new Error("TODO");
             }
         }
         else if (sourcePattern instanceof ASTifyGrammar.Matcher) {
@@ -198,26 +216,6 @@ public abstract class Pattern {
             return new Optional(createFromList(((ASTifyGrammar.Optional) sourcePattern).getPatterns(), definition, scope));
         }
         return null;
-    }
-
-    public static<T extends ASTifyGrammar.RootPattern> List<Pattern> createFromList(List<T> sourcePatterns, Definition.TypeDefinition definition, Scope scope) {
-        List<Pattern> result = new ArrayList<>();
-
-        for (ASTifyGrammar.RootPattern pattern : sourcePatterns) {
-            result.add(createFrom(pattern, definition, scope));
-        }
-
-        return result;
-    }
-
-    public static<T, R> List<R> map(List<T> list, java.util.function.Function<T, R> f) {
-        List<R> result = new ArrayList<>();
-
-        for (T elem : list) {
-            result.add(f.apply(elem));
-        }
-
-        return result;
     }
 
     private static String str(String s) {
