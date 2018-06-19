@@ -1,157 +1,105 @@
 package astify.grammar_definition;
 
-import astify.token.TokenType;
+import astify.grammar_definition.support.ClassBuilder;
+import astify.grammar_definition.support.NameHelper;
+import astify.grammar_definition.support.OutputHelper;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Definition {
+public abstract class Definition {
     private final String name;
+    protected final ClassBuilder classBuilder;
 
     public Definition(String name) {
         this.name = name;
+        this.classBuilder = new ClassBuilder(getStructName());
     }
 
-    String getName() {
+    public String getName() {
         return name;
     }
 
-    String getStructName() {
-        return NameHelper.toUpperCamelCase(getName());
+    public ClassBuilder getClassBuilder() {
+        return classBuilder;
     }
 
-   String getPatternName() {
-        return NameHelper.toLowerLispCase(getName());
+    public String getStructName() {
+        return NameHelper.toUpperCamelCase(name);
     }
 
-    static class Property {
-        private final Type type;
-        private final String name;
-        private final String rawName;
-
-        Property(Type type, String name) {
-            this.type = type;
-            this.name = NameHelper.toLowerCamelCase(name);
-            this.rawName = name;
-        }
-
-        String getRawName() {
-            return rawName;
-        }
-
-        String getName() {
-            return name;
-        }
-
-        Type getType() {
-            return type;
-        }
-
-        String getParameterString() {
-            return type.toString() + " " + name;
-        }
-
-        String getDefinitionString() {
-            return "private final " + getParameterString()+ ";";
-        }
-
-        String getGetterString() {
-            Definition typeDefinition = type.getDefinition();
-            boolean isBoolean = type.isNative(NativeDefinition.NativeType.Boolean);
-
-            return "public " + type.toString() + " " + (isBoolean ? NameHelper.getBooleanGetterName(name) : NameHelper.getGetterName(name)) + "()";
-        }
+    public String getPatternName() {
+        return NameHelper.toLowerLispCase(name);
     }
 
-    static class TypeDefinition extends Definition {
+    abstract void buildTo(OutputHelper helper);
+
+    public static class TypeDefinition extends Definition {
+        private final List<List<Pattern>> patternLists = new ArrayList<>();
         private final List<Property> properties = new ArrayList<>();
-        private final Set<UnionDefinition> superTypes = new HashSet<>();
-        private final List<ASTifyGrammar.PatternList> patternLists = new ArrayList<>();
-        private final Map<String, Property> propertyLookup = new HashMap<>();
 
-        TypeDefinition(String name) {
+        public TypeDefinition(String name) {
             super(name);
+            classBuilder.addExtends("Capture.ObjectCapture");
+            classBuilder.addConstructorField("Position", "spanningPosition");
         }
 
-        List<Property> getProperties() {
+        public List<Property> getProperties() {
             return properties;
         }
 
-        Set<UnionDefinition> getSuperTypes() {
-            return superTypes;
+        public Property getProperty(String name) {
+            for (Property property : properties) {
+                if (property.getPropertyName().equals(name)) {
+                    return property;
+                }
+            }
+
+            return null;
         }
 
-        List<ASTifyGrammar.PatternList> getPatternLists() {
+        public void addProperty(Property property) {
+            classBuilder.addField(property.getTypeString(), property.getPropertyName(), property.isOptional());
+            properties.add(property);
+        }
+
+        public void addPattern(ASTifyGrammar.PatternList patternList, Scope scope) {
+            patternLists.add(Pattern.createFromList(patternList.getPatterns(), this, scope));
+        }
+
+        public List<List<Pattern>> getPatternLists() {
             return patternLists;
         }
 
-        void addProperty(Property property) {
-            properties.add(property);
-            propertyLookup.put(property.getRawName(), property);
+        public String getCallbackName() {
+            return "create" + getStructName();
         }
 
-        Property getProperty(String name) {
-            return propertyLookup.get(name);
-        }
-
-        void addSuperType(UnionDefinition union) {
-            superTypes.add(union);
-        }
-
-        void addPatternList(ASTifyGrammar.PatternList list) {
-            patternLists.add(list);
+        @Override void buildTo(OutputHelper helper) {
+            classBuilder.buildTo(helper);
         }
     }
 
-    static class TokenTypeDefinition extends Definition {
-        private final TokenType tokenType;
-
-        TokenTypeDefinition(TokenType tokenType) {
-            super(tokenType.toString());
-            this.tokenType = tokenType;
-        }
-
-        TokenType getTokenType() {
-            return tokenType;
-        }
-    }
-
-    static class NativeDefinition extends Definition {
-        private final Definition.NativeDefinition.NativeType type;
-
-        enum NativeType {
-            Boolean
-        }
-
-        NativeDefinition(NativeType type) {
-            super(type.toString());
-            this.type = type;
-        }
-
-        NativeType getType() {
-            return type;
-        }
-
-        String getTypeString() {
-            switch (type) {
-                case Boolean: return "Boolean";
-            }
-            return "";
-        }
-    }
-
-    static class UnionDefinition extends Definition {
-        private final Set<TypeDefinition> subtypes = new HashSet<>();
-
-        UnionDefinition(String name) {
+    public static class UnionDefinition extends Definition {
+        public UnionDefinition(String name) {
             super(name);
+            classBuilder.setClassType(ClassBuilder.ClassType.Interface);
+            classBuilder.setFlag(ClassBuilder.ENABLE_CONSTRUCTOR, false);
+            classBuilder.setFlag(ClassBuilder.ENABLE_METHODS, false);
+            classBuilder.addExtends("astify.core.Positioned");
         }
 
-        Set<TypeDefinition> getSubtypes() {
-            return subtypes;
+        public void addMember(Definition definition) {
+            if (definition instanceof UnionDefinition) {
+                definition.getClassBuilder().addExtends(getStructName());
+            }
+            else if (definition instanceof TypeDefinition) {
+                definition.getClassBuilder().addImplements(getStructName());
+            }
         }
 
-        void addSubType(TypeDefinition definition) {
-            subtypes.add(definition);
+        @Override void buildTo(OutputHelper helper) {
+            classBuilder.buildTo(helper);
         }
     }
 }

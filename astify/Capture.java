@@ -38,11 +38,15 @@ public abstract class Capture implements Positioned {
     }
 
     public static final class TokenCapture extends Capture {
-        public final Token token;
+        private final Token token;
 
         public TokenCapture(Token token) {
             super(token.getPosition());
             this.token = token;
+        }
+
+        public Token getToken() {
+            return token;
         }
 
         public TokenType getType() {

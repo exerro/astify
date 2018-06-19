@@ -1,4 +1,4 @@
-package astify.grammar_definition;
+package astify.grammar_definition.support;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -25,13 +25,13 @@ public class NameHelper {
         names.add(name);
     }
 
-    String getNameAndDefine(String name) {
-        name = getName(name);
+    String getNameAndDefine(String desiredName) {
+        String name = getName(desiredName);
         define(name);
         return name;
     }
 
-    static String toUpperCamelCase(String name) {
+    public static String toUpperCamelCase(String name) {
         name = name.replace("_", "-");
         name = name.substring(0, 1).toUpperCase() + name.substring(1);
 
@@ -43,7 +43,7 @@ public class NameHelper {
         return name;
     }
 
-    static String toLowerCamelCase(String name) {
+    public static String toLowerCamelCase(String name) {
         name = name.substring(0, 1) + name.substring(1).replace("_", "-");
         name = name.substring(0, 1).toLowerCase() + name.substring(1);
 
@@ -55,7 +55,7 @@ public class NameHelper {
         return name;
     }
 
-    static String toLowerLispCase(String name) {
+    public static String toLowerLispCase(String name) {
         name = name.replace("_", "-");
         name = name.substring(0, 1).toLowerCase() + name.substring(1);
 
@@ -68,11 +68,7 @@ public class NameHelper {
         return name;
     }
 
-    static String getGetterName(String name) {
-        return "get" + toUpperCamelCase(name);
-    }
-
-    static String getBooleanGetterName(String name) {
-        return "is" + toUpperCamelCase(name);
+    public static String getGetterName(String name, boolean isBoolean) {
+        return (isBoolean ? "is" : "get") + toUpperCamelCase(name);
     }
 }

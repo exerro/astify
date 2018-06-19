@@ -1,5 +1,8 @@
 package astify.grammar_definition;
 
+import java.io.File;
+import java.nio.file.Paths;
+
 public class BuildConfig {
     private String path;
     private String _package;
@@ -27,5 +30,9 @@ public class BuildConfig {
 
     public void setPackage(String _package) {
         this._package = _package;
+    }
+
+    public String getFullPath() {
+        return path + (!path.equals("") && !_package.equals("") ? "/" : "") + _package.replace('.', Paths.get("a", "b").toString().charAt(1));
     }
 }

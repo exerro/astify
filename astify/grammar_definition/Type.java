@@ -1,46 +1,75 @@
 package astify.grammar_definition;
 
-public class Type {
-    private final Definition definition;
-    private final boolean optional, list;
+public abstract class Type {
+    abstract String getName();
+    abstract String getReferenceName();
 
-    public Type(Definition definition, boolean optional, boolean list) {
-        this.definition = definition;
-        this.optional = optional;
-        this.list = list;
-    }
+    public static class DefinedType extends Type {
+        private final Definition definition;
 
-    public Definition getDefinition() {
-        return definition;
-    }
-
-    public boolean isOptional() {
-        return optional;
-    }
-
-    public boolean isList() {
-        return list;
-    }
-
-    public boolean isNative() {
-        return definition instanceof Definition.NativeDefinition;
-    }
-
-    public boolean isNative(Definition.NativeDefinition.NativeType t) {
-        return isNative() && ((Definition.NativeDefinition) definition).getType() == t;
-    }
-
-    @Override public String toString() {
-        String str = definition.getName();
-
-        if (definition instanceof Definition.TokenTypeDefinition) {
-            str = "Token";
+        public DefinedType(Definition definition) {
+            this.definition = definition;
         }
 
-        if (isList()) {
-            str = "List<" + str + ">";
+        public Definition getDefinition() {
+            return definition;
         }
 
-        return str;
+        @Override String getName() {
+            return definition.getName();
+        }
+
+        @Override String getReferenceName() {
+            return definition.getStructName();
+        }
+    }
+
+    public static class TokenType extends Type {
+        private final astify.token.TokenType tokenType;
+
+        public TokenType(astify.token.TokenType tokenType) {
+            this.tokenType = tokenType;
+        }
+
+        public astify.token.TokenType getTokenType() {
+            return tokenType;
+        }
+
+        @Override String getName() {
+            return tokenType.name();
+        }
+
+        @Override String getReferenceName() {
+            return "Token";
+        }
+    }
+
+    public static class BuiltinType extends Type {
+        public enum Types {
+            String,
+            Boolean
+        }
+
+        private final Types type;
+
+        public BuiltinType(Types type) {
+            this.type = type;
+        }
+
+        public Types getType() {
+            return type;
+        }
+
+        @Override String getName() {
+            switch (type) {
+                case String: return "string";
+                case Boolean: return "bool";
+            }
+            return "what";
+        }
+
+        @Override String getReferenceName() {
+            return type.name();
+        }
     }
 }

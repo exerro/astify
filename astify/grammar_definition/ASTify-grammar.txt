@@ -1,55 +1,86 @@
 
-grammar test
+grammar ASTify-grammar
 
-Union(Word typename, Word[] subtypes)
-: 'union' .typename ':' .subtypes(':')
-
+// utilities
 Type(Word name, bool optional, bool lst)
 : .name .optional('?') .lst('[' ']')
 
 TypedName(Type type, Word name)
 : .type .name
 
+MatcherTarget(Word property)
+: '.' .property
+
+PatternList(RootPattern[] patterns)
+: .patterns
+
 NamedPropertyList(Word name, TypedName[] properties)
 : .name '(' [.properties(',')] ')'
 
-AbstractTypeDefinition(NamedPropertyList properties)
-: 'abstract' .properties
 
-PropertyReference(Word property, Pattern[] delimiter)
-: '.' .property ['(' .delimiter ')']
 
+// patterns
 TypeReference(Word type)
 : '@' .type
 
 Terminal(String terminal)
 : .terminal
 
+Function(Word name, UncapturingPattern[] patterns)
+: 'list' '(' (@Pattern -> .patterns) ')'
+: 'delim' '(' (@Pattern -> .patterns) ',' (@Pattern -> .patterns) ')'
+
+Matcher(UncapturingPattern source, MatcherTarget target)
+: '(' .source '->' .target ')'
+
+// wrapper around Matcher
+// without a qualifier: (@typeof(property) -> .property)
+// with a qualifier (if property is a list): (delim(@typeof(property), qualifier) -> .property)
+//                  (if property is an optional): [(qualifier -> .property)]
+PropertyReference(Word property, UncapturingPattern[] qualifier)
+: '.' .property ['(' .qualifier ')']
+
 Optional(Pattern[] patterns)
 : '[' .patterns ']'
 
-PatternList(Pattern[] patterns)
-: .patterns
+// pattern unions
+union UncapturingPattern
+: TypeReference
+: Terminal
+: Function
+
+union Pattern
+: UncapturingPattern
+: Matcher
+: PropertyReference
+
+union RootPattern
+: Pattern
+: Optional
+
+
+
+// definitions
+AbstractTypeDefinition(NamedPropertyList properties)
+: 'abstract' .properties
 
 TypeDefinition(NamedPropertyList properties, PatternList[] patterns)
 : .properties ':' .patterns(':')
 
+Union(Word typename, Word[] subtypes)
+: 'union' .typename ':' .subtypes(':')
+
+// definition union
+union Definition
+: AbstractTypeDefinition
+: TypeDefinition
+: Union
+
+
+
+// grammar
 Grammar(Word name)
 : 'grammar' .name
 
 ASTify-grammar(Grammar _grammar, Definition[] definitions)
 : ._grammar .definitions @EOF
-
-test()
-: @ASTify-grammar
-
-union Pattern
-: PropertyReference
-: TypeReference
-: Terminal
-: Optional
-
-union Definition
-: TypeDefinition
-: AbstractTypeDefinition
-: Union

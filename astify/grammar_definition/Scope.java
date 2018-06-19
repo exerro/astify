@@ -6,32 +6,42 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Scope {
-    Map<String, Definition> scope = new HashMap<>();
+    private final Map<String, Type> scope = new HashMap<>();
 
     boolean exists(String name) {
+        assert name != null;
         return scope.containsKey(name);
     }
 
-    Definition lookup(String name) {
+    Type lookup(String name) {
+        assert name != null;
         assert exists(name);
         return scope.get(name);
     }
 
-    void define(String name, Definition value) {
+    Definition lookupDefinition(String name) {
+        assert name != null;
+        assert exists(name);
+        Type t = lookup(name);
+        return t instanceof Type.DefinedType ? ((Type.DefinedType) t).getDefinition() : null;
+    }
+
+    void define(String name, Type value) {
         assert !exists(name);
         scope.put(name, value);
     }
 
-    void define(Definition value) {
-        assert !exists(value.getName());
+    void define(Type value) {
+        assert !exists(value.getName()) : value.getName();
         scope.put(value.getName(), value);
     }
 
     void defineNativeTypes() {
-        define("bool", new Definition.NativeDefinition(Definition.NativeDefinition.NativeType.Boolean));
+        define(new Type.BuiltinType(Type.BuiltinType.Types.Boolean));
+        define(new Type.BuiltinType(Type.BuiltinType.Types.String));
 
         for (TokenType type : TokenType.values()) {
-            define(type.toString(), new Definition.TokenTypeDefinition(type));
+            define(new Type.TokenType(type));
         }
     }
 }

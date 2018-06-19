@@ -1,143 +1,225 @@
 package astify.grammar_definition;
 
 import astify.Capture;
+import astify.token.Token;
 import astify.core.Position;
 import astify.core.Positioned;
-import astify.token.Token;
+import astify.grammar_definition.support.Util;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
+import static java.util.Objects.hash;
+
 public class ASTifyGrammar extends Capture.ObjectCapture {
-    private final Grammar grammar;
+    private final Grammar _grammar;
     private final List<Definition> definitions;
 
-    public ASTifyGrammar(Position spanningPosition, Grammar grammar, List<Definition> definitions) {
+    ASTifyGrammar(Position spanningPosition, Grammar _grammar, List<Definition> definitions) {
         super(spanningPosition);
-        this.grammar = grammar;
+        assert _grammar != null : "_grammar is null";
+        assert definitions != null : "definitions is null";
+        this._grammar = _grammar;
         this.definitions = definitions;
     }
 
     public Grammar getGrammar() {
-        return grammar;
+        return _grammar;
     }
 
     public List<Definition> getDefinitions() {
         return definitions;
     }
 
-    public static Capture create(List<Capture> captures) {
-        Grammar grammar = (Grammar) captures.get(0);
-        ListCapture definitionsCaptures = (ListCapture) captures.get(1);
-        List<Definition> definitions = new ArrayList<>();
-        Position position = captures.get(0).spanningPosition.to(captures.get(1).spanningPosition);
-
-        for (Iterator it = definitionsCaptures.iterator(); it.hasNext(); ) {
-            definitions.add((Definition) it.next());
-        }
-
-        return new ASTifyGrammar(position, grammar, definitions);
+    @Override public String toString() {
+        return "<ASTifyGrammar"
+                + "\n\t_grammar: " + _grammar.toString().replace("\n", "\n\t")
+                + "\n\tdefinitions: [" + Util.concatList(definitions).replace("\n", "\n\t") + "]"
+                + "\n>";
     }
 
-    public static class Union extends Capture.ObjectCapture implements Definition {
-        private final Token typename;
-        private final List<Token> subtypes;
+    @Override public boolean equals(Object object) {
+        if (!(object instanceof ASTifyGrammar)) return false;
+        ASTifyGrammar objectASTifyGrammar = (ASTifyGrammar) object;
+        if (!(_grammar.equals(objectASTifyGrammar._grammar))) return false;
+        return definitions.equals(objectASTifyGrammar.definitions);
+    }
 
-        public Union(Position spanningPosition, Token typename, List<Token> subtypes) {
+    @Override public int hashCode() {
+        return hash(_grammar, definitions);
+    }
+
+    static class AbstractTypeDefinition extends Capture.ObjectCapture implements Definition {
+        private final NamedPropertyList properties;
+
+        AbstractTypeDefinition(Position spanningPosition, NamedPropertyList properties) {
             super(spanningPosition);
-            this.typename = typename;
-            this.subtypes = subtypes;
+            assert properties != null : "properties is null";
+            this.properties = properties;
         }
 
-        public Token getTypename() {
-            return typename;
+        public NamedPropertyList getProperties() {
+            return properties;
         }
 
-        public List<Token> getSubtypes() {
-            return subtypes;
+        @Override public String toString() {
+            return "<AbstractTypeDefinition"
+                    + "\n\tproperties: " + properties.toString().replace("\n", "\n\t")
+                    + "\n>";
         }
 
-        public static Capture create(List<Capture> captures) {
-            Token typename = ((TokenCapture) captures.get(1)).token;
-            ListCapture subtypesCaptures = (ListCapture) captures.get(3);
-            List<Token> subtypes = new ArrayList<>();
-            Position position = captures.get(0).spanningPosition.to(captures.get(3).spanningPosition);
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof AbstractTypeDefinition)) return false;
+            AbstractTypeDefinition objectAbstractTypeDefinition = (AbstractTypeDefinition) object;
+            return properties.equals(objectAbstractTypeDefinition.properties);
+        }
 
-            for (Iterator it = subtypesCaptures.iterator(); it.hasNext(); ) {
-                subtypes.add(((TokenCapture) it.next()).token);
-            }
-
-            return new Union(position, typename, subtypes);
+        @Override public int hashCode() {
+            return hash(properties);
         }
     }
 
-    public static class Type extends Capture.ObjectCapture {
+    interface Definition extends Positioned {
+    }
+
+    static class Grammar extends Capture.ObjectCapture {
         private final Token name;
-        private final boolean optional, list;
 
-        public Type(Position spanningPosition, Token name, boolean optional, boolean list) {
+        Grammar(Position spanningPosition, Token name) {
             super(spanningPosition);
+            assert name != null : "name is null";
             this.name = name;
-            this.optional = optional;
-            this.list = list;
         }
 
         public Token getName() {
             return name;
         }
 
-        public boolean isOptional() {
-            return optional;
+        @Override public String toString() {
+            return "<Grammar"
+                    + "\n\tname: " + name.getValue().replace("\n", "\n\t")
+                    + "\n>";
         }
 
-        public boolean isList() {
-            return list;
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof Grammar)) return false;
+            Grammar objectGrammar = (Grammar) object;
+            return name.equals(objectGrammar.name);
         }
 
-        public static Capture create(List<Capture> captures) {
-            Token name = ((TokenCapture) captures.get(0)).token;
-            boolean optional = !(captures.get(1) instanceof EmptyCapture);
-            boolean list = !(captures.get(2) instanceof EmptyCapture);
-            Position position = captures.get(0).spanningPosition.to(captures.get(1).spanningPosition);
-
-            return new Type(position, name, optional, list);
+        @Override public int hashCode() {
+            return hash(name);
         }
     }
 
-    public static class TypedName extends Capture.ObjectCapture {
-        private final Type type;
+    static class Function extends Capture.ObjectCapture implements UncapturingPattern {
         private final Token name;
+        private final List<UncapturingPattern> patterns;
 
-        public TypedName(Position spanningPosition, Type type, Token name) {
+        Function(Position spanningPosition, Token name, List<UncapturingPattern> patterns) {
             super(spanningPosition);
-            this.type = type;
             this.name = name;
-        }
-
-        public Type getType() {
-            return type;
+            this.patterns = patterns;
         }
 
         public Token getName() {
             return name;
         }
 
-        public static Capture create(List<Capture> captures) {
-            Type type = (Type) captures.get(0);
-            Token name = ((TokenCapture) captures.get(1)).token;
-            Position position = captures.get(0).spanningPosition.to(captures.get(1).spanningPosition);
+        public List<UncapturingPattern> getPatterns() {
+            return patterns;
+        }
 
-            return new TypedName(position, type, name);
+        @Override public String toString() {
+            return "<Function"
+                    + "\n\tname: " + name.toString().replace("\n", "\n\t")
+                    + "\n\tpatterns: [" + Util.concatList(patterns).replace("\n", "\n\t") + "]"
+                    + "\n>";
+        }
+
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof Function)) return false;
+            Function objectFunction = (Function) object;
+            return name.equals(objectFunction.name) && patterns.equals(objectFunction.patterns);
+        }
+
+        @Override public int hashCode() {
+            return hash(name, patterns);
         }
     }
 
-    public static class NamedPropertyList extends Capture.ObjectCapture {
+    static class Matcher extends Capture.ObjectCapture implements Pattern {
+        private final UncapturingPattern source;
+        private final MatcherTarget target;
+
+        Matcher(Position spanningPosition, UncapturingPattern source, MatcherTarget target) {
+            super(spanningPosition);
+            this.source = source;
+            this.target = target;
+        }
+
+        public UncapturingPattern getSource() {
+            return source;
+        }
+
+        public MatcherTarget getTarget() {
+            return target;
+        }
+
+        @Override public String toString() {
+            return "<Matcher"
+                    + "\n\tsource: " + source.toString().replace("\n", "\n\t")
+                    + "\n\ttarget: " + target.toString().replace("\n", "\n\t")
+                    + "\n>";
+        }
+
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof Matcher)) return false;
+            Matcher objectMatcher = (Matcher) object;
+            return source.equals(objectMatcher.source) && target.equals(objectMatcher.target);
+        }
+
+        @Override public int hashCode() {
+            return hash(source, target);
+        }
+    }
+
+    static class MatcherTarget extends Capture.ObjectCapture {
+        private final Token property;
+
+        MatcherTarget(Position spanningPosition, Token property) {
+            super(spanningPosition);
+            this.property = property;
+        }
+
+        public Token getProperty() {
+            return property;
+        }
+
+        @Override public String toString() {
+            return "<MatcherTarget"
+                    + "\n\tproperty: " + property.getValue().replace("\n", "\n\t")
+                    + "\n>";
+        }
+
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof MatcherTarget)) return false;
+            MatcherTarget objectMatcherTarget = (MatcherTarget) object;
+            return property.equals(objectMatcherTarget.property);
+        }
+
+        @Override public int hashCode() {
+            return hash(property);
+        }
+    }
+
+    static class NamedPropertyList extends Capture.ObjectCapture {
         private final Token name;
         private final List<TypedName> properties;
 
-        public NamedPropertyList(Position spanningPosition, Token name, List<TypedName> properties) {
+        NamedPropertyList(Position spanningPosition, Token name, List<TypedName> properties) {
             super(spanningPosition);
+            assert name != null : "name is null";
+            assert properties != null : "properties is null";
             this.name = name;
             this.properties = properties;
         }
@@ -150,103 +232,137 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             return properties;
         }
 
-        public static Capture create(List<Capture> captures) {
-            Token name = ((TokenCapture) captures.get(0)).token;
-            List<TypedName> properties = new ArrayList<>();
-            Position position = captures.get(0).spanningPosition.to(captures.get(3).spanningPosition);
+        @Override public String toString() {
+            return "<NamedPropertyList"
+                    + "\n\tname: " + name.getValue().replace("\n", "\n\t")
+                    + "\n\tproperties: [" + Util.concatList(properties).replace("\n", "\n\t") + "]"
+                    + "\n>";
+        }
 
-            if (!(captures.get(2) instanceof EmptyCapture)) {
-                ListCapture propertiesCaptures = (ListCapture) captures.get(2);
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof NamedPropertyList)) return false;
+            NamedPropertyList objectNamedPropertyList = (NamedPropertyList) object;
+            if (!(name.equals(objectNamedPropertyList.name))) return false;
+            return properties.equals(objectNamedPropertyList.properties);
+        }
 
-                for (Iterator it = propertiesCaptures.iterator(); it.hasNext(); ) {
-                    properties.add((TypedName) it.next());
-                }
-            }
-
-            return new NamedPropertyList(position, name, properties);
+        @Override public int hashCode() {
+            return hash(name, properties);
         }
     }
 
-    public static class AbstractTypeDefinition extends Capture.ObjectCapture implements Definition {
-        private final NamedPropertyList properties;
+    static class Optional extends Capture.ObjectCapture implements RootPattern {
+        private final List<Pattern> patterns;
 
-        public AbstractTypeDefinition(Position spanningPosition, NamedPropertyList properties) {
+        Optional(Position spanningPosition, List<Pattern> patterns) {
             super(spanningPosition);
-            this.properties = properties;
+            assert patterns != null : "patterns is null";
+            this.patterns = patterns;
         }
 
-        public NamedPropertyList getProperties() {
-            return properties;
+        public List<Pattern> getPatterns() {
+            return patterns;
         }
 
-        public static Capture create(List<Capture> captures) {
-            NamedPropertyList properties = (NamedPropertyList) captures.get(1);
-            Position position = captures.get(0).spanningPosition.to(captures.get(1).spanningPosition);
+        @Override public String toString() {
+            return "<Optional"
+                    + "\n\tpatterns: [" + Util.concatList(patterns).replace("\n", "\n\t") + "]"
+                    + "\n>";
+        }
 
-            return new AbstractTypeDefinition(position, properties);
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof Optional)) return false;
+            Optional objectOptional = (Optional) object;
+            return patterns.equals(objectOptional.patterns);
+        }
+
+        @Override public int hashCode() {
+            return hash(patterns);
         }
     }
 
-    public static class ParameterReference extends Capture.ObjectCapture implements Pattern {
-        private final Token parameter;
-        private final List<Pattern> delimiter;
+    interface Pattern extends Positioned, RootPattern {
+    }
 
-        public ParameterReference(Position spanningPosition, Token parameter, List<Pattern> delimiter) {
+    static class PatternList extends Capture.ObjectCapture {
+        private final List<RootPattern> patterns;
+
+        PatternList(Position spanningPosition, List<RootPattern> patterns) {
             super(spanningPosition);
-            this.parameter = parameter;
-            this.delimiter = delimiter;
+            assert patterns != null : "patterns is null";
+            this.patterns = patterns;
         }
 
-        public Token getParameter() {
-            return parameter;
+        public List<RootPattern> getPatterns() {
+            return patterns;
         }
 
-        public List<Pattern> getDelimiter() {
-            return delimiter;
+        @Override public String toString() {
+            return "<PatternList"
+                    + "\n\tpatterns: [" + Util.concatList(patterns).replace("\n", "\n\t") + "]"
+                    + "\n>";
         }
 
-        public static Capture create(List<Capture> captures) {
-            Token parameter = ((TokenCapture) captures.get(1)).token;
-            List<Pattern> delimiter = new ArrayList<>();
-            Position position = captures.get(0).spanningPosition.to(captures.get(2).spanningPosition);
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof PatternList)) return false;
+            PatternList objectPatternList = (PatternList) object;
+            return patterns.equals(objectPatternList.patterns);
+        }
 
-            if (!(captures.get(2) instanceof EmptyCapture)) {
-                ListCapture delimiterCaptures = (ListCapture) ((ListCapture) captures.get(2)).get(1);
-
-                for (Iterator it = delimiterCaptures.iterator(); it.hasNext(); ) {
-                    delimiter.add((Pattern) it.next());
-                }
-            }
-
-            return new ParameterReference(position, parameter, delimiter);
+        @Override public int hashCode() {
+            return hash(patterns);
         }
     }
 
-    public static class TypeReference extends Capture.ObjectCapture implements Pattern {
-        private final Token type;
+    static class PropertyReference extends Capture.ObjectCapture implements Pattern {
+        private final Token property;
+        private final List<UncapturingPattern> qualifier;
 
-        public TypeReference(Position spanningPosition, Token type) {
+        PropertyReference(Position spanningPosition, Token property, List<UncapturingPattern> qualifier) {
             super(spanningPosition);
-            this.type = type;
+            assert property != null : "property is null";
+            assert qualifier != null : "qualifier is null";
+            this.property = property;
+            this.qualifier = qualifier;
         }
 
-        public Token getType() {
-            return type;
+        public Token getProperty() {
+            return property;
         }
 
-        public static Capture create(List<Capture> captures) {
-            Token type = ((TokenCapture) captures.get(1)).token;
-            Position position = captures.get(0).spanningPosition;
+        public List<UncapturingPattern> getQualifier() {
+            return qualifier;
+        }
 
-            return new TypeReference(position, type);
+        @Override public String toString() {
+            return "<PropertyReference"
+                    + "\n\tproperty: " + property.getValue().replace("\n", "\n\t")
+                    + "\n\tqualifier: [" + Util.concatList(qualifier).replace("\n", "\n\t") + "]"
+                    + "\n>";
+        }
+
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof PropertyReference)) return false;
+            PropertyReference objectPropertyReference = (PropertyReference) object;
+            if (!(property.equals(objectPropertyReference.property))) return false;
+            return qualifier.equals(objectPropertyReference.qualifier);
+        }
+
+        @Override public int hashCode() {
+            return hash(property, qualifier);
         }
     }
 
-    public static class Terminal extends Capture.ObjectCapture implements Pattern {
+    interface RootPattern {
+
+    }
+
+    static class Terminal extends Capture.ObjectCapture implements UncapturingPattern {
         private final Token terminal;
 
-        public Terminal(Position spanningPosition, Token terminal) {
+        Terminal(Position spanningPosition, Token terminal) {
             super(spanningPosition);
+            assert terminal != null : "terminal is null";
             this.terminal = terminal;
         }
 
@@ -254,70 +370,79 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             return terminal;
         }
 
-        public static Capture create(List<Capture> captures) {
-            Token terminal = ((TokenCapture) captures.get(0)).token;
-            Position position = terminal.getPosition();
+        @Override public String toString() {
+            return "<Terminal"
+                    + "\n\tterminal: " + terminal.getValue().replace("\n", "\n\t")
+                    + "\n>";
+        }
 
-            return new Terminal(position, terminal);
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof Terminal)) return false;
+            Terminal objectTerminal = (Terminal) object;
+            return terminal.equals(objectTerminal.terminal);
+        }
+
+        @Override public int hashCode() {
+            return hash(terminal);
         }
     }
 
-    public static class Optional extends Capture.ObjectCapture implements Pattern {
-        private final List<Pattern> patterns;
+    static class Type extends Capture.ObjectCapture {
+        private final Token name;
+        private final Boolean optional;
+        private final Boolean lst;
 
-        public Optional(Position spanningPosition, List<Pattern> patterns) {
+        Type(Position spanningPosition, Token name, Boolean optional, Boolean lst) {
             super(spanningPosition);
-            this.patterns = patterns;
+            assert name != null : "name is null";
+            assert optional != null : "optional is null";
+            assert lst != null : "lst is null";
+            this.name = name;
+            this.optional = optional;
+            this.lst = lst;
         }
 
-        public List<Pattern> getPatterns() {
-            return patterns;
+        public Token getName() {
+            return name;
         }
 
-        public static Capture create(List<Capture> captures) {
-            ListCapture patternsCaptures = (ListCapture) captures.get(1);
-            List<Pattern> patterns = new ArrayList<>();
-            Position position = captures.get(0).spanningPosition.to(captures.get(2).spanningPosition);
-
-            for (Iterator it = patternsCaptures.iterator(); it.hasNext(); ) {
-                patterns.add((Pattern) it.next());
-            }
-
-            return new Optional(position, patterns);
-        }
-    }
-
-    public static class PatternList extends Capture.ObjectCapture {
-        private final List<Pattern> patterns;
-
-        public PatternList(Position spanningPosition, List<Pattern> patterns) {
-            super(spanningPosition);
-            this.patterns = patterns;
+        public Boolean isOptional() {
+            return optional;
         }
 
-        public List<Pattern> getPatterns() {
-            return patterns;
+        public Boolean isLst() {
+            return lst;
         }
 
-        public static Capture create(List<Capture> captures) {
-            ListCapture patternsCaptures = (ListCapture) captures.get(0);
-            List<Pattern> patterns = new ArrayList<>();
-            Position position = captures.get(0).spanningPosition;
+        @Override public String toString() {
+            return "<Type"
+                    + "\n\tname: " + name.getValue().replace("\n", "\n\t")
+                    + "\n\toptional: " + optional.toString().replace("\n", "\n\t")
+                    + "\n\tlst: " + lst.toString().replace("\n", "\n\t")
+                    + "\n>";
+        }
 
-            for (Iterator it = patternsCaptures.iterator(); it.hasNext(); ) {
-                patterns.add((Pattern) it.next());
-            }
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof Type)) return false;
+            Type objectType = (Type) object;
+            if (!(name.equals(objectType.name))) return false;
+            if (!(optional.equals(objectType.optional))) return false;
+            return lst.equals(objectType.lst);
+        }
 
-            return new PatternList(position, patterns);
+        @Override public int hashCode() {
+            return hash(name, optional, lst);
         }
     }
 
-    public static class TypeDefinition extends Capture.ObjectCapture implements Definition {
+    static class TypeDefinition extends Capture.ObjectCapture implements Definition {
         private final NamedPropertyList properties;
         private final List<PatternList> patterns;
 
-        public TypeDefinition(Position spanningPosition, NamedPropertyList properties, List<PatternList> patterns) {
+        TypeDefinition(Position spanningPosition, NamedPropertyList properties, List<PatternList> patterns) {
             super(spanningPosition);
+            assert properties != null : "properties is null";
+            assert patterns != null : "patterns is null";
             this.properties = properties;
             this.patterns = patterns;
         }
@@ -330,49 +455,134 @@ public class ASTifyGrammar extends Capture.ObjectCapture {
             return patterns;
         }
 
-        public static Capture create(List<Capture> captures) {
-            NamedPropertyList properties = (NamedPropertyList) captures.get(0);
-            ListCapture patternsCaptures = (ListCapture) captures.get(2);
-            List<PatternList> patterns = new ArrayList<>();
-            Position position = captures.get(0).spanningPosition.to(captures.get(2).spanningPosition);
+        @Override public String toString() {
+            return "<TypeDefinition"
+                    + "\n\tproperties: " + properties.toString().replace("\n", "\n\t")
+                    + "\n\tpatterns: [" + Util.concatList(patterns).replace("\n", "\n\t") + "]"
+                    + "\n>";
+        }
 
-            for (Iterator it = patternsCaptures.iterator(); it.hasNext(); ) {
-                patterns.add((PatternList) it.next());
-            }
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof TypeDefinition)) return false;
+            TypeDefinition objectTypeDefinition = (TypeDefinition) object;
+            if (!(properties.equals(objectTypeDefinition.properties))) return false;
+            return patterns.equals(objectTypeDefinition.patterns);
+        }
 
-            return new TypeDefinition(position, properties, patterns);
+        @Override public int hashCode() {
+            return hash(properties, patterns);
         }
     }
 
-    public static class Grammar extends Capture.ObjectCapture {
+    static class TypeReference extends Capture.ObjectCapture implements UncapturingPattern {
+        private final Token type;
+
+        TypeReference(Position spanningPosition, Token type) {
+            super(spanningPosition);
+            assert type != null : "type is null";
+            this.type = type;
+        }
+
+        public Token getType() {
+            return type;
+        }
+
+        @Override public String toString() {
+            return "<TypeReference"
+                    + "\n\ttype: " + type.getValue().replace("\n", "\n\t")
+                    + "\n>";
+        }
+
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof TypeReference)) return false;
+            TypeReference objectTypeReference = (TypeReference) object;
+            return type.equals(objectTypeReference.type);
+        }
+
+        @Override public int hashCode() {
+            return hash(type);
+        }
+    }
+
+    static class TypedName extends Capture.ObjectCapture {
+        private final Type type;
         private final Token name;
 
-        public Grammar(Position spanningPosition, Token name) {
+        TypedName(Position spanningPosition, Type type, Token name) {
             super(spanningPosition);
+            assert type != null : "type is null";
+            assert name != null : "name is null";
+            this.type = type;
             this.name = name;
+        }
+
+        public Type getType() {
+            return type;
         }
 
         public Token getName() {
             return name;
         }
 
-        public static Capture create(List<Capture> captures) {
-            Token name = ((TokenCapture) captures.get(1)).token;
-            Position position = captures.get(0).spanningPosition.to(captures.get(1).spanningPosition);
+        @Override public String toString() {
+            return "<TypedName"
+                    + "\n\ttype: " + type.toString().replace("\n", "\n\t")
+                    + "\n\tname: " + name.getValue().replace("\n", "\n\t")
+                    + "\n>";
+        }
 
-            return new Grammar(position, name);
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof TypedName)) return false;
+            TypedName objectTypedName = (TypedName) object;
+            if (!(type.equals(objectTypedName.type))) return false;
+            return name.equals(objectTypedName.name);
+        }
+
+        @Override public int hashCode() {
+            return hash(type, name);
+        }
+    }
+
+    interface UncapturingPattern extends Pattern, Positioned {
+
+    }
+
+    static class Union extends Capture.ObjectCapture implements Definition {
+        private final Token typename;
+        private final List<Token> subtypes;
+
+        Union(Position spanningPosition, Token typename, List<Token> subtypes) {
+            super(spanningPosition);
+            assert typename != null : "typename is null";
+            assert subtypes != null : "subtypes is null";
+            this.typename = typename;
+            this.subtypes = subtypes;
+        }
+
+        public Token getTypename() {
+            return typename;
+        }
+
+        public List<Token> getSubtypes() {
+            return subtypes;
         }
 
         @Override public String toString() {
-            return "<Grammar " + name + ">";
+            return "<Union"
+                    + "\n\ttypename: " + typename.getValue().replace("\n", "\n\t")
+                    + "\n\tsubtypes: [" + Util.concatList(subtypes).replace("\n", "\n\t") + "]"
+                    + "\n>";
         }
-    }
 
-    public interface Pattern extends Positioned {
+        @Override public boolean equals(Object object) {
+            if (!(object instanceof Union)) return false;
+            Union objectUnion = (Union) object;
+            if (!(typename.equals(objectUnion.typename))) return false;
+            return subtypes.equals(objectUnion.subtypes);
+        }
 
-    }
-
-    public interface Definition extends Positioned {
-
+        @Override public int hashCode() {
+            return hash(typename, subtypes);
+        }
     }
 }
