@@ -35,6 +35,7 @@ public class ClassBuilder {
     private ClassType type = ClassType.Class;
     private int fieldCount = 0, constructorFieldCount = 0;
     private int extendsCount = 0, implementsCount = 0;
+    private String constructorAccess = "public", getterAccess = "public";
 
     public static final int
             ENABLE_CONSTRUCTOR = 1,
@@ -50,6 +51,22 @@ public class ClassBuilder {
 
     public String getClassName() {
         return className;
+    }
+
+    public static boolean validateAccessModifier(String access) {
+        return access.equals("public") || access.equals("protected") || access.equals("default");
+    }
+
+    public void setGetterAccess(String access) {
+        assert validateAccessModifier(access);
+        if (access.equals("default")) access = "";
+        getterAccess = access;
+    }
+
+    public void setConstructorAccess(String access) {
+        assert validateAccessModifier(access);
+        if (access.equals("default")) access = "";
+        constructorAccess = access;
     }
 
     public void addExtends(String name) {
@@ -81,7 +98,8 @@ public class ClassBuilder {
             constructorBodyHeader.writeLine("assert " + name + " != null;");
         }
 
-        getters.write("public " + type + " " + NameHelper.getGetterName(name, type.equals("boolean")) + "()");
+        getters.write(getterAccess.equals("") ? "" : getterAccess + " ");
+        getters.write(type + " " + NameHelper.getGetterName(name, type.equals("boolean")) + "()");
         getters.enterBlock();
             getters.write("return " + name + ";");
         getters.exitBlock();
@@ -108,7 +126,8 @@ public class ClassBuilder {
     }
 
     public void addAbstractGetter(String type, String name) {
-        getters.write("public " + type + " " + NameHelper.getGetterName(name, type.equals("boolean")) + "();");
+        getters.write(getterAccess.equals("") ? "" : getterAccess + " ");
+        getters.write(type + " " + NameHelper.getGetterName(name, type.equals("boolean")) + "();");
         getters.writeLine();
         getters.writeLine();
     }
@@ -132,7 +151,11 @@ public class ClassBuilder {
     }
 
     public void addClass(ClassBuilder builder) {
-        classBuilders.add(builder::buildToStatic);
+        classBuilders.add((result) -> buildToModified(result, "static"));
+    }
+
+    public void addClass(ClassBuilder builder, String modifier) {
+        classBuilders.add((result) -> builder.buildToModified(result, (modifier.equals("") ? "" : modifier + " ") + "static"));
     }
 
     public void setFlag(int flag, boolean state) {
@@ -152,9 +175,9 @@ public class ClassBuilder {
         return buildToInternal(result);
     }
 
-    public OutputHelper buildToStatic(OutputHelper result) {
+    public OutputHelper buildToModified(OutputHelper result, String modifier) {
         result.ensureLines(2);
-        result.writeWord("static");
+        result.write(modifier.replace("default", ""));
         return buildToInternal(result);
     }
 
@@ -182,7 +205,8 @@ public class ClassBuilder {
         if ((flags & ENABLE_CONSTRUCTOR) != 0) {
             result.ensureLines(2);
 
-            result.write("public " + className + "(");
+            result.write(constructorAccess.equals("") ? "" : constructorAccess + " ");
+            result.write(className + "(");
             result.write(constructorParameters.getResult());
             result.write(")");
             result.enterBlock();
@@ -255,6 +279,7 @@ public class ClassBuilder {
         if (!classBuilders.isEmpty()) {
             for (Builder classBuilder : classBuilders) {
                 result.ensureLines(2);
+
                 classBuilder.build(result);
             }
         }

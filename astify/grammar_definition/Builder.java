@@ -39,8 +39,6 @@ public class Builder {
         patternBuilder.writeLine();
         patternBuilder.writeLine("import astify.Capture;");
         patternBuilder.writeLine("import astify.Pattern;");
-        patternBuilder.writeLine("import astify.PatternBuilder;");
-        patternBuilder.writeLine("import astify.core.Position;");
         patternBuilder.writeLine("import astify.token.Token;");
         patternBuilder.writeLine();
         patternBuilder.writeLine("import java.util.ArrayList;");
@@ -54,7 +52,8 @@ public class Builder {
         patternBuilderClass.addMethod((helper) -> {
             boolean first = true;
 
-            helper.write("public " + patternBuilderClass.getClassName() + "()");
+            helper.write(buildConfig.getPatternBuilderConstructorAccess().equals("default") ? "" : buildConfig.getPatternBuilderConstructorAccess() + " ");
+            helper.write(patternBuilderClass.getClassName() + "()");
             helper.enterBlock();
 
                 for (String pattern : builtPatterns) {
@@ -96,6 +95,8 @@ public class Builder {
 
         scope.define(new Type.DefinedType(d));
         definedTypes.add(d.getName());
+        d.getClassBuilder().setConstructorAccess(buildConfig.getConstructorAccess());
+        d.getClassBuilder().setGetterAccess(buildConfig.getGetterAccess());
     }
 
     public void buildDefinition(ASTifyGrammar.Definition sourceDefinition) {
@@ -153,16 +154,15 @@ public class Builder {
 
         for (String name : definedTypes) {
             if (!name.equals(NameHelper.toUpperCamelCase(grammarName))) {
-                grammarDefinition.getClassBuilder().addClass(scope.lookupDefinition(name).getClassBuilder());
+                grammarDefinition.getClassBuilder().addClass(scope.lookupDefinition(name).getClassBuilder(), buildConfig.getClassAccess());
             }
         }
-
-        scope.lookupDefinition(NameHelper.toUpperCamelCase(grammarName)).buildTo(ASTDefinition);
 
         buildPatternDefinitions();
         buildPatternHandlers();
 
-        patternBuilderClass.buildTo(patternBuilder);
+        grammarDefinition.getClassBuilder().buildToModified(ASTDefinition, buildConfig.getClassAccess());
+        patternBuilderClass.buildToModified(patternBuilder, buildConfig.getPatternBuilderConstructorAccess());
     }
 
     public void createFiles() throws IOException {
