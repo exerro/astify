@@ -7,19 +7,20 @@ import astify.token.TokenException;
 import astify.token.TokenGenerator;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 
 public class GrammarDefinition {
-    public static void parseAndBuild(String filename, BuildConfig config) throws TokenException, ParserException {
+    public static void parseAndBuild(String filename, BuildConfig config) throws TokenException, ParserException, FileNotFoundException {
         ASTifyGrammar grammar = parse(filename);
         buildOutput(grammar, config);
     }
 
-    public static void parseAndBuild(String filename) throws TokenException, ParserException {
+    public static void parseAndBuild(String filename) throws TokenException, ParserException, FileNotFoundException {
         BuildConfig config = new BuildConfig(new File(filename).getParent().replace("/", "."));
         parseAndBuild(filename, config);
     }
 
-    public static ASTifyGrammar parse(String filename) throws TokenException, ParserException {
+    public static ASTifyGrammar parse(String filename) throws TokenException, ParserException, FileNotFoundException {
         Source source = new Source.FileSource(filename);
         ASTifyGrammarPatternBuilder builder = new ASTifyGrammarPatternBuilder();
         TokenGenerator generator = new ASTifyGrammarTokenGenerator(source, builder.getKeywords());

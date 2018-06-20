@@ -1,0 +1,15 @@
+
+grammar TestGrammar
+
+Thing1(Word value)
+: 'word' .value
+
+Thing2(Word[] words)
+: 'words' .words(',')
+
+TestGrammar(Thing[] things)
+: 'hello' .things @EOF
+
+union Thing
+: Thing1
+: Thing2

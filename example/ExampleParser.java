@@ -10,8 +10,10 @@ import astify.token.DefaultTokenGenerator;
 import astify.token.TokenException;
 import astify.token.TokenGenerator;
 
+import java.io.FileNotFoundException;
+
 public class ExampleParser {
-    public static void parse(String filePath) throws TokenException, ParserException {
+    public static void parse(String filePath) throws TokenException, ParserException, FileNotFoundException {
         Source source = new Source.FileSource(filePath);
         PatternBuilder builder = new ExamplePatternBuilder();
         TokenGenerator generator = new DefaultTokenGenerator(source, builder.getKeywords());
@@ -33,7 +35,7 @@ public class ExampleParser {
         }
     }
 
-    public static void main(String[] args) throws TokenException, ParserException {
+    public static void main(String[] args) throws TokenException, ParserException, FileNotFoundException {
         parse("example/example.txt");
     }
 }

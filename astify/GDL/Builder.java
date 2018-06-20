@@ -142,13 +142,13 @@ class Builder {
     }
 
     void build() {
-        assert definedTypes.contains(NameHelper.toUpperCamelCase(grammarName));
-        assert scope.lookupDefinition(NameHelper.toUpperCamelCase(grammarName)) instanceof Definition.TypeDefinition;
+        assert definedTypes.contains(grammarName);
+        assert scope.lookupDefinition(grammarName) instanceof Definition.TypeDefinition;
 
-        Definition.TypeDefinition grammarDefinition = (Definition.TypeDefinition) scope.lookupDefinition(NameHelper.toUpperCamelCase(grammarName));
+        Definition.TypeDefinition grammarDefinition = (Definition.TypeDefinition) scope.lookupDefinition(grammarName);
 
         for (String name : definedTypes) {
-            if (!name.equals(NameHelper.toUpperCamelCase(grammarName))) {
+            if (!name.equals(grammarName)) {
                 grammarDefinition.getClassBuilder().addClass(scope.lookupDefinition(name).getClassBuilder(), buildConfig.getClassAccess());
             }
         }
@@ -224,7 +224,7 @@ class Builder {
 
     private ClassBuilder.Builder generateCreatorCallback(String name, Definition.TypeDefinition definition, List<Pattern> patternList) {
         OutputHelper content = new OutputHelper();
-        Definition.TypeDefinition grammarDefinition = (Definition.TypeDefinition) scope.lookupDefinition(NameHelper.toUpperCamelCase(grammarName));
+        Definition.TypeDefinition grammarDefinition = (Definition.TypeDefinition) scope.lookupDefinition(grammarName);
         List<String> propertyNames = new ArrayList<>();
 
         for (Property property : definition.getProperties()) {
