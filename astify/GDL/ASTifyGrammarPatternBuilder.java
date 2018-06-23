@@ -51,7 +51,6 @@ public class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		);
 		
 		sequence("matcher-target", this::createMatcherTarget,
-			operator("."),
 			token(Word)
 		);
 		
@@ -179,12 +178,12 @@ public class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		return new ASTifyGrammar.TypedName(captures.get(0).spanningPosition.to(captures.get(1).spanningPosition), type, name);
 	}
 	
-	// ['.', (Word -> property)]
+	// [(Word -> property)]
 	private Capture createMatcherTarget(List<Capture> captures) {
 		Token property = null;
-		property = ((Capture.TokenCapture) captures.get(1)).getToken();
+		property = ((Capture.TokenCapture) captures.get(0)).getToken();
 		
-		return new ASTifyGrammar.MatcherTarget(captures.get(0).spanningPosition.to(captures.get(1).spanningPosition), property);
+		return new ASTifyGrammar.MatcherTarget(captures.get(0).spanningPosition, property);
 	}
 	
 	// [(list(RootPattern) -> patterns)]

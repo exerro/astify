@@ -1,6 +1,8 @@
 
 grammar ASTify-grammar
 
+
+
 // utilities
 Type(Word name, bool optional, bool lst)
 : .name .optional('?') .lst('[' ']')
@@ -9,7 +11,7 @@ TypedName(Type type, Word name)
 : .type .name
 
 MatcherTarget(Word property)
-: '.' .property
+: .property
 
 PatternList(RootPattern[] patterns)
 : .patterns
@@ -27,8 +29,8 @@ Terminal(String terminal)
 : .terminal
 
 Function(Word name, UncapturingPattern[] patterns)
-: 'list' '(' (@Pattern -> .patterns) ')'
-: 'delim' '(' (@Pattern -> .patterns) ',' (@Pattern -> .patterns) ')'
+: 'list' '(' (@Pattern -> patterns) ')'
+: 'delim' '(' (@Pattern -> patterns) ',' (@Pattern -> patterns) ')'
 
 Matcher(UncapturingPattern source, MatcherTarget target)
 : '(' .source '->' .target ')'
@@ -84,3 +86,5 @@ Grammar(Word name)
 
 ASTify-grammar(Grammar _grammar, Definition[] definitions)
 : ._grammar .definitions @EOF
+
+
