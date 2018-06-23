@@ -6,7 +6,6 @@ import astify.ParserException;
 import astify.token.TokenException;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -110,7 +109,7 @@ public class ASTifyGDL {
                 return options.contains(opt.substring(2)) ? opt.substring(2) : null;
             }
             else {
-                aliases.get(opt.substring(1));
+                return aliases.get(opt.substring(1));
             }
         }
         return null;

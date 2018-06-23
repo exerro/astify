@@ -8,6 +8,7 @@ import java.util.*;
 public class PatternBuilder {
     private final Map<String, Pattern> environment;
     private final Set<String> keywords;
+    private final Set<String> operators;
 
     protected TokenType Word = TokenType.Word;
     protected TokenType String = TokenType.String;
@@ -23,11 +24,14 @@ public class PatternBuilder {
     public PatternBuilder() {
         environment = new HashMap<>();
         keywords = new HashSet<>();
+        operators = new HashSet<>();
     }
 
     public Set<String> getKeywords() {
-        return keywords;
+        return new HashSet<>(keywords);
     }
+
+    public Set<String> getOperators() { return new HashSet<>(operators); }
 
     // a token with the given type
     public Pattern.TokenPattern token(TokenType type) {
@@ -64,15 +68,14 @@ public class PatternBuilder {
         return new Pattern.TokenPattern(TokenType.Keyword, word);
     }
 
-    // a token with the type Symbol and the given symbol value
-    public Pattern.TokenPattern symbol(String symbol) {
+    // a sequence of consecutive tokens with the type Symbol matching the symbol given
+    public Pattern symbol(String symbol) {
         assert symbol != null;
-        return new Pattern.TokenPattern(TokenType.Symbol, symbol);
-    }
 
-    // a sequence of consecutive symbols (with no spaces) matching the characters of the given symbol
-    public Pattern operator(String symbol) {
-        if (symbol.length() == 1) return symbol(symbol);
+        if (symbol.length() == 1) {
+            return new Pattern.TokenPattern(TokenType.Symbol, symbol);
+        }
+
         List<Pattern> patterns = new ArrayList<>();
 
         patterns.add(symbol(symbol.substring(0, 1)));
@@ -86,6 +89,12 @@ public class PatternBuilder {
                 symbol,
                 captures.get(0).spanningPosition.to(captures.get(captures.size() - 1).spanningPosition)
         )));
+    }
+
+    public Pattern operator(String symbol) {
+        assert symbol != null;
+        operators.add(symbol);
+        return symbol(symbol);
     }
 
     // matches either the pattern given or nothing

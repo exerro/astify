@@ -249,11 +249,6 @@ abstract class Pattern {
                 resultingPattern = new Matcher(new TypeReference(expectedType), property.getPropertyName());
             }
 
-            // note: not possible if Type.BooleanType
-            if (property.isOptional()) {
-                resultingPattern = new Optional(Collections.singletonList(resultingPattern));
-            }
-
             return resultingPattern;
         }
 

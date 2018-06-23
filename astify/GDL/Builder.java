@@ -391,7 +391,7 @@ class Builder {
             }
         }
         else if (pat instanceof Pattern.Terminal) {
-            return (((Pattern.Terminal) pat).isKeyword() ? "keyword" : "operator") + "(" + Util.convertStringQuotes(((Pattern.Terminal) pat).getValue()) + ")";
+            return (((Pattern.Terminal) pat).isKeyword() ? "keyword" : "symbol") + "(" + Util.convertStringQuotes(((Pattern.Terminal) pat).getValue()) + ")";
         }
         else if (pat instanceof Pattern.TypeReference) {
             Type type = ((Pattern.TypeReference) pat).getReference();
@@ -558,7 +558,7 @@ class Builder {
                 String subSourceList = "sub" + NameHelper.toUpperCamelCase(sourceList);
                 List<Pattern> subPatterns = ((Pattern.Optional) pattern).getPatterns();
 
-                output.write("List<Capture> " + subSourceList + " = ((Capture.ListCapture) " + source + ").all();");
+                output.write("Capture.ListCapture " + subSourceList + " = (Capture.ListCapture) " + source + ";");
                 output.writeLine();
                 output.writeLine();
 

@@ -1,26 +1,26 @@
 
 grammar TestGrammar
 
-Thing1(Word value)
-: 'word' .value
-: 'otherWord' .value
+abstract Operator(Word word)
 
-Thing2(Word[] words)
-: 'words' .words(',')
+Basic(Word value)
+: .value
 
-Thing3(Word value, Word extra)
-: 'word' .value .extra
+Complex(Keyword? value)
+: ('hi' -> value)
+: [.value]
 
-Thing4(Word? value)
-: 'thing' [.value]
+List(Word[] words)
+: (@Word -> words) (@Word -> words) (delim(@Word, ',') -> words)
 
-TestGrammar(Things[] things)
-: 'hello' .things @EOF
+Optional(Word? word)
+: 'not_optional' .word
+: 'optional' [.word]
 
-union Thing
-: Thing1
-: Thing3
+TestGrammar(Stuff stuff)
+: .stuff @EOF
 
-union Things
-: Thing
-: Thing2
+union Stuff
+: Basic
+: Complex
+: List
