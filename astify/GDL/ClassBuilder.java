@@ -142,7 +142,8 @@ class ClassBuilder {
     }
 
     void addClass(ClassBuilder builder, String modifier) {
-        classBuilders.add((result) -> builder.buildToModified(result, (modifier.equals("") ? "" : modifier + " ") + "static"));
+        String usedModifier = builder.getClassType() == ClassType.Class ? (modifier.equals("") ? "" : modifier + " ") + "static" : modifier;
+        classBuilders.add((result) -> builder.buildToModified(result, usedModifier));
     }
 
     void setFlag(int flag, boolean state) {
@@ -151,6 +152,10 @@ class ClassBuilder {
 
     void setClassType(ClassType type) {
         this.type = type;
+    }
+
+    ClassType getClassType() {
+        return type;
     }
 
     OutputHelper buildToModified(OutputHelper result, String modifier) {

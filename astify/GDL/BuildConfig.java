@@ -77,6 +77,7 @@ public class BuildConfig {
     }
 
     public String getFullPath() {
-        return path + (!path.equals("") && !_package.equals("") ? "/" : "") + _package.replace('.', Paths.get("a", "b").toString().charAt(1));
+        char sep = Paths.get("a", "b").toString().charAt(1);
+        return path + (!path.equals("") && !_package.equals("") ? "/" : "") + _package.replace('.', sep);
     }
 }

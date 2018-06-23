@@ -258,10 +258,10 @@ class Builder {
                     content.enterBlock();
                     content.write("List<Capture> subCaptures = (List<Capture>) ((Capture.ListCapture) captures.get(" + i + ")).all();");
 
-                    for (Pattern subPattern : ((Pattern.Optional) pattern).getPatterns()) {
+                    for (int n = 0; n < ((Pattern.Optional) pattern).getPatterns().size(); ++n) {
+                        Pattern subPattern = ((Pattern.Optional) pattern).getPatterns().get(n);
                         if (subPattern instanceof Pattern.Matcher) {
-                            content.writeLine("// sub-matcher " + ((Pattern.Matcher) subPattern).getSource().toString() + " -> " + ((Pattern.Matcher) subPattern).getTarget());
-                            content.write(getMatcherSetString("subCaptures.get(0)", (Pattern.Matcher) subPattern, definition));
+                            content.write(getMatcherSetString("subCaptures.get(" + n + ")", (Pattern.Matcher) subPattern, definition));
                         }
                     }
 
@@ -271,7 +271,6 @@ class Builder {
                 }
                 else if (pattern instanceof Pattern.Matcher) {
                     content.ensureLines(1);
-                    content.writeLine("// matcher " + ((Pattern.Matcher) pattern).getSource().toString() + " -> " + ((Pattern.Matcher) pattern).getTarget());
                     content.write(getMatcherSetString("captures.get(" + i + ")", (Pattern.Matcher) pattern, definition));
                 }
             }
@@ -290,6 +289,7 @@ class Builder {
         content.write(String.join(", ", propertyNames) + ");");
 
         return (helper) -> {
+            helper.writeLine("// " + patternList.toString());
             helper.write("private Capture " + name + "(List<Capture> captures)");
             helper.enterBlock();
 

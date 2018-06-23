@@ -26,7 +26,7 @@ public class ASTifyGDL {
         if (options == null) return;
 
         String file = args[0];
-        String packageName = options.getOrDefault("package", new File(file).getParent().replace("/", "."));
+        String packageName = options.getOrDefault("package", new File(file).getParent().replace("/", ".").replace("\\", "."));
         String outputPath = options.getOrDefault("output", "");
 
         BuildConfig config = new BuildConfig(packageName, outputPath);
@@ -49,7 +49,7 @@ public class ASTifyGDL {
         }
         catch (TokenException | ParserException e) {
             System.err.println("Syntax error:");
-            System.err.println(e.getMessage());
+            System.err.println(e.toString());
         }
         catch (FileNotFoundException e) {
             System.err.println(e.getMessage());

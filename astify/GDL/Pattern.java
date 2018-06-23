@@ -69,7 +69,7 @@ abstract class Pattern {
         @Override String getPatternBuilderTerm() {
             for (int i = 1; i < value.length() - 1; ++i) {
                 if (!Character.isLetterOrDigit(value.charAt(i)) && value.charAt(i) != '_') {
-                    return "symbol(" + str(value) + ")";
+                    return "operator(" + str(value) + ")";
                 }
             }
 
