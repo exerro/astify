@@ -15,11 +15,11 @@ import java.io.FileNotFoundException;
 public class ExampleParser {
     public static void parse(String filePath) throws TokenException, ParserException, FileNotFoundException {
         Source source = new Source.FileSource(filePath);
-        PatternBuilder builder = new ExamplePatternBuilder();
+        PatternBuilder builder = new ExampleGrammarPatternBuilder();
         TokenGenerator generator = new DefaultTokenGenerator(source, builder.getKeywords());
         Parser parser = new Parser();
 
-        parser.setup(builder.lookup("example"), generator.getStartingPosition());
+        parser.setup(builder.getMain(), generator.getStartingPosition());
         parser.parse(generator);
 
         if (parser.hasError()) {
