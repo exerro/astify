@@ -22,6 +22,10 @@ abstract class Type {
         @Override String getReferenceName() {
             return definition.getStructName();
         }
+
+        @Override public boolean equals(Object other) {
+            return other instanceof DefinedType && definition == ((DefinedType) other).definition;
+        }
     }
 
     static class TokenType extends Type {
@@ -42,34 +46,26 @@ abstract class Type {
         @Override String getReferenceName() {
             return "Token";
         }
+
+        @Override public boolean equals(Object other) {
+            return other instanceof TokenType && tokenType == ((TokenType) other).tokenType;
+        }
     }
 
-    static class BuiltinType extends Type {
-        enum Types {
-            String,
-            Boolean
-        }
-
-        private final Types type;
-
-        BuiltinType(Types type) {
-            this.type = type;
-        }
-
-        Types getType() {
-            return type;
+    static class BooleanType extends Type {
+        BooleanType() {
         }
 
         @Override String getName() {
-            switch (type) {
-                case String: return "string";
-                case Boolean: return "bool";
-            }
-            return "what";
+            return "bool";
         }
 
         @Override String getReferenceName() {
-            return type.name();
+            return "Boolean";
+        }
+
+        @Override public boolean equals(Object other) {
+            return other instanceof BooleanType;
         }
     }
 }

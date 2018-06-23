@@ -3,13 +3,24 @@ grammar TestGrammar
 
 Thing1(Word value)
 : 'word' .value
+: 'otherWord' .value
 
 Thing2(Word[] words)
 : 'words' .words(',')
 
-TestGrammar(Thing[] things)
+Thing3(Word value, Word extra)
+: 'word' .value .extra
+
+Thing4(Word? value)
+: 'thing' [.value]
+
+TestGrammar(Things[] things)
 : 'hello' .things @EOF
 
 union Thing
 : Thing1
+: Thing3
+
+union Things
+: Thing
 : Thing2

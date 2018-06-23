@@ -37,8 +37,7 @@ class Scope {
     }
 
     void defineNativeTypes() {
-        define(new Type.BuiltinType(Type.BuiltinType.Types.Boolean));
-        define(new Type.BuiltinType(Type.BuiltinType.Types.String));
+        define(new Type.BooleanType());
 
         for (TokenType type : TokenType.values()) {
             define(new Type.TokenType(type));

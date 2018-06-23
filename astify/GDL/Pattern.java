@@ -7,8 +7,6 @@ import java.util.Collections;
 import java.util.List;
 
 abstract class Pattern {
-    abstract String getPatternBuilderTerm();
-
     static class Optional extends Pattern {
         private final List<Pattern> optionalParts;
 
@@ -23,57 +21,89 @@ abstract class Pattern {
         @Override public String toString() {
             return optionalParts.toString();
         }
-
-        @Override String getPatternBuilderTerm() {
-            return "optional(sequence(\n\t" + String.join(",\n\t", map(optionalParts, Pattern::getPatternBuilderTerm)) + "\n))";
-        }
     }
 
-    static class ListType extends Pattern {
-        private final Pattern item;
-        private final List<Pattern> separator;
+    static class OptionalCapture extends Optional {
+        private final String propertyName;
 
-        ListType(Pattern item, List<Pattern> separator) {
-            this.item = item;
-            this.separator = separator;
+        OptionalCapture(List<Pattern> optionalParts, String propertyName) {
+            super(optionalParts);
+            this.propertyName = propertyName;
         }
 
-        ListType(Pattern item, Pattern pattern) {
-            this(item, Collections.singletonList(pattern));
-        }
-
-        ListType(Pattern pattern) {
-            this(pattern, new ArrayList<>());
+        String getPropertyName() {
+            return propertyName;
         }
 
         @Override public String toString() {
-            return (separator.isEmpty() ? "list" : "delim") + "(" + item.toString() + (separator.isEmpty() ? "" : ", " + String.join(", ", map(separator, Object::toString))) + ")";
+            return "." + propertyName + "(" + Util.listToString(getPatterns()) + ")";
+        }
+    }
+
+    static class ListPattern extends Pattern {
+        private final Pattern item;
+        private final List<Pattern> separator;
+        private final boolean hasSeparator;
+
+        ListPattern(Pattern item, List<Pattern> separator) {
+            if (separator == null) separator = new ArrayList<>();
+
+            this.item = item;
+            this.separator = separator;
+
+            hasSeparator = separator.size() > 0;
         }
 
-        @Override String getPatternBuilderTerm() {
-            return (separator.isEmpty() ? "list" : "delim") + "(" + item.getPatternBuilderTerm() + (separator.isEmpty() ? "" : ", " + String.join(", ", map(separator, Pattern::getPatternBuilderTerm))) + ")";
+        ListPattern(Pattern item, Pattern pattern) {
+            this.item = item;
+            this.separator = Collections.singletonList(pattern);
+
+            hasSeparator = true;
+        }
+
+        ListPattern(Pattern pattern) {
+            this.item = pattern;
+            this.separator = new ArrayList<>();
+
+            hasSeparator = false;
+        }
+
+        Pattern getItem() {
+            return item;
+        }
+
+        List<Pattern> getSeparator() {
+            return separator;
+        }
+
+        boolean hasSeparator() {
+            return hasSeparator;
+        }
+
+        @Override public String toString() {
+            return (hasSeparator ? "delim" : "list") + "(" + item.toString() + (hasSeparator ? ", " + Util.listToString(separator) : "") + ")";
         }
     }
 
     static class Terminal extends Pattern {
         private final String value;
+        private final boolean isKeyword;
 
-        Terminal(String value) {
+        Terminal(String value, boolean isKeyword) {
             this.value = value;
+            this.isKeyword = isKeyword;
+        }
+
+        String getValue() {
+            return value;
+        }
+
+        boolean isKeyword() {
+            return isKeyword;
         }
 
         @Override public String toString() {
             return value;
-        }
-
-        @Override String getPatternBuilderTerm() {
-            for (int i = 1; i < value.length() - 1; ++i) {
-                if (!Character.isLetterOrDigit(value.charAt(i)) && value.charAt(i) != '_') {
-                    return "operator(" + str(value) + ")";
-                }
-            }
-
-            return "keyword(" + str(value) + ")";
         }
     }
 
@@ -84,145 +114,155 @@ abstract class Pattern {
             this.reference = reference;
         }
 
-        @Override public String toString() {
-            return reference.getName();
+        Type getReference() {
+            return reference;
         }
 
-        @Override String getPatternBuilderTerm() {
-            if (reference instanceof Type.DefinedType) {
-                return "ref(\"" + ((Type.DefinedType) reference).getDefinition().getPatternName() + "\")";
-            }
-            else if (reference instanceof Type.TokenType) {
-                return "token(" + ((Type.TokenType) reference).getTokenType().name() + ")";
-            }
-            else throw new Error("what");
+        @Override public String toString() {
+            return "@" + reference.getName();
         }
     }
 
     static class Matcher extends Pattern {
         private final Pattern source;
-        private final String target;
+        private final String targetProperty;
 
-        Matcher(Pattern source, String target) {
+        Matcher(Pattern source, String targetProperty) {
             this.source = source;
-            this.target = target;
+            this.targetProperty = targetProperty;
         }
 
         Pattern getSource() {
             return source;
         }
 
-        String getTarget() {
-            return target;
+        String getTargetProperty() {
+            return targetProperty;
         }
 
         @Override public String toString() {
-            return "(" + source.toString() + " -> " + target + ")";
-        }
-
-        @Override String getPatternBuilderTerm() {
-            return source.getPatternBuilderTerm();
+            return "(" + source.toString() + " -> " + targetProperty + ")";
         }
     }
 
-    static<T extends ASTifyGrammar.RootPattern> List<Pattern> createFromList(List<T> sourcePatterns, Definition.TypeDefinition definition, Scope scope) throws GDLException {
+    static<T extends ASTifyGrammar.RootPattern> List<Pattern> createFromList(List<T> sourcePatterns, PropertyList properties, Scope scope) throws GDLException {
         List<Pattern> result = new ArrayList<>();
 
         for (ASTifyGrammar.RootPattern pattern : sourcePatterns) {
-            result.add(createFrom(pattern, definition, scope));
+            result.add(createFrom(pattern, properties, scope));
         }
 
         return result;
     }
 
-    static<T, R> List<R> map(List<T> list, java.util.function.Function<T, R> f) {
-        List<R> result = new ArrayList<>();
-
-        for (T elem : list) {
-            result.add(f.apply(elem));
-        }
-
-        return result;
-    }
-
-    private static Pattern createFrom(ASTifyGrammar.RootPattern sourcePattern, Definition.TypeDefinition definition, Scope scope) throws GDLException {
+    private static Pattern createFrom(ASTifyGrammar.RootPattern sourcePattern, PropertyList properties, Scope scope) throws GDLException {
         if (sourcePattern instanceof ASTifyGrammar.TypeReference) {
-            Token sourceType = ((ASTifyGrammar.TypeReference) sourcePattern).getType();
+            Token sourceTypeName = ((ASTifyGrammar.TypeReference) sourcePattern).getType();
 
-            if (scope.exists(sourceType.getValue())) {
-                return new TypeReference(scope.lookup(sourceType.getValue()));
+            if (scope.exists(sourceTypeName.getValue())) {
+                return new TypeReference(scope.lookup(sourceTypeName.getValue()));
             }
             else {
-                throw new GDLException("Cannot find type '" + sourceType.getValue() + "'", sourceType.getPosition());
+                throw new GDLException("Cannot find type '" + sourceTypeName.getValue() + "'", sourceTypeName.getPosition());
             }
         }
+
         else if (sourcePattern instanceof ASTifyGrammar.Terminal) {
-            return new Terminal(((ASTifyGrammar.Terminal) sourcePattern).getTerminal().getValue());
+            boolean isKeyword = true;
+            String tokenValue = ((ASTifyGrammar.Terminal) sourcePattern).getTerminal().getValue();
+
+            for (int i = 1; i < tokenValue.length() - 1; ++i) {
+                char c = tokenValue.charAt(i);
+                if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && c != '_') {
+                    isKeyword = false;
+                    break;
+                }
+            }
+
+            return new Terminal(tokenValue, isKeyword);
         }
+
         else if (sourcePattern instanceof ASTifyGrammar.Function) {
-            String name =(((ASTifyGrammar.Function) sourcePattern).getName()).getValue();
+            Token functionNameToken = (((ASTifyGrammar.Function) sourcePattern).getName());
             List<Pattern> parameters = new ArrayList<>();
 
             for (ASTifyGrammar.UncapturingPattern pat : ((ASTifyGrammar.Function) sourcePattern).getPatterns()) {
-                parameters.add(createFrom(pat, definition, scope));
+                parameters.add(createFrom(pat, properties, scope));
             }
 
-            switch (name) {
+            switch (functionNameToken.getValue()) {
                 case "list":
-                    if (parameters.size() != 1) throw new GDLException("Incorrect number of parameters for `list(pat)` (" + parameters.size() + ")", sourcePattern.getPosition());
-                    return new ListType(parameters.get(0));
+                    if (parameters.size() != 1) {
+                        throw new GDLException("Incorrect number of parameters for `list(pat)` (" + parameters.size() + ")", sourcePattern.getPosition());
+                    }
+
+                    return new ListPattern(parameters.get(0));
+
                 case "delim":
-                    if (parameters.size() != 2) throw new GDLException("Incorrect number of parameters for `delim(pat, sep)` (" + parameters.size() + ")", sourcePattern.getPosition());
-                    return new ListType(parameters.get(0), parameters.get(1));
+                    if (parameters.size() != 2) {
+                        throw new GDLException("Incorrect number of parameters for `delim(pat, sep)` (" + parameters.size() + ")", sourcePattern.getPosition());
+                    }
+
+                    return new ListPattern(parameters.get(0), parameters.get(1));
+
                 default:
-                    throw new GDLException("Unknown function '" + name + "'", ((ASTifyGrammar.Function) sourcePattern).getName().getPosition());
+                    throw new GDLException("Unknown function '" + functionNameToken.getValue() + "'", functionNameToken.getPosition());
             }
         }
+
         else if (sourcePattern instanceof ASTifyGrammar.Matcher) {
-            return new Matcher(createFrom(((ASTifyGrammar.Matcher) sourcePattern).getSource(), definition, scope), ((ASTifyGrammar.Matcher) sourcePattern).getTarget().getProperty().getValue());
-        }
-        else if (sourcePattern instanceof ASTifyGrammar.PropertyReference) {
-            Token propertyToken = ((ASTifyGrammar.PropertyReference) sourcePattern).getProperty();
-            Property property = definition.getProperty(propertyToken.getValue());
-            List<ASTifyGrammar.UncapturingPattern> qualifier = ((ASTifyGrammar.PropertyReference) sourcePattern).getQualifier();
+            Pattern resolvedSourcePattern = createFrom(((ASTifyGrammar.Matcher) sourcePattern).getSource(), properties, scope);
+            Token targetPropertyToken = ((ASTifyGrammar.Matcher) sourcePattern).getTargetProperty().getProperty();
 
-            if (property != null) {
-                Type expectedType = property.getType();
-                Pattern resultingPattern;
-
-                if (property.isList()) {
-                    Pattern parameter = new TypeReference(expectedType);
-
-                    if (qualifier.size() == 0) {
-                        resultingPattern = new ListType(parameter);
-                    }
-                    else {
-                        resultingPattern = new ListType(parameter, createFromList(qualifier, definition, scope));
-                    }
-                }
-                else if (expectedType instanceof Type.BuiltinType) {
-                    resultingPattern = new Optional(createFromList(qualifier, definition, scope));
-                }
-                else {
-                    resultingPattern = new TypeReference(expectedType);
-                }
-
-                return new Matcher(resultingPattern, property.getPropertyName());
+            if (properties.exists(targetPropertyToken.getValue())) {
+                // TODO: validate types
+                return new Matcher(resolvedSourcePattern, targetPropertyToken.getValue());
             }
             else {
-                throw new GDLException("Property '" + propertyToken.getValue() + "' does not exist in " + definition.getName(), propertyToken.getPosition());
+                throw new GDLException("Undefined property '" + targetPropertyToken.getValue() + "'", targetPropertyToken.getPosition());
             }
         }
-        else if (sourcePattern instanceof ASTifyGrammar.Optional) {
-            return new Optional(createFromList(((ASTifyGrammar.Optional) sourcePattern).getPatterns(), definition, scope));
+
+        else if (sourcePattern instanceof ASTifyGrammar.PropertyReference) {
+            Token propertyToken = ((ASTifyGrammar.PropertyReference) sourcePattern).getProperty();
+
+            if (!properties.exists(propertyToken.getValue())) {
+                throw new GDLException("Reference to undefined property '" + propertyToken.getValue() + "'", propertyToken.getPosition());
+            }
+
+            List<Pattern> qualifier = createFromList(((ASTifyGrammar.PropertyReference) sourcePattern).getQualifier(), properties, scope);
+            Property property = properties.lookup(propertyToken.getValue());
+            Type expectedType = property.getType();
+            Pattern resultingPattern;
+
+            // if the targetProperty property is a list, we need a ListPattern(pat [, delim])
+            if (property.isList()) {
+                resultingPattern = new Matcher(new ListPattern(new TypeReference(expectedType), qualifier.size() > 0 ? qualifier : null), property.getPropertyName());
+            }
+            // if the targetProperty property is a boolean, its value is true if a match is found
+            else if (expectedType instanceof Type.BooleanType) {
+                // property will not be optional
+                resultingPattern = new OptionalCapture(qualifier, property.getPropertyName());
+            }
+            // otherwise, simply refer a type ref
+            else {
+                resultingPattern = new Matcher(new TypeReference(expectedType), property.getPropertyName());
+            }
+
+            // note: not possible if Type.BooleanType
+            if (property.isOptional()) {
+                resultingPattern = new Optional(Collections.singletonList(resultingPattern));
+            }
+
+            return resultingPattern;
         }
+
+        else if (sourcePattern instanceof ASTifyGrammar.Optional) {
+            List<Pattern> patterns = createFromList(((ASTifyGrammar.Optional) sourcePattern).getPatterns(), properties, scope);
+            return new Optional(patterns);
+        }
+
         return null;
     }
 
-    private static String str(String s) {
-        if (s.charAt(0) == '\'') {
-            return "\"" + s.substring(1, s.length() - 1).replace("\"", "\\\"").replace("\\'", "'") + "\"";
-        }
-        return s;
-    }
 }

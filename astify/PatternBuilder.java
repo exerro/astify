@@ -215,7 +215,7 @@ public class PatternBuilder {
     // looks up a pattern with the given name
     public Pattern lookup(String name) {
         assert name != null;
-        assert environment.containsKey(name) : "Lookup of " + name + " failed";
+        assert environment.containsKey(name) : "Lookup of '" + name + "' failed";
         return environment.get(name);
     }
 

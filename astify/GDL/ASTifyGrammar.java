@@ -46,7 +46,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		return _grammar.hashCode() + 31 * definitions.hashCode();
 	}
 	
-	 static class Type extends Capture.ObjectCapture {
+	static class Type extends Capture.ObjectCapture {
 		private final Token name;
 		private final Boolean optional;
 		private final Boolean lst;
@@ -95,7 +95,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	 static class TypedName extends Capture.ObjectCapture {
+	static class TypedName extends Capture.ObjectCapture {
 		private final Type type;
 		private final Token name;
 		
@@ -136,7 +136,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	 static class MatcherTarget extends Capture.ObjectCapture {
+	static class MatcherTarget extends Capture.ObjectCapture {
 		private final Token property;
 		
 		protected MatcherTarget(Position spanningPosition, Token property) {
@@ -169,7 +169,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	 static class PatternList extends Capture.ObjectCapture {
+	static class PatternList extends Capture.ObjectCapture {
 		private final List<RootPattern> patterns;
 		
 		protected PatternList(Position spanningPosition, List<RootPattern> patterns) {
@@ -202,7 +202,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	 static class NamedPropertyList extends Capture.ObjectCapture {
+	static class NamedPropertyList extends Capture.ObjectCapture {
 		private final Token name;
 		private final List<TypedName> properties;
 		
@@ -243,7 +243,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	 static class TypeReference extends Capture.ObjectCapture implements UncapturingPattern {
+	static class TypeReference extends Capture.ObjectCapture implements UncapturingPattern {
 		private final Token type;
 		
 		protected TypeReference(Position spanningPosition, Token type) {
@@ -276,7 +276,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	 static class Terminal extends Capture.ObjectCapture implements UncapturingPattern {
+	static class Terminal extends Capture.ObjectCapture implements UncapturingPattern {
 		private final Token terminal;
 		
 		protected Terminal(Position spanningPosition, Token terminal) {
@@ -309,7 +309,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	 static class Function extends Capture.ObjectCapture implements UncapturingPattern {
+	static class Function extends Capture.ObjectCapture implements UncapturingPattern {
 		private final Token name;
 		private final List<UncapturingPattern> patterns;
 		
@@ -350,31 +350,31 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	 static class Matcher extends Capture.ObjectCapture implements Pattern {
+	static class Matcher extends Capture.ObjectCapture implements Pattern {
 		private final UncapturingPattern source;
-		private final MatcherTarget target;
+		private final MatcherTarget targetProperty;
 		
-		protected Matcher(Position spanningPosition, UncapturingPattern source, MatcherTarget target) {
+		protected Matcher(Position spanningPosition, UncapturingPattern source, MatcherTarget targetProperty) {
 			super(spanningPosition);
 			assert source != null;
-			assert target != null;
+			assert targetProperty != null;
 			this.source = source;
-			this.target = target;
+			this.targetProperty = targetProperty;
 		}
 		
 		public UncapturingPattern getSource() {
 			return source;
 		}
 		
-		public MatcherTarget getTarget() {
-			return target;
+		public MatcherTarget getTargetProperty() {
+			return targetProperty;
 		}
 		
 		@Override
 		public String toString() {
 			return "(Matcher"
 			     + "\n\tsource = " + source.toString().replace("\n", "\n\t")
-			     + "\n\ttarget = " + target.toString().replace("\n", "\n\t")
+			     + "\n\ttargetProperty = " + targetProperty.toString().replace("\n", "\n\t")
 			     + "\n)";
 		}
 		
@@ -382,16 +382,16 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		public boolean equals(Object other) {
 			if (!(other instanceof Matcher)) return false;
 			Matcher otherCasted = (Matcher) other;
-			return source.equals(otherCasted.source) && target.equals(otherCasted.target);
+			return source.equals(otherCasted.source) && targetProperty.equals(otherCasted.targetProperty);
 		}
 		
 		@Override
 		public int hashCode() {
-			return source.hashCode() + 31 * target.hashCode();
+			return source.hashCode() + 31 * targetProperty.hashCode();
 		}
 	}
 	
-	 static class PropertyReference extends Capture.ObjectCapture implements Pattern {
+	static class PropertyReference extends Capture.ObjectCapture implements Pattern {
 		private final Token property;
 		private final List<UncapturingPattern> qualifier;
 		
@@ -432,7 +432,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	 static class Optional extends Capture.ObjectCapture implements RootPattern {
+	static class Optional extends Capture.ObjectCapture implements RootPattern {
 		private final List<Pattern> patterns;
 		
 		protected Optional(Position spanningPosition, List<Pattern> patterns) {
@@ -477,7 +477,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		
 	}
 	
-	 static class AbstractTypeDefinition extends Capture.ObjectCapture implements Definition {
+	static class AbstractTypeDefinition extends Capture.ObjectCapture implements Definition {
 		private final NamedPropertyList properties;
 		
 		protected AbstractTypeDefinition(Position spanningPosition, NamedPropertyList properties) {
@@ -510,7 +510,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	 static class TypeDefinition extends Capture.ObjectCapture implements Definition {
+	static class TypeDefinition extends Capture.ObjectCapture implements Definition {
 		private final NamedPropertyList properties;
 		private final List<PatternList> patterns;
 		
@@ -551,7 +551,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	 static class Union extends Capture.ObjectCapture implements Definition {
+	static class Union extends Capture.ObjectCapture implements Definition {
 		private final Token typename;
 		private final List<Token> subtypes;
 		
@@ -596,7 +596,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		
 	}
 	
-	 static class Grammar extends Capture.ObjectCapture {
+	static class Grammar extends Capture.ObjectCapture {
 		private final Token name;
 		
 		protected Grammar(Position spanningPosition, Token name) {

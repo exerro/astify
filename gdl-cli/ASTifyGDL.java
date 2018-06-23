@@ -7,6 +7,7 @@ import astify.token.TokenException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -52,11 +53,11 @@ public class ASTifyGDL {
             System.err.println("Syntax error:");
             System.err.println(e.toString());
         }
-        catch (FileNotFoundException e) {
-            System.err.println(e.getMessage());
-        }
         catch (GDLException e) {
             System.err.println(e.toString());
+        }
+        catch (IOException e) {
+            System.err.println(e.getMessage());
         }
     }
 

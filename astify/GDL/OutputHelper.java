@@ -87,17 +87,11 @@ class OutputHelper {
         return result.toString();
     }
 
-    void writeToFile(File file) {
-        FileWriter writer;
+    void writeToFile(File file) throws IOException {
+        FileWriter writer = new FileWriter(file);
 
-        try { writer = new FileWriter(file); }
-        catch (IOException e) { return; }
-
-        try { writer.write(getResult()); writer.flush(); }
-        catch (IOException ignored) {}
-
-        try { writer.close(); }
-        catch (IOException ignored) {}
-
+        writer.write(getResult());
+        writer.flush();
+        writer.close();
     }
 }

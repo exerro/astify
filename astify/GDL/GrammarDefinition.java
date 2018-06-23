@@ -8,14 +8,15 @@ import astify.token.TokenGenerator;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class GrammarDefinition {
-    public static void parseAndBuild(String filename, BuildConfig config) throws TokenException, ParserException, FileNotFoundException, GDLException {
+    public static void parseAndBuild(String filename, BuildConfig config) throws TokenException, ParserException, IOException, GDLException {
         ASTifyGrammar grammar = parse(filename);
         buildOutput(grammar, config);
     }
 
-    public static void parseAndBuild(String filename) throws TokenException, ParserException, FileNotFoundException, GDLException {
+    public static void parseAndBuild(String filename) throws TokenException, ParserException, IOException, GDLException {
         BuildConfig config = new BuildConfig(new File(filename).getParent().replace("/", "."));
         parseAndBuild(filename, config);
     }
@@ -38,17 +39,10 @@ public class GrammarDefinition {
         }
     }
 
-    public static void buildOutput(ASTifyGrammar grammar, BuildConfig config) throws GDLException {
+    public static void buildOutput(ASTifyGrammar grammar, BuildConfig config) throws GDLException, IOException {
         Builder outputBuilder = new Builder(grammar.getGrammar().getName().getValue(), config);
 
-        for (ASTifyGrammar.Definition definition : grammar.getDefinitions()) {
-            outputBuilder.registerDefinition(definition);
-        }
-
-        for (ASTifyGrammar.Definition definition : grammar.getDefinitions()) {
-            outputBuilder.buildDefinition(definition);
-        }
-
+        outputBuilder.setup(grammar);
         outputBuilder.build();
         outputBuilder.createFiles();
     }

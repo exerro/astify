@@ -1,5 +1,7 @@
 package astify.GDL;
 
+import static java.util.Objects.hash;
+
 class Property {
     private final Type type;
     private final String propertyName;
@@ -29,11 +31,13 @@ class Property {
         return isOptional;
     }
 
-    String getTypeString(String prefix) {
-        return isList ? "List<" + prefix + type.getReferenceName() + ">" : prefix + type.getReferenceName();
+    @Override public boolean equals(Object other) {
+        if (!(other instanceof Property)) return false;
+        Property otherCasted = (Property) other;
+        return type == otherCasted.type && propertyName.equals(otherCasted.propertyName) && isList == otherCasted.isList && isOptional == otherCasted.isOptional;
     }
 
-    String getTypeString() {
-        return getTypeString("");
+    @Override public int hashCode() {
+        return hash(type, propertyName, isList, isOptional);
     }
 }

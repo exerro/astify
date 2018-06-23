@@ -1,23 +1,16 @@
 package astify.GDL;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public abstract class Definition {
     private final String name;
-    final ClassBuilder classBuilder;
 
     public Definition(String name) {
         this.name = name;
-        this.classBuilder = new ClassBuilder(getStructName());
     }
 
     String getName() {
         return name;
-    }
-
-    ClassBuilder getClassBuilder() {
-        return classBuilder;
     }
 
     String getStructName() {
@@ -30,62 +23,94 @@ public abstract class Definition {
 
     static class TypeDefinition extends Definition {
         private final List<List<Pattern>> patternLists = new ArrayList<>();
-        private final List<Property> properties = new ArrayList<>();
+        private final PropertyList properties = new PropertyList();
 
         TypeDefinition(String name) {
             super(name);
-            classBuilder.addExtends("Capture.ObjectCapture");
-            classBuilder.addConstructorField("Position", "spanningPosition");
         }
 
-        List<Property> getProperties() {
+        PropertyList getProperties() {
             return properties;
-        }
-
-        Property getProperty(String name) {
-            for (Property property : properties) {
-                if (property.getPropertyName().equals(name)) {
-                    return property;
-                }
-            }
-
-            return null;
-        }
-
-        void addProperty(Property property) {
-            classBuilder.addField(property.getTypeString(), property.getPropertyName(), property.isOptional());
-            properties.add(property);
-        }
-
-        void addPattern(ASTifyGrammar.PatternList patternList, Scope scope) throws GDLException {
-            patternLists.add(Pattern.createFromList(patternList.getPatterns(), this, scope));
         }
 
         List<List<Pattern>> getPatternLists() {
             return patternLists;
         }
 
-        String getCallbackName() {
-            return "create" + getStructName();
+        void addProperty(Property property) {
+            properties.add(property);
+        }
+
+        void addPattern(List<Pattern> patternList) {
+            patternLists.add(patternList);
+        }
+
+        void addPattern(ASTifyGrammar.PatternList patternList, Scope scope) throws GDLException {
+            patternLists.add(Pattern.createFromList(patternList.getPatterns(), properties, scope));
         }
     }
 
     static class UnionDefinition extends Definition {
+        private final List<Definition> members = new ArrayList<>();
+
         UnionDefinition(String name) {
             super(name);
-            classBuilder.setClassType(ClassBuilder.ClassType.Interface);
-            classBuilder.setFlag(ClassBuilder.ENABLE_CONSTRUCTOR, false);
-            classBuilder.setFlag(ClassBuilder.ENABLE_METHODS, false);
-            classBuilder.addExtends("astify.core.Positioned");
+        }
+
+        List<TypeDefinition> getMembers() {
+            List<Definition> queue = new ArrayList<Definition>() {{ addAll(members); }};
+            List<TypeDefinition> result = new ArrayList<>();
+
+            for (Definition d : members) {
+                if (d instanceof TypeDefinition) {
+                    result.add((TypeDefinition) d);
+                }
+                else if (d instanceof UnionDefinition) {
+                    result.addAll(((UnionDefinition) d).getMembers());
+                }
+            }
+
+            return result;
+        }
+
+        List<Definition> getRawMembers() {
+            return members;
         }
 
         void addMember(Definition definition) {
-            if (definition instanceof UnionDefinition) {
-                definition.getClassBuilder().addExtends(getStructName());
+            members.add(definition);
+        }
+
+        // returns properties shared across all types that the union encompasses
+        Set<Property> getSharedProperties() {
+            Set<Property> properties = new HashSet<>();
+            List<TypeDefinition> members = getMembers();
+
+            if (members.isEmpty()) return properties;
+
+            for (Iterator<Property> it = members.get(0).getProperties().iterator(); it.hasNext();)
+                properties.add(it.next());
+
+            for (TypeDefinition member : members) {
+                PropertyList memberProperties = member.getProperties();
+
+                for (Iterator<Property> it = properties.iterator(); it.hasNext(); ) {
+                    Property property = it.next();
+
+                    if (!memberProperties.exists(property.getPropertyName())) {
+                        it.remove();
+                        continue;
+                    }
+
+                    if (!property.equals(memberProperties.lookup(property.getPropertyName()))) {
+                        it.remove();
+                    }
+                }
+
+                if (properties.size() == 0) break;
             }
-            else if (definition instanceof TypeDefinition) {
-                definition.getClassBuilder().addImplements(getStructName());
-            }
+
+            return properties;
         }
     }
 }

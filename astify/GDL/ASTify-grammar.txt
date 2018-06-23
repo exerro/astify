@@ -29,11 +29,11 @@ Terminal(String terminal)
 : .terminal
 
 Function(Word name, UncapturingPattern[] patterns)
-: 'list' '(' (@Pattern -> patterns) ')'
-: 'delim' '(' (@Pattern -> patterns) ',' (@Pattern -> patterns) ')'
+: ('list' -> name) '(' (@Pattern -> patterns) ')'
+: ('delim' -> name) '(' (@Pattern -> patterns) ',' (@Pattern -> patterns) ')'
 
-Matcher(UncapturingPattern source, MatcherTarget target)
-: '(' .source '->' .target ')'
+Matcher(UncapturingPattern source, MatcherTarget targetProperty)
+: '(' .source '->' .targetProperty ')'
 
 // wrapper around Matcher
 // without a qualifier: (@typeof(property) -> .property)

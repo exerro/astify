@@ -32,7 +32,7 @@ class ClassBuilder {
 
     private int flags = ENABLE_CONSTRUCTOR | ENABLE_METHODS;
     private ClassType type = ClassType.Class;
-    private int fieldCount = 0, constructorFieldCount = 0;
+    private int fieldCount = 0, constructorFieldCount = 0, getterCount = 0;
     private int extendsCount = 0, implementsCount = 0;
     private String constructorAccess = "public", getterAccess = "public";
 
@@ -97,14 +97,12 @@ class ClassBuilder {
             constructorBodyHeader.writeLine("assert " + name + " != null;");
         }
 
+        getters.ensureLines(2);
         getters.write(getterAccess.equals("") ? "" : getterAccess + " ");
         getters.write(type + " " + NameHelper.getGetterName(name, type.equals("boolean") || type.equals("Boolean")) + "()");
         getters.enterBlock();
             getters.write("return " + name + ";");
         getters.exitBlock();
-
-        getters.writeLine();
-        getters.writeLine();
 
         toStringBody.writeLine();
         toStringBody.write("     + \"\\n\\t" + name + " = \" + " + (isPrimitiveType || type.equals("String") ? name : name + ".toString().replace(\"\\n\", \"\\n\\t\")"));
@@ -122,13 +120,15 @@ class ClassBuilder {
         hashCodeBody.write(isPrimitiveType ? (type.equals("boolean") ? "(" + name + " ? 1 : 0)" : name) : name + ".hashCode()");
 
         ++fieldCount;
+        ++getterCount;
     }
 
     void addAbstractGetter(String type, String name) {
+        getters.ensureLines(2);
         getters.write(getterAccess.equals("") ? "" : getterAccess + " ");
         getters.write(type + " " + NameHelper.getGetterName(name, type.equals("boolean") || type.equals("Boolean")) + "();");
-        getters.writeLine();
-        getters.writeLine();
+
+        ++getterCount;
     }
 
     void addConstructorField(String type, String name) {
@@ -142,7 +142,7 @@ class ClassBuilder {
     }
 
     void addClass(ClassBuilder builder, String modifier) {
-        String usedModifier = builder.getClassType() == ClassType.Class ? (modifier.equals("") ? "" : modifier + " ") + "static" : modifier;
+        String usedModifier = builder.getClassType() == ClassType.Class ? (modifier + " static").trim() : modifier;
         classBuilders.add((result) -> builder.buildToModified(result, usedModifier));
     }
 
@@ -160,7 +160,7 @@ class ClassBuilder {
 
     OutputHelper buildToModified(OutputHelper result, String modifier) {
         result.ensureLines(2);
-        result.write(modifier.replace("default", ""));
+        result.write(modifier.replace("default", "").trim());
         return buildToInternal(result);
     }
 
@@ -206,7 +206,7 @@ class ClassBuilder {
             }
         }
 
-        if (fieldCount > 0) {
+        if (getterCount > 0) {
             result.ensureLines(2);
             result.write(getters.getResult());
         }
