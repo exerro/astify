@@ -125,7 +125,7 @@ abstract class Pattern {
         }
     }
 
-    static<T extends ASTifyGrammar.RootPattern> List<Pattern> createFromList(List<T> sourcePatterns, Definition.TypeDefinition definition, Scope scope) {
+    static<T extends ASTifyGrammar.RootPattern> List<Pattern> createFromList(List<T> sourcePatterns, Definition.TypeDefinition definition, Scope scope) throws GDLException {
         List<Pattern> result = new ArrayList<>();
 
         for (ASTifyGrammar.RootPattern pattern : sourcePatterns) {
@@ -145,7 +145,7 @@ abstract class Pattern {
         return result;
     }
 
-    private static Pattern createFrom(ASTifyGrammar.RootPattern sourcePattern, Definition.TypeDefinition definition, Scope scope) {
+    private static Pattern createFrom(ASTifyGrammar.RootPattern sourcePattern, Definition.TypeDefinition definition, Scope scope) throws GDLException {
         if (sourcePattern instanceof ASTifyGrammar.TypeReference) {
             Token sourceType = ((ASTifyGrammar.TypeReference) sourcePattern).getType();
 
@@ -153,7 +153,7 @@ abstract class Pattern {
                 return new TypeReference(scope.lookup(sourceType.getValue()));
             }
             else {
-                throw new Error("TODO");
+                throw new GDLException("Cannot find type '" + sourceType.getValue() + "'", sourceType.getPosition());
             }
         }
         else if (sourcePattern instanceof ASTifyGrammar.Terminal) {
@@ -169,20 +169,21 @@ abstract class Pattern {
 
             switch (name) {
                 case "list":
-                    if (parameters.size() != 1) throw new Error("TODO");
+                    if (parameters.size() != 1) throw new GDLException("Incorrect number of parameters for `list(pat)` (" + parameters.size() + ")", sourcePattern.getPosition());
                     return new ListType(parameters.get(0));
                 case "delim":
-                    if (parameters.size() != 2) throw new Error("TODO");
+                    if (parameters.size() != 2) throw new GDLException("Incorrect number of parameters for `delim(pat, sep)` (" + parameters.size() + ")", sourcePattern.getPosition());
                     return new ListType(parameters.get(0), parameters.get(1));
                 default:
-                    throw new Error("TODO");
+                    throw new GDLException("Unknown function '" + name + "'", ((ASTifyGrammar.Function) sourcePattern).getName().getPosition());
             }
         }
         else if (sourcePattern instanceof ASTifyGrammar.Matcher) {
             return new Matcher(createFrom(((ASTifyGrammar.Matcher) sourcePattern).getSource(), definition, scope), ((ASTifyGrammar.Matcher) sourcePattern).getTarget().getProperty().getValue());
         }
         else if (sourcePattern instanceof ASTifyGrammar.PropertyReference) {
-            Property property = definition.getProperty(((ASTifyGrammar.PropertyReference) sourcePattern).getProperty().getValue());
+            Token propertyToken = ((ASTifyGrammar.PropertyReference) sourcePattern).getProperty();
+            Property property = definition.getProperty(propertyToken.getValue());
             List<ASTifyGrammar.UncapturingPattern> qualifier = ((ASTifyGrammar.PropertyReference) sourcePattern).getQualifier();
 
             if (property != null) {
@@ -209,7 +210,7 @@ abstract class Pattern {
                 return new Matcher(resultingPattern, property.getPropertyName());
             }
             else {
-                throw new Error("TODO");
+                throw new GDLException("Property '" + propertyToken.getValue() + "' does not exist in " + definition.getName(), propertyToken.getPosition());
             }
         }
         else if (sourcePattern instanceof ASTifyGrammar.Optional) {

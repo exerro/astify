@@ -10,12 +10,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 public class GrammarDefinition {
-    public static void parseAndBuild(String filename, BuildConfig config) throws TokenException, ParserException, FileNotFoundException {
+    public static void parseAndBuild(String filename, BuildConfig config) throws TokenException, ParserException, FileNotFoundException, GDLException {
         ASTifyGrammar grammar = parse(filename);
         buildOutput(grammar, config);
     }
 
-    public static void parseAndBuild(String filename) throws TokenException, ParserException, FileNotFoundException {
+    public static void parseAndBuild(String filename) throws TokenException, ParserException, FileNotFoundException, GDLException {
         BuildConfig config = new BuildConfig(new File(filename).getParent().replace("/", "."));
         parseAndBuild(filename, config);
     }
@@ -38,7 +38,7 @@ public class GrammarDefinition {
         }
     }
 
-    public static void buildOutput(ASTifyGrammar grammar, BuildConfig config) {
+    public static void buildOutput(ASTifyGrammar grammar, BuildConfig config) throws GDLException {
         Builder outputBuilder = new Builder(grammar.getGrammar().getName().getValue(), config);
 
         for (ASTifyGrammar.Definition definition : grammar.getDefinitions()) {

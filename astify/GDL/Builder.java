@@ -1,5 +1,7 @@
 package astify.GDL;
 
+import astify.token.Token;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,20 +96,20 @@ class Builder {
         d.getClassBuilder().setGetterAccess(buildConfig.getGetterAccess());
     }
 
-    void buildDefinition(ASTifyGrammar.Definition sourceDefinition) {
-        String name = null;
+    void buildDefinition(ASTifyGrammar.Definition sourceDefinition) throws GDLException {
+        Token nameToken = null;
 
-        if (sourceDefinition instanceof ASTifyGrammar.AbstractTypeDefinition) name = ((ASTifyGrammar.AbstractTypeDefinition) sourceDefinition).getProperties().getName().getValue();
-        else if (sourceDefinition instanceof ASTifyGrammar.TypeDefinition) name = ((ASTifyGrammar.TypeDefinition) sourceDefinition).getProperties().getName().getValue();
-        else if (sourceDefinition instanceof ASTifyGrammar.Union) name = ((ASTifyGrammar.Union) sourceDefinition).getTypename().getValue();
+        if (sourceDefinition instanceof ASTifyGrammar.AbstractTypeDefinition) nameToken = ((ASTifyGrammar.AbstractTypeDefinition) sourceDefinition).getProperties().getName();
+        else if (sourceDefinition instanceof ASTifyGrammar.TypeDefinition) nameToken = ((ASTifyGrammar.TypeDefinition) sourceDefinition).getProperties().getName();
+        else if (sourceDefinition instanceof ASTifyGrammar.Union) nameToken = ((ASTifyGrammar.Union) sourceDefinition).getTypename();
 
-        if (name == null) throw new Error("what " + sourceDefinition.getClass().getName());
+        if (nameToken == null) throw new Error("what " + sourceDefinition.getClass().getName());
 
-        assert definedTypes.contains(name);
+        assert definedTypes.contains(nameToken.getValue());
 
-        Definition d = scope.lookupDefinition(name);
+        Definition d = scope.lookupDefinition(nameToken.getValue());
 
-        if (d == null) throw new Error("TODO");
+        if (d == null) throw new GDLException("'" + nameToken.getValue() + "' is not a defined type", nameToken.getPosition());
 
         if (sourceDefinition instanceof ASTifyGrammar.AbstractTypeDefinition) {
             ASTifyGrammar.AbstractTypeDefinition def = (ASTifyGrammar.AbstractTypeDefinition) sourceDefinition;

@@ -98,7 +98,7 @@ class ClassBuilder {
         }
 
         getters.write(getterAccess.equals("") ? "" : getterAccess + " ");
-        getters.write(type + " " + NameHelper.getGetterName(name, type.equals("boolean")) + "()");
+        getters.write(type + " " + NameHelper.getGetterName(name, type.equals("boolean") || type.equals("Boolean")) + "()");
         getters.enterBlock();
             getters.write("return " + name + ";");
         getters.exitBlock();
@@ -126,7 +126,7 @@ class ClassBuilder {
 
     void addAbstractGetter(String type, String name) {
         getters.write(getterAccess.equals("") ? "" : getterAccess + " ");
-        getters.write(type + " " + NameHelper.getGetterName(name, type.equals("boolean")) + "();");
+        getters.write(type + " " + NameHelper.getGetterName(name, type.equals("boolean") || type.equals("Boolean")) + "();");
         getters.writeLine();
         getters.writeLine();
     }

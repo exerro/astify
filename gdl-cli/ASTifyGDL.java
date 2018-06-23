@@ -1,5 +1,6 @@
 
 import astify.GDL.BuildConfig;
+import astify.GDL.GDLException;
 import astify.GDL.GrammarDefinition;
 import astify.ParserException;
 import astify.token.TokenException;
@@ -53,6 +54,9 @@ public class ASTifyGDL {
         }
         catch (FileNotFoundException e) {
             System.err.println(e.getMessage());
+        }
+        catch (GDLException e) {
+            System.err.println(e.toString());
         }
     }
 

@@ -65,11 +65,11 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 			return name;
 		}
 		
-		public Boolean getOptional() {
+		public Boolean isOptional() {
 			return optional;
 		}
 		
-		public Boolean getLst() {
+		public Boolean isLst() {
 			return lst;
 		}
 		

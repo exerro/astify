@@ -57,7 +57,7 @@ public abstract class Definition {
             properties.add(property);
         }
 
-        void addPattern(ASTifyGrammar.PatternList patternList, Scope scope) {
+        void addPattern(ASTifyGrammar.PatternList patternList, Scope scope) throws GDLException {
             patternLists.add(Pattern.createFromList(patternList.getPatterns(), this, scope));
         }
 
