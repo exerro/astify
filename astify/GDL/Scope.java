@@ -26,14 +26,10 @@ class Scope {
         return t instanceof Type.DefinedType ? ((Type.DefinedType) t).getDefinition() : null;
     }
 
-    void define(String name, Type value) {
-        assert !exists(name);
-        scope.put(name, value);
-    }
-
     void define(Type value) {
+        assert value != null;
         assert !exists(value.getName()) : value.getName();
-        define(value.getName(), value);
+        scope.put(value.getName(), value);
     }
 
     void defineNativeTypes() {

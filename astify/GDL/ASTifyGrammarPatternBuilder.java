@@ -14,11 +14,11 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		sequence("type", this::createType, 
 			token(Word), 
 			optional(sequence(
-				operator("?")
+				symbol("?")
 			)), 
 			optional(sequence(
-				operator("["), 
-				operator("]")
+				symbol("["), 
+				symbol("]")
 			))
 		);
 		
@@ -37,15 +37,15 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		
 		sequence("named-property-list", this::createNamedPropertyList, 
 			token(Word), 
-			operator("("), 
+			symbol("("), 
 			optional(sequence(
-				delim(ref("typed-name"), sequence(operator(",")))
+				delim(ref("typed-name"), sequence(symbol(",")))
 			)), 
-			operator(")")
+			symbol(")")
 		);
 		
 		sequence("type-reference", this::createTypeReference, 
-			operator("@"), 
+			symbol("@"), 
 			token(Word)
 		);
 		
@@ -55,18 +55,18 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		
 		sequence("function-1", this::createFunction_1, 
 			keyword("list"), 
-			operator("("), 
+			symbol("("), 
 			ref("pattern"), 
-			operator(")")
+			symbol(")")
 		);
 		
 		sequence("function-2", this::createFunction_2, 
 			keyword("delim"), 
-			operator("("), 
+			symbol("("), 
 			ref("pattern"), 
-			operator(","), 
+			symbol(","), 
 			ref("pattern"), 
-			operator(")")
+			symbol(")")
 		);
 		
 		defineInline("function", one_of(
@@ -75,27 +75,27 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		));
 		
 		sequence("matcher", this::createMatcher, 
-			operator("("), 
+			symbol("("), 
 			ref("uncapturing-pattern"), 
-			operator("->"), 
+			symbol("->"), 
 			ref("matcher-target"), 
-			operator(")")
+			symbol(")")
 		);
 		
 		sequence("property-reference", this::createPropertyReference, 
-			operator("."), 
+			symbol("."), 
 			token(Word), 
 			optional(sequence(
-				operator("("), 
+				symbol("("), 
 				list(ref("uncapturing-pattern")), 
-				operator(")")
+				symbol(")")
 			))
 		);
 		
 		sequence("optional", this::createOptional, 
-			operator("["), 
+			symbol("["), 
 			list(ref("pattern")), 
-			operator("]")
+			symbol("]")
 		);
 		
 		define("uncapturing-pattern", one_of(
@@ -128,15 +128,15 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		
 		sequence("type-definition", this::createTypeDefinition, 
 			ref("named-property-list"), 
-			operator(":"), 
-			delim(ref("pattern-list"), sequence(operator(":")))
+			symbol(":"), 
+			delim(ref("pattern-list"), sequence(symbol(":")))
 		);
 		
 		sequence("union", this::createUnion, 
 			keyword("union"), 
 			token(Word), 
-			operator(":"), 
-			delim(token(Word), sequence(operator(":")))
+			symbol(":"), 
+			delim(token(Word), sequence(symbol(":")))
 		);
 		
 		define("definition", one_of(
@@ -208,7 +208,7 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		astify.core.Position spanningPosition = captures.get(0).getPosition().to(captures.get(3).getPosition());
 		
 		if (!(captures.get(2) instanceof Capture.EmptyCapture)) {
-			List<Capture> subCaptures = ((Capture.ListCapture) captures.get(2)).all();
+			Capture.ListCapture subCaptures = (Capture.ListCapture) captures.get(2);
 			
 			for (Iterator<Capture> it = ((Capture.ListCapture) subCaptures.get(0)).iterator(); it.hasNext(); ) {
 				properties.add((ASTifyGrammar.TypedName) it.next());
@@ -273,7 +273,7 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		astify.core.Position spanningPosition = captures.get(0).getPosition().to(captures.get(2).getPosition());
 		
 		if (!(captures.get(2) instanceof Capture.EmptyCapture)) {
-			List<Capture> subCaptures = ((Capture.ListCapture) captures.get(2)).all();
+			Capture.ListCapture subCaptures = (Capture.ListCapture) captures.get(2);
 			
 			for (Iterator<Capture> it = ((Capture.ListCapture) subCaptures.get(1)).iterator(); it.hasNext(); ) {
 				qualifier.add((ASTifyGrammar.UncapturingPattern) it.next());

@@ -28,7 +28,7 @@ class Util {
         return s.substring(1, s.length() - 1);
     }
 
-    public static String setToStringQuoted(Set<String> set) {
+    static String setToStringQuoted(Set<String> set) {
         StringBuilder builder = new StringBuilder();
         boolean first = true;
 
@@ -36,7 +36,7 @@ class Util {
             if (first) first = false;
             else builder.append(", ");
 
-            builder.append("'" + s + "'");
+            builder.append("'").append(s).append("'");
         }
 
         return builder.toString();

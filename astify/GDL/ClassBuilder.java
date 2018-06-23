@@ -82,6 +82,10 @@ class ClassBuilder {
         ++implementsCount;
     }
 
+    void addField(Builder fieldBuilder) {
+        fieldBuilders.add(fieldBuilder);
+    }
+
     void addField(String type, String name, boolean isOptional) {
         boolean isPrimitiveType = type.charAt(0) >= 'a' && type.charAt(0) <= 'z'; // assuming lower case first character -> primitive
 

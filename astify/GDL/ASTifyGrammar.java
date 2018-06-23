@@ -9,7 +9,7 @@ import java.util.List;
 class ASTifyGrammar extends Capture.ObjectCapture {
 	private final Grammar _grammar;
 	private final List<Definition> definitions;
-	
+
 	protected ASTifyGrammar(Position spanningPosition, Grammar _grammar, List<Definition> definitions) {
 		super(spanningPosition);
 		assert _grammar != null;
@@ -17,15 +17,15 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		this._grammar = _grammar;
 		this.definitions = definitions;
 	}
-	
+
 	public Grammar getGrammar() {
 		return _grammar;
 	}
-	
+
 	public List<Definition> getDefinitions() {
 		return definitions;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "(ASTifyGrammar"

@@ -14,7 +14,7 @@ public class GDLException extends Exception {
         return position;
     }
 
-    public String toString() {
+    @Override public String toString() {
         return position.source.getName() + ": " + getMessage() + "\n" + position.getLineAndCaret();
     }
 }

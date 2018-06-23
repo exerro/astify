@@ -13,9 +13,15 @@ Complex(Keyword? value)
 List(Word[] words)
 : (@Word -> words) (@Word -> words) (delim(@Word, ',') -> words)
 
+Delimited(Word[] words)
+: .words('.' '.')
+
 Optional(Word? word)
 : 'not_optional' .word
 : 'optional' [.word]
+
+Fail(Operator operator)
+: .operator
 
 TestGrammar(Stuff stuff)
 : .stuff @EOF

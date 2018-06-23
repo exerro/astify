@@ -58,7 +58,6 @@ public abstract class Definition {
         }
 
         List<TypeDefinition> getMembers() {
-            List<Definition> queue = new ArrayList<Definition>() {{ addAll(members); }};
             List<TypeDefinition> result = new ArrayList<>();
 
             for (Definition d : members) {

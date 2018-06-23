@@ -39,11 +39,16 @@ public class GrammarDefinition {
         }
     }
 
-    public static void buildOutput(ASTifyGrammar grammar, BuildConfig config) throws GDLException, IOException {
-        Builder outputBuilder = new Builder(grammar.getGrammar().getName().getValue(), config);
+    public static void buildOutput(ASTifyGrammar grammarSource, BuildConfig config) throws GDLException, IOException {
+        Grammar grammar = new Grammar(grammarSource.getGrammar().getName().getValue());
+        ASTDefinitionBuilder ASTDefinitionBuilder = new ASTDefinitionBuilder(grammar, config);
+        PatternBuilder patternBuilder = new PatternBuilder(grammar, config);
 
-        outputBuilder.setup(grammar);
-        outputBuilder.build();
-        outputBuilder.createFiles();
+        grammar.load(grammarSource);
+
+        ASTDefinitionBuilder.build();
+        ASTDefinitionBuilder.createFiles();
+        patternBuilder.build();
+        patternBuilder.createFiles();
     }
 }

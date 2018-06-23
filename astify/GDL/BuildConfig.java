@@ -22,7 +22,7 @@ public class BuildConfig {
         getterAccess = access;
     }
 
-    public BuildConfig(String _package) {
+    BuildConfig(String _package) {
         this(_package, "");
     }
 
