@@ -161,7 +161,17 @@ abstract class Pattern {
             Token sourceTypeName = ((ASTifyGrammar.TypeReference) sourcePattern).getType();
 
             if (scope.exists(sourceTypeName.getValue())) {
-                return new TypeReference(scope.lookup(sourceTypeName.getValue()));
+                Type type = scope.lookup(sourceTypeName.getValue());
+
+                if (type instanceof Type.DefinedType) {
+                    Definition definition = ((Type.DefinedType) type).getDefinition();
+
+                    if (definition.isAbstract()) {
+                        throw new GDLException("Cannot refer to abstract type '" + type.getName() + "'", sourcePattern.getPosition());
+                    }
+                }
+
+                return new TypeReference(type);
             }
             else {
                 throw new GDLException("Cannot find type '" + sourceTypeName.getValue() + "'", sourceTypeName.getPosition());
@@ -277,6 +287,14 @@ abstract class Pattern {
             Property property = properties.lookup(propertyToken.getValue());
             Type expectedType = property.getType();
             Pattern resultingPattern;
+
+            if (expectedType instanceof Type.DefinedType) {
+                Definition definition = ((Type.DefinedType) expectedType).getDefinition();
+
+                if (definition.isAbstract()) {
+                    throw new GDLException("Cannot refer to abstract type '" + expectedType.getName() + "'", sourcePattern.getPosition());
+                }
+            }
 
             // if the targetProperty property is a list, we need a ListPattern(pat [, delim])
             if (property.isList()) {

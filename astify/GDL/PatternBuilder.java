@@ -142,12 +142,10 @@ class PatternBuilder {
     }
 
     private void buildUnionPatternDefinition(Definition.UnionDefinition definition) {
-        builtPatterns.add("define(\"" + definition.getPatternName() + "\", one_of(" + Util.listToString(Util.map(definition.getMembers(), (def) -> "\n\tref(\"" + def.getPatternName() + "\")")) + "\n));");
+        builtPatterns.add("define(\"" + definition.getPatternName() + "\", one_of(" + Util.listToString(Util.map(definition.getParseMembers(), (def) -> "\n\tref(\"" + def.getPatternName() + "\")")) + "\n));");
     }
 
     private void buildPatternHandlers(Definition.TypeDefinition definition) {
-        String baseName = "create" + definition.getStructName();
-        boolean appendIndex = definition.getPatternLists().size() > 1;
         int i = 0;
 
         for (List<Pattern> patternList : definition.getPatternLists()) {

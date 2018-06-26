@@ -23,12 +23,16 @@ public abstract class Definition {
 
     abstract boolean castsTo(Definition other);
 
+    abstract boolean isAbstract();
+
     static class TypeDefinition extends Definition {
         private final List<List<Pattern>> patternLists = new ArrayList<>();
         private final PropertyList properties = new PropertyList();
+        private final boolean isAbstract;
 
-        TypeDefinition(String name) {
+        TypeDefinition(String name, boolean isAbstract) {
             super(name);
+            this.isAbstract = isAbstract;
         }
 
         PropertyList getProperties() {
@@ -47,8 +51,8 @@ public abstract class Definition {
             patternLists.add(patternList);
         }
 
-        void addPattern(ASTifyGrammar.PatternList patternList, Scope scope) throws GDLException {
-            patternLists.add(Pattern.createFromList(patternList.getPatterns(), properties, scope));
+        @Override boolean isAbstract() {
+            return isAbstract;
         }
 
         @Override
@@ -123,6 +127,18 @@ public abstract class Definition {
             return properties;
         }
 
+        public List<Definition> getParseMembers() {
+            List<Definition> result = new ArrayList<>();
+
+            for (TypeDefinition member : getMembers()) {
+                if (!member.isAbstract()) {
+                    result.add(member);
+                }
+            }
+
+            return result;
+        }
+
         @Override
         boolean castsTo(Definition other) {
             if (!(other instanceof UnionDefinition)) return false;
@@ -146,6 +162,10 @@ public abstract class Definition {
             }
 
             return false;
+        }
+
+        @Override boolean isAbstract() {
+            return getParseMembers().isEmpty();
         }
     }
 }

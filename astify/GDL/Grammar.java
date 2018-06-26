@@ -1,5 +1,7 @@
 package astify.GDL;
 
+import astify.core.Position;
+import astify.core.Source;
 import astify.token.Token;
 
 import java.util.*;
@@ -37,7 +39,6 @@ class Grammar {
         registerAllProperties(grammar.getDefinitions());
         registerAllUnionMembers(grammar.getDefinitions());
         bindAllPatternLists(grammar.getDefinitions());
-        validatePatternTypeReferences();
     }
 
     private void registerDefinitions(List<ASTifyGrammar.Definition> definitions, ASTifyGrammar.Grammar grammar) throws GDLException {
@@ -45,7 +46,7 @@ class Grammar {
             registerDefinition(definition);
         }
 
-        if (!(scope.lookupDefinition(name) instanceof Definition.TypeDefinition)) {
+        if (!scope.exists(name) || !(scope.lookupDefinition(name) instanceof Definition.TypeDefinition)) {
             throw new GDLException("Type '" + name + "' not defined", grammar.getPosition());
         }
     }
@@ -55,11 +56,11 @@ class Grammar {
 
         if (definition instanceof ASTifyGrammar.AbstractTypeDefinition) {
             String name = ((ASTifyGrammar.AbstractTypeDefinition) definition).getProperties().getName().getValue();
-            d = new Definition.TypeDefinition(name);
+            d = new Definition.TypeDefinition(name, true);
         }
         else if (definition instanceof ASTifyGrammar.TypeDefinition) {
             String name = ((ASTifyGrammar.TypeDefinition) definition).getProperties().getName().getValue();
-            d = new Definition.TypeDefinition(name);
+            d = new Definition.TypeDefinition(name, false);
         }
         else if (definition instanceof ASTifyGrammar.Union) {
             String name = ((ASTifyGrammar.Union) definition).getTypename().getValue();
@@ -199,9 +200,5 @@ class Grammar {
                 throw new GDLException("Undefined sub-type '" + subtypeToken.getValue() + "'", subtypeToken.getPosition());
             }
         }
-    }
-
-    private void validatePatternTypeReferences() throws GDLException {
-        // ensure that wherever there is a @Type in a pattern, Type is a union or a type definition with patterns (not abstract)
     }
 }

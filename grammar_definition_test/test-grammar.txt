@@ -1,50 +1,14 @@
 
 grammar TestGrammar
 
-abstract Operator(Word word)
+abstract Number(Word value)
 
-Basic(Word value)
-: .value
+Reference(Word reference)
+: .reference
 
-Complex(Keyword? value)
-: ('hi' -> value)
-: [.value]
+TestGrammar(Value[] values)
+: .values
 
-List(Word[] words)
-: (@Word -> words) (@Word -> words) (delim(@Word, ',') -> words)
-
-Delimited(Word[] words)
-: .words('.' '.')
-: 'none'
-
-Optional(Word? word)
-: 'not_optional' .word
-: 'optional' [.word]
-
-Fail(Operator operator)
-: .operator
-
-NotFail(Stuff stuff)
-: (@Basic -> stuff)
-: (@Complex -> stuff)
-
-NotFail2(FinalUnion u)
-: (@Boop -> u)
-
-TestGrammar(Stuff stuff)
-: .stuff @EOF
-
-union Stuff
-: Basic
-: Complex
-: List
-
-union Boop
-: Stuff
-
-union OtherUnion
-: Stuff
-
-union FinalUnion
-: OtherUnion
-: Boop
+union Value
+: Number
+: Reference
