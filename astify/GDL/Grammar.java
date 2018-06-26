@@ -35,8 +35,8 @@ class Grammar {
     void load(ASTifyGrammar grammar) throws GDLException {
         registerDefinitions(grammar.getDefinitions(), grammar.getGrammar());
         registerAllProperties(grammar.getDefinitions());
-        bindAllPatternLists(grammar.getDefinitions());
         registerAllUnionMembers(grammar.getDefinitions());
+        bindAllPatternLists(grammar.getDefinitions());
         validatePatternTypeReferences();
     }
 

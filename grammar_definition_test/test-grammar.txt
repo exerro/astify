@@ -15,6 +15,7 @@ List(Word[] words)
 
 Delimited(Word[] words)
 : .words('.' '.')
+: 'none'
 
 Optional(Word? word)
 : 'not_optional' .word
@@ -23,6 +24,13 @@ Optional(Word? word)
 Fail(Operator operator)
 : .operator
 
+NotFail(Stuff stuff)
+: (@Basic -> stuff)
+: (@Complex -> stuff)
+
+NotFail2(FinalUnion u)
+: (@Boop -> u)
+
 TestGrammar(Stuff stuff)
 : .stuff @EOF
 
@@ -30,3 +38,13 @@ union Stuff
 : Basic
 : Complex
 : List
+
+union Boop
+: Stuff
+
+union OtherUnion
+: Stuff
+
+union FinalUnion
+: OtherUnion
+: Boop

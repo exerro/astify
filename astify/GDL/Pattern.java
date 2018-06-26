@@ -1,6 +1,7 @@
 package astify.GDL;
 
 import astify.token.Token;
+import astify.token.TokenType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -215,7 +216,49 @@ abstract class Pattern {
             Token targetPropertyToken = ((ASTifyGrammar.Matcher) sourcePattern).getTargetProperty().getProperty();
 
             if (properties.exists(targetPropertyToken.getValue())) {
-                // TODO: validate types
+                Property targetProperty = properties.lookup(targetPropertyToken.getValue());
+
+                if (resolvedSourcePattern instanceof ListPattern) {
+                    if (!targetProperty.isList()) {
+                        throw new GDLException("Incompatible types: attempt to assign list pattern to non-list property", sourcePattern.getPosition());
+                    }
+                }
+                else if (resolvedSourcePattern instanceof Terminal) {
+                    if (!(targetProperty.getType() instanceof Type.TokenType)) {
+                        throw new GDLException("Incompatible types: cannot assign token literal to non-token property", sourcePattern.getPosition());
+                    }
+                    else if (((Terminal) resolvedSourcePattern).isKeyword() && ((Type.TokenType) targetProperty.getType()).getTokenType() != TokenType.Keyword) {
+                        throw new GDLException("Incompatible types: cannot assign keyword literal to non-keyword property", sourcePattern.getPosition());
+                    }
+                    else if (!((Terminal) resolvedSourcePattern).isKeyword() && ((Type.TokenType) targetProperty.getType()).getTokenType() != TokenType.Symbol) {
+                        throw new GDLException("Incompatible types: cannot assign symbol literal to non-symbol property", sourcePattern.getPosition());
+                    }
+                }
+                else if (resolvedSourcePattern instanceof TypeReference) {
+                    Type sourceType = ((TypeReference) resolvedSourcePattern).getReference();
+
+                    if (sourceType instanceof Type.TokenType) {
+                        if (!sourceType.equals(targetProperty.getType())) {
+                            throw new GDLException("Incompatible types: cannot convert between token types " + sourceType.getName() + " and " + targetProperty.getType().getName(), sourcePattern.getPosition());
+                        }
+                    }
+                    else if (sourceType instanceof Type.DefinedType) {
+                        Definition sourceDefinition = ((Type.DefinedType) sourceType).getDefinition();
+
+                        if (targetProperty.getType() instanceof Type.DefinedType) {
+                            if (!sourceDefinition.castsTo(((Type.DefinedType) targetProperty.getType()).getDefinition())) {
+                                throw new GDLException("Incompatible types: cannot convert '" + sourceType.getName() + "' to '" + targetProperty.getType().getName() + "'", sourcePattern.getPosition());
+                            }
+                        }
+                        else {
+                            throw new GDLException("Incompatible types: cannot convert '" + sourceType.getName() + "' to '" + targetProperty.getType().getName() + "'", sourcePattern.getPosition());
+                        }
+                    }
+                    else if (sourceType instanceof Type.BooleanType) {
+                        throw new GDLException("Incompatible types: cannot use type `bool` in matcher", sourcePattern.getPosition());
+                    }
+                }
+
                 return new Matcher(resolvedSourcePattern, targetPropertyToken.getValue());
             }
             else {
@@ -259,5 +302,4 @@ abstract class Pattern {
 
         return null;
     }
-
 }

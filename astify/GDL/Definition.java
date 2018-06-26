@@ -21,6 +21,8 @@ public abstract class Definition {
         return NameHelper.toLowerLispCase(name);
     }
 
+    abstract boolean castsTo(Definition other);
+
     static class TypeDefinition extends Definition {
         private final List<List<Pattern>> patternLists = new ArrayList<>();
         private final PropertyList properties = new PropertyList();
@@ -47,6 +49,15 @@ public abstract class Definition {
 
         void addPattern(ASTifyGrammar.PatternList patternList, Scope scope) throws GDLException {
             patternLists.add(Pattern.createFromList(patternList.getPatterns(), properties, scope));
+        }
+
+        @Override
+        boolean castsTo(Definition other) {
+            if (other instanceof UnionDefinition) {
+                return ((UnionDefinition) other).getMembers().contains(this);
+            }
+
+            return other == this;
         }
     }
 
@@ -110,6 +121,31 @@ public abstract class Definition {
             }
 
             return properties;
+        }
+
+        @Override
+        boolean castsTo(Definition other) {
+            if (!(other instanceof UnionDefinition)) return false;
+
+            List<UnionDefinition> queue = new ArrayList<>();
+
+            queue.add((UnionDefinition) other);
+
+            for (int i = 0; i < queue.size(); ++i) {
+                UnionDefinition def = queue.get(i);
+
+                for (Definition member : def.getRawMembers()) {
+                    if (member == this) {
+                        return true;
+                    }
+
+                    if (member instanceof UnionDefinition && !queue.contains(member)) {
+                        queue.add((UnionDefinition) member);
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }
