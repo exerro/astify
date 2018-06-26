@@ -127,7 +127,7 @@ public abstract class Definition {
             return properties;
         }
 
-        public List<Definition> getParseMembers() {
+        List<Definition> getParseMembers() {
             List<Definition> result = new ArrayList<>();
 
             for (TypeDefinition member : getMembers()) {
