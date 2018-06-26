@@ -9,16 +9,18 @@ import astify.token.TokenGenerator;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 public class GrammarDefinition {
-    public static void parseAndBuild(String filename, BuildConfig config) throws TokenException, ParserException, IOException, GDLException {
+    public static List<GDLException> parseAndBuild(String filename, BuildConfig config) throws TokenException, ParserException, IOException {
         ASTifyGrammar grammar = parse(filename);
-        buildOutput(grammar, config);
+        return buildOutput(grammar, config);
     }
 
-    public static void parseAndBuild(String filename) throws TokenException, ParserException, IOException, GDLException {
+    public static List<GDLException> parseAndBuild(String filename) throws TokenException, ParserException, IOException {
         BuildConfig config = new BuildConfig(new File(filename).getParent().replace("/", "."));
-        parseAndBuild(filename, config);
+        return parseAndBuild(filename, config);
     }
 
     public static ASTifyGrammar parse(String filename) throws TokenException, ParserException, FileNotFoundException {
@@ -39,16 +41,22 @@ public class GrammarDefinition {
         }
     }
 
-    public static void buildOutput(ASTifyGrammar grammarSource, BuildConfig config) throws GDLException, IOException {
+    public static List<GDLException> buildOutput(ASTifyGrammar grammarSource, BuildConfig config) throws IOException {
         Grammar grammar = new Grammar(grammarSource.getGrammar().getName().getValue());
         ASTDefinitionBuilder ASTDefinitionBuilder = new ASTDefinitionBuilder(grammar, config);
         PatternBuilder patternBuilder = new PatternBuilder(grammar, config);
 
         grammar.load(grammarSource);
 
+        if (grammar.hasException()) {
+            return grammar.getExceptions();
+        }
+
         ASTDefinitionBuilder.build();
         ASTDefinitionBuilder.createFiles();
         patternBuilder.build();
         patternBuilder.createFiles();
+
+        return Collections.emptyList();
     }
 }

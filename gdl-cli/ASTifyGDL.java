@@ -7,10 +7,7 @@ import astify.token.TokenException;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class ASTifyGDL {
     private static final Set<String> options = new HashSet<>();
@@ -52,13 +49,14 @@ public class ASTifyGDL {
         }
 
         try {
-            GrammarDefinition.parseAndBuild(file, config);
+            List<GDLException> exceptions = GrammarDefinition.parseAndBuild(file, config);
+
+            for (GDLException exception : exceptions) {
+                System.err.println(exception.toString());
+            }
         }
         catch (TokenException | ParserException e) {
             System.err.println("Syntax error:");
-            System.err.println(e.toString());
-        }
-        catch (GDLException e) {
             System.err.println(e.toString());
         }
         catch (IOException e) {

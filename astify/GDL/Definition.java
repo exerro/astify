@@ -1,171 +1,97 @@
 package astify.GDL;
 
+import astify.core.Position;
+
 import java.util.*;
 
 public abstract class Definition {
     private final String name;
+    private final Position definitionPosition;
 
-    public Definition(String name) {
+    public Definition(String name, Position definitionPosition) {
         this.name = name;
+        this.definitionPosition = definitionPosition;
     }
 
     String getName() {
         return name;
     }
 
-    String getStructName() {
-        return NameHelper.toUpperCamelCase(name);
+    public Position getPosition() {
+        return definitionPosition;
     }
-
-    String getPatternName() {
-        return NameHelper.toLowerLispCase(name);
-    }
-
-    abstract boolean castsTo(Definition other);
-
-    abstract boolean isAbstract();
 
     static class TypeDefinition extends Definition {
-        private final List<List<Pattern>> patternLists = new ArrayList<>();
-        private final PropertyList properties = new PropertyList();
-        private final boolean isAbstract;
+        private final Type type;
 
-        TypeDefinition(String name, boolean isAbstract) {
-            super(name);
-            this.isAbstract = isAbstract;
+        public TypeDefinition(Type type, Position definitionPosition) {
+            super(type.getName(), definitionPosition);
+            this.type = type;
         }
 
-        PropertyList getProperties() {
-            return properties;
-        }
-
-        List<List<Pattern>> getPatternLists() {
-            return patternLists;
-        }
-
-        void addProperty(Property property) {
-            properties.add(property);
-        }
-
-        void addPattern(List<Pattern> patternList) {
-            patternLists.add(patternList);
-        }
-
-        @Override boolean isAbstract() {
-            return isAbstract;
-        }
-
-        @Override
-        boolean castsTo(Definition other) {
-            if (other instanceof UnionDefinition) {
-                return ((UnionDefinition) other).getMembers().contains(this);
-            }
-
-            return other == this;
+        Type getType() {
+            return type;
         }
     }
 
-    static class UnionDefinition extends Definition {
-        private final List<Definition> members = new ArrayList<>();
+    static class AliasDefinition extends Definition {
+        private Pattern pattern = null;
 
-        UnionDefinition(String name) {
-            super(name);
+        AliasDefinition(String name, Position definitionPosition) {
+            super(name, definitionPosition);
         }
 
-        List<TypeDefinition> getMembers() {
-            List<TypeDefinition> result = new ArrayList<>();
-
-            for (Definition d : members) {
-                if (d instanceof TypeDefinition) {
-                    result.add((TypeDefinition) d);
-                }
-                else if (d instanceof UnionDefinition) {
-                    result.addAll(((UnionDefinition) d).getMembers());
-                }
-            }
-
-            return result;
+        public Pattern getPattern() {
+            return pattern;
         }
 
-        List<Definition> getRawMembers() {
-            return members;
+        public void setPattern(Pattern pattern) {
+            assert this.pattern == null;
+            this.pattern = pattern;
+        }
+    }
+
+    static class ExternDefinition extends Definition {
+        private final List<Type> parameterTypes = new ArrayList<>();
+        private final List<String> parameterNames = new ArrayList<>();
+
+        ExternDefinition(String name, Position definitionPosition) {
+            super(name, definitionPosition);
         }
 
-        void addMember(Definition definition) {
-            members.add(definition);
+        void addParameter(Type type, String name) {
+            parameterTypes.add(type);
+            parameterNames.add(name);
         }
 
-        // returns properties shared across all types that the union encompasses
-        Set<Property> getSharedProperties() {
-            Set<Property> properties = new HashSet<>();
-            List<TypeDefinition> members = getMembers();
+        Type getParameterType(int i) {
+            return parameterTypes.get(i);
+        }
 
-            if (members.isEmpty()) return properties;
+        String getParameterName(int i) {
+            return parameterNames.get(i);
+        }
 
-            for (Iterator<Property> it = members.get(0).getProperties().iterator(); it.hasNext();)
-                properties.add(it.next());
+        Iterator<Integer> parameterIterator() {
+            return new Iterator<Integer>() {
+                int i = 0;
 
-            for (TypeDefinition member : members) {
-                PropertyList memberProperties = member.getProperties();
-
-                for (Iterator<Property> it = properties.iterator(); it.hasNext(); ) {
-                    Property property = it.next();
-
-                    if (!memberProperties.exists(property.getPropertyName())) {
-                        it.remove();
-                        continue;
-                    }
-
-                    if (!property.equals(memberProperties.lookup(property.getPropertyName()))) {
-                        it.remove();
-                    }
+                Type getType() {
+                    return getParameterType(i);
                 }
 
-                if (properties.size() == 0) break;
-            }
-
-            return properties;
-        }
-
-        List<Definition> getParseMembers() {
-            List<Definition> result = new ArrayList<>();
-
-            for (TypeDefinition member : getMembers()) {
-                if (!member.isAbstract()) {
-                    result.add(member);
+                String getName() {
+                    return getParameterName(i);
                 }
-            }
 
-            return result;
-        }
-
-        @Override
-        boolean castsTo(Definition other) {
-            if (!(other instanceof UnionDefinition)) return false;
-
-            List<UnionDefinition> queue = new ArrayList<>();
-
-            queue.add((UnionDefinition) other);
-
-            for (int i = 0; i < queue.size(); ++i) {
-                UnionDefinition def = queue.get(i);
-
-                for (Definition member : def.getRawMembers()) {
-                    if (member == this) {
-                        return true;
-                    }
-
-                    if (member instanceof UnionDefinition && !queue.contains(member)) {
-                        queue.add((UnionDefinition) member);
-                    }
+                @Override public boolean hasNext() {
+                    return i < parameterTypes.size();
                 }
-            }
 
-            return false;
-        }
-
-        @Override boolean isAbstract() {
-            return getParseMembers().isEmpty();
+                @Override public Integer next() {
+                    return i++;
+                }
+            };
         }
     }
 }

@@ -44,6 +44,24 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 			symbol(")")
 		);
 		
+		sequence("call", this::createCall, 
+			token(Word), 
+			symbol("("), 
+			optional(sequence(
+				delim(ref("parameter"), sequence(symbol(",")))
+			)), 
+			symbol(")")
+		);
+		
+		sequence("reference", this::createReference, 
+			token(Word)
+		);
+		
+		define("parameter", one_of(
+			ref("reference"), 
+			ref("call")
+		));
+		
 		sequence("type-reference", this::createTypeReference, 
 			symbol("@"), 
 			token(Word)
@@ -56,16 +74,16 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		sequence("function-1", this::createFunction_1, 
 			keyword("list"), 
 			symbol("("), 
-			ref("pattern"), 
+			ref("uncapturing-pattern"), 
 			symbol(")")
 		);
 		
 		sequence("function-2", this::createFunction_2, 
 			keyword("delim"), 
 			symbol("("), 
-			ref("pattern"), 
+			ref("uncapturing-pattern"), 
 			symbol(","), 
-			ref("pattern"), 
+			ref("uncapturing-pattern"), 
 			symbol(")")
 		);
 		
@@ -139,10 +157,48 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 			delim(token(Word), sequence(symbol(":")))
 		);
 		
+		sequence("alias-definition", this::createAliasDefinition, 
+			keyword("alias"), 
+			token(Word), 
+			symbol(":"), 
+			ref("pattern-list")
+		);
+		
+		sequence("extern-definition", this::createExternDefinition, 
+			keyword("extern"), 
+			ref("type"), 
+			token(Word), 
+			symbol("("), 
+			optional(sequence(
+				delim(ref("typed-name"), sequence(symbol(",")))
+			)), 
+			symbol(")")
+		);
+		
+		sequence("extend", this::createExtend, 
+			keyword("extend"), 
+			ref("named-property-list"), 
+			symbol(":"), 
+			ref("pattern-list"), 
+			keyword("in"), 
+			ref("call")
+		);
+		
 		define("definition", one_of(
 			ref("abstract-type-definition"), 
 			ref("type-definition"), 
-			ref("union")
+			ref("union"), 
+			ref("alias-definition"), 
+			ref("extern-definition")
+		));
+		
+		define("statement", one_of(
+			ref("abstract-type-definition"), 
+			ref("type-definition"), 
+			ref("union"), 
+			ref("alias-definition"), 
+			ref("extern-definition"), 
+			ref("extend")
 		));
 		
 		sequence("grammar", this::createGrammar, 
@@ -152,7 +208,7 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		
 		sequence("a-s-tify-grammar", this::createASTifyGrammar, 
 			ref("grammar"), 
-			list(ref("definition")), 
+			list(ref("statement")), 
 			token(EOF)
 		);
 	}
@@ -218,6 +274,31 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		return new ASTifyGrammar.NamedPropertyList(spanningPosition, name, properties);
 	}
 	
+	// (@Word -> functionName), '(', [(delim(@Parameter, ',') -> parameters)], ')'
+	private Capture createCall(List<Capture> captures) {
+		Token functionName = ((Capture.TokenCapture) captures.get(0)).getToken();
+		List<ASTifyGrammar.Parameter> parameters = new ArrayList<>();
+		astify.core.Position spanningPosition = captures.get(0).getPosition().to(captures.get(3).getPosition());
+		
+		if (!(captures.get(2) instanceof Capture.EmptyCapture)) {
+			Capture.ListCapture subCaptures = (Capture.ListCapture) captures.get(2);
+			
+			for (Iterator<Capture> it = ((Capture.ListCapture) subCaptures.get(0)).iterator(); it.hasNext(); ) {
+				parameters.add((ASTifyGrammar.Parameter) it.next());
+			}
+		}
+		
+		return new ASTifyGrammar.Call(spanningPosition, functionName, parameters);
+	}
+	
+	// (@Word -> reference)
+	private Capture createReference(List<Capture> captures) {
+		Token reference = ((Capture.TokenCapture) captures.get(0)).getToken();
+		astify.core.Position spanningPosition = captures.get(0).getPosition();
+		
+		return new ASTifyGrammar.Reference(spanningPosition, reference);
+	}
+	
 	// '@', (@Word -> type)
 	private Capture createTypeReference(List<Capture> captures) {
 		Token type = ((Capture.TokenCapture) captures.get(1)).getToken();
@@ -234,7 +315,7 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		return new ASTifyGrammar.Terminal(spanningPosition, terminal);
 	}
 	
-	// ('list' -> name), '(', (@Pattern -> patterns), ')'
+	// ('list' -> name), '(', (@UncapturingPattern -> patterns), ')'
 	private Capture createFunction_1(List<Capture> captures) {
 		Token name = ((Capture.TokenCapture) captures.get(0)).getToken();
 		List<ASTifyGrammar.UncapturingPattern> patterns = new ArrayList<>();
@@ -245,7 +326,7 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		return new ASTifyGrammar.Function(spanningPosition, name, patterns);
 	}
 	
-	// ('delim' -> name), '(', (@Pattern -> patterns), ',', (@Pattern -> patterns), ')'
+	// ('delim' -> name), '(', (@UncapturingPattern -> patterns), ',', (@UncapturingPattern -> patterns), ')'
 	private Capture createFunction_2(List<Capture> captures) {
 		Token name = ((Capture.TokenCapture) captures.get(0)).getToken();
 		List<ASTifyGrammar.UncapturingPattern> patterns = new ArrayList<>();
@@ -329,6 +410,43 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		return new ASTifyGrammar.Union(spanningPosition, typename, subtypes);
 	}
 	
+	// 'alias', (@Word -> name), ':', (@PatternList -> patternList)
+	private Capture createAliasDefinition(List<Capture> captures) {
+		Token name = ((Capture.TokenCapture) captures.get(1)).getToken();
+		ASTifyGrammar.PatternList patternList = (ASTifyGrammar.PatternList) captures.get(3);
+		astify.core.Position spanningPosition = captures.get(0).getPosition().to(captures.get(3).getPosition());
+		
+		return new ASTifyGrammar.AliasDefinition(spanningPosition, name, patternList);
+	}
+	
+	// 'extern', (@Type -> returnType), (@Word -> name), '(', [(delim(@TypedName, ',') -> parameters)], ')'
+	private Capture createExternDefinition(List<Capture> captures) {
+		ASTifyGrammar.Type returnType = (ASTifyGrammar.Type) captures.get(1);
+		Token name = ((Capture.TokenCapture) captures.get(2)).getToken();
+		List<ASTifyGrammar.TypedName> parameters = new ArrayList<>();
+		astify.core.Position spanningPosition = captures.get(0).getPosition().to(captures.get(5).getPosition());
+		
+		if (!(captures.get(4) instanceof Capture.EmptyCapture)) {
+			Capture.ListCapture subCaptures = (Capture.ListCapture) captures.get(4);
+			
+			for (Iterator<Capture> it = ((Capture.ListCapture) subCaptures.get(0)).iterator(); it.hasNext(); ) {
+				parameters.add((ASTifyGrammar.TypedName) it.next());
+			}
+		}
+		
+		return new ASTifyGrammar.ExternDefinition(spanningPosition, returnType, name, parameters);
+	}
+	
+	// 'extend', (@NamedPropertyList -> properties), ':', (@PatternList -> patternList), 'in', (@Call -> call)
+	private Capture createExtend(List<Capture> captures) {
+		ASTifyGrammar.NamedPropertyList properties = (ASTifyGrammar.NamedPropertyList) captures.get(1);
+		ASTifyGrammar.PatternList patternList = (ASTifyGrammar.PatternList) captures.get(3);
+		ASTifyGrammar.Call call = (ASTifyGrammar.Call) captures.get(5);
+		astify.core.Position spanningPosition = captures.get(0).getPosition().to(captures.get(5).getPosition());
+		
+		return new ASTifyGrammar.Extend(spanningPosition, properties, patternList, call);
+	}
+	
 	// 'grammar', (@Word -> name)
 	private Capture createGrammar(List<Capture> captures) {
 		Token name = ((Capture.TokenCapture) captures.get(1)).getToken();
@@ -337,16 +455,16 @@ class ASTifyGrammarPatternBuilder extends astify.PatternBuilder {
 		return new ASTifyGrammar.Grammar(spanningPosition, name);
 	}
 	
-	// (@Grammar -> _grammar), (list(@Definition) -> definitions), @EOF
+	// (@Grammar -> _grammar), (list(@Statement) -> statements), @EOF
 	private Capture createASTifyGrammar(List<Capture> captures) {
 		ASTifyGrammar.Grammar _grammar = (ASTifyGrammar.Grammar) captures.get(0);
-		List<ASTifyGrammar.Definition> definitions = new ArrayList<>();
+		List<ASTifyGrammar.Statement> statements = new ArrayList<>();
 		astify.core.Position spanningPosition = captures.get(0).getPosition().to(captures.get(2).getPosition());
 		
 		for (Iterator<Capture> it = ((Capture.ListCapture) captures.get(1)).iterator(); it.hasNext(); ) {
-			definitions.add((ASTifyGrammar.Definition) it.next());
+			statements.add((ASTifyGrammar.Statement) it.next());
 		}
 		
-		return new ASTifyGrammar(spanningPosition, _grammar, definitions);
+		return new ASTifyGrammar(spanningPosition, _grammar, statements);
 	}
 }

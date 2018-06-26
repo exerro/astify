@@ -1,7 +1,5 @@
 package astify.GDL;
 
-import astify.token.TokenType;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -17,6 +15,12 @@ class PatternBuilder {
         this.grammar = grammar;
         this.buildConfig = buildConfig;
         this.patternBuilderClass = new ClassBuilder(grammar.getClassName() + "PatternBuilder");
+    }
+
+    void createFiles() throws IOException {
+        String basePath = buildConfig.getFullPath() + "/";
+
+        patternBuilder.writeToFile(new File(basePath + grammar.getClassName() + "PatternBuilder.java"));
     }
 
     void build() {
@@ -60,10 +64,10 @@ class PatternBuilder {
             helper.exitBlock();
         });
 
-        buildPatterns();
+        // buildPatterns();
     }
 
-    private void buildPatterns() {
+    /*private void buildPatterns() {
         for (String s : grammar.getDefinedTypes()) {
             Definition d = grammar.getScope().lookupDefinition(s);
 
@@ -360,11 +364,5 @@ class PatternBuilder {
 
     private String getPatternName(Definition.TypeDefinition definition, int index) {
         return definition.getPatternName() + (definition.getPatternLists().size() > 1 ? "-" + (index + 1) : "");
-    }
-
-    void createFiles() throws IOException {
-        String basePath = buildConfig.getFullPath() + "/";
-
-        patternBuilder.writeToFile(new File(basePath + grammar.getClassName() + "PatternBuilder.java"));
-    }
+    }*/
 }

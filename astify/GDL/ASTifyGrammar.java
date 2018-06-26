@@ -8,29 +8,29 @@ import java.util.List;
 
 class ASTifyGrammar extends Capture.ObjectCapture {
 	private final Grammar _grammar;
-	private final List<Definition> definitions;
-
-	protected ASTifyGrammar(Position spanningPosition, Grammar _grammar, List<Definition> definitions) {
+	private final List<Statement> statements;
+	
+	protected ASTifyGrammar(Position spanningPosition, Grammar _grammar, List<Statement> statements) {
 		super(spanningPosition);
 		assert _grammar != null;
-		assert definitions != null;
+		assert statements != null;
 		this._grammar = _grammar;
-		this.definitions = definitions;
+		this.statements = statements;
 	}
-
+	
 	public Grammar getGrammar() {
 		return _grammar;
 	}
-
-	public List<Definition> getDefinitions() {
-		return definitions;
+	
+	public List<Statement> getStatements() {
+		return statements;
 	}
-
+	
 	@Override
 	public String toString() {
 		return "(ASTifyGrammar"
 		     + "\n\t_grammar = " + _grammar.toString().replace("\n", "\n\t")
-		     + "\n\tdefinitions = " + definitions.toString().replace("\n", "\n\t")
+		     + "\n\tstatements = " + statements.toString().replace("\n", "\n\t")
 		     + "\n)";
 	}
 	
@@ -38,12 +38,12 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 	public boolean equals(Object other) {
 		if (!(other instanceof ASTifyGrammar)) return false;
 		ASTifyGrammar otherCasted = (ASTifyGrammar) other;
-		return _grammar.equals(otherCasted._grammar) && definitions.equals(otherCasted.definitions);
+		return _grammar.equals(otherCasted._grammar) && statements.equals(otherCasted.statements);
 	}
 	
 	@Override
 	public int hashCode() {
-		return _grammar.hashCode() + 31 * definitions.hashCode();
+		return _grammar.hashCode() + 31 * statements.hashCode();
 	}
 	
 	static class Type extends Capture.ObjectCapture {
@@ -241,6 +241,84 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		public int hashCode() {
 			return name.hashCode() + 31 * properties.hashCode();
 		}
+	}
+	
+	static class Call extends Capture.ObjectCapture implements Parameter {
+		private final Token functionName;
+		private final List<Parameter> parameters;
+		
+		protected Call(Position spanningPosition, Token functionName, List<Parameter> parameters) {
+			super(spanningPosition);
+			assert functionName != null;
+			assert parameters != null;
+			this.functionName = functionName;
+			this.parameters = parameters;
+		}
+		
+		public Token getFunctionName() {
+			return functionName;
+		}
+		
+		public List<Parameter> getParameters() {
+			return parameters;
+		}
+		
+		@Override
+		public String toString() {
+			return "(Call"
+			     + "\n\tfunctionName = " + functionName.toString().replace("\n", "\n\t")
+			     + "\n\tparameters = " + parameters.toString().replace("\n", "\n\t")
+			     + "\n)";
+		}
+		
+		@Override
+		public boolean equals(Object other) {
+			if (!(other instanceof Call)) return false;
+			Call otherCasted = (Call) other;
+			return functionName.equals(otherCasted.functionName) && parameters.equals(otherCasted.parameters);
+		}
+		
+		@Override
+		public int hashCode() {
+			return functionName.hashCode() + 31 * parameters.hashCode();
+		}
+	}
+	
+	static class Reference extends Capture.ObjectCapture implements Parameter {
+		private final Token reference;
+		
+		protected Reference(Position spanningPosition, Token reference) {
+			super(spanningPosition);
+			assert reference != null;
+			this.reference = reference;
+		}
+		
+		public Token getReference() {
+			return reference;
+		}
+		
+		@Override
+		public String toString() {
+			return "(Reference"
+			     + "\n\treference = " + reference.toString().replace("\n", "\n\t")
+			     + "\n)";
+		}
+		
+		@Override
+		public boolean equals(Object other) {
+			if (!(other instanceof Reference)) return false;
+			Reference otherCasted = (Reference) other;
+			return reference.equals(otherCasted.reference);
+		}
+		
+		@Override
+		public int hashCode() {
+			return reference.hashCode();
+		}
+	}
+	
+	interface Parameter extends astify.core.Positioned {
+		
 	}
 	
 	static class TypeReference extends Capture.ObjectCapture implements UncapturingPattern {
@@ -592,7 +670,150 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		}
 	}
 	
-	interface Definition extends astify.core.Positioned {
+	static class AliasDefinition extends Capture.ObjectCapture implements Definition {
+		private final Token name;
+		private final PatternList patternList;
+		
+		protected AliasDefinition(Position spanningPosition, Token name, PatternList patternList) {
+			super(spanningPosition);
+			assert name != null;
+			assert patternList != null;
+			this.name = name;
+			this.patternList = patternList;
+		}
+		
+		public Token getName() {
+			return name;
+		}
+		
+		public PatternList getPatternList() {
+			return patternList;
+		}
+		
+		@Override
+		public String toString() {
+			return "(AliasDefinition"
+			     + "\n\tname = " + name.toString().replace("\n", "\n\t")
+			     + "\n\tpatternList = " + patternList.toString().replace("\n", "\n\t")
+			     + "\n)";
+		}
+		
+		@Override
+		public boolean equals(Object other) {
+			if (!(other instanceof AliasDefinition)) return false;
+			AliasDefinition otherCasted = (AliasDefinition) other;
+			return name.equals(otherCasted.name) && patternList.equals(otherCasted.patternList);
+		}
+		
+		@Override
+		public int hashCode() {
+			return name.hashCode() + 31 * patternList.hashCode();
+		}
+	}
+	
+	static class ExternDefinition extends Capture.ObjectCapture implements Definition {
+		private final Type returnType;
+		private final Token name;
+		private final List<TypedName> parameters;
+		
+		protected ExternDefinition(Position spanningPosition, Type returnType, Token name, List<TypedName> parameters) {
+			super(spanningPosition);
+			assert returnType != null;
+			assert name != null;
+			assert parameters != null;
+			this.returnType = returnType;
+			this.name = name;
+			this.parameters = parameters;
+		}
+		
+		public Type getReturnType() {
+			return returnType;
+		}
+		
+		public Token getName() {
+			return name;
+		}
+		
+		public List<TypedName> getParameters() {
+			return parameters;
+		}
+		
+		@Override
+		public String toString() {
+			return "(ExternDefinition"
+			     + "\n\treturnType = " + returnType.toString().replace("\n", "\n\t")
+			     + "\n\tname = " + name.toString().replace("\n", "\n\t")
+			     + "\n\tparameters = " + parameters.toString().replace("\n", "\n\t")
+			     + "\n)";
+		}
+		
+		@Override
+		public boolean equals(Object other) {
+			if (!(other instanceof ExternDefinition)) return false;
+			ExternDefinition otherCasted = (ExternDefinition) other;
+			return returnType.equals(otherCasted.returnType) && name.equals(otherCasted.name) && parameters.equals(otherCasted.parameters);
+		}
+		
+		@Override
+		public int hashCode() {
+			return returnType.hashCode() + 31 * name.hashCode() + 961 * parameters.hashCode();
+		}
+	}
+	
+	static class Extend extends Capture.ObjectCapture implements Statement {
+		private final NamedPropertyList properties;
+		private final PatternList patternList;
+		private final Call call;
+		
+		protected Extend(Position spanningPosition, NamedPropertyList properties, PatternList patternList, Call call) {
+			super(spanningPosition);
+			assert properties != null;
+			assert patternList != null;
+			assert call != null;
+			this.properties = properties;
+			this.patternList = patternList;
+			this.call = call;
+		}
+		
+		public NamedPropertyList getProperties() {
+			return properties;
+		}
+		
+		public PatternList getPatternList() {
+			return patternList;
+		}
+		
+		public Call getCall() {
+			return call;
+		}
+		
+		@Override
+		public String toString() {
+			return "(Extend"
+			     + "\n\tproperties = " + properties.toString().replace("\n", "\n\t")
+			     + "\n\tpatternList = " + patternList.toString().replace("\n", "\n\t")
+			     + "\n\tcall = " + call.toString().replace("\n", "\n\t")
+			     + "\n)";
+		}
+		
+		@Override
+		public boolean equals(Object other) {
+			if (!(other instanceof Extend)) return false;
+			Extend otherCasted = (Extend) other;
+			return properties.equals(otherCasted.properties) && patternList.equals(otherCasted.patternList) && call.equals(otherCasted.call);
+		}
+		
+		@Override
+		public int hashCode() {
+			return properties.hashCode() + 31 * patternList.hashCode() + 961 * call.hashCode();
+		}
+	}
+	
+	interface Definition extends astify.core.Positioned, Statement {
+		
+	}
+	
+	interface Statement extends astify.core.Positioned {
 		
 	}
 	

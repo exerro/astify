@@ -1,14 +1,12 @@
 
-grammar TestGrammar
+grammar G
 
-abstract Number(Word value)
+A(): .one
+A(): .two
+B(): .three
+B(): .four
 
-Reference(Word reference)
-: .reference
+alias A: @B
 
-TestGrammar(Value[] values)
-: .values
-
-union Value
-: Number
-: Reference
+G()
+: 'hello'

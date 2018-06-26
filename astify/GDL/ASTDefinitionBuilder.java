@@ -2,7 +2,6 @@ package astify.GDL;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
 
 class ASTDefinitionBuilder {
     private final OutputHelper ASTDefinition = new OutputHelper();
@@ -14,6 +13,12 @@ class ASTDefinitionBuilder {
         this.buildConfig = buildConfig;
     }
 
+    void createFiles() throws IOException {
+        String basePath = buildConfig.getFullPath() + "/";
+
+        ASTDefinition.writeToFile(new File(basePath + grammar.getClassName() + ".java"));
+    }
+
     void build() {
         ASTDefinition.writeLine("package " + buildConfig.getPackage() + ";");
         ASTDefinition.writeLine();
@@ -23,10 +28,10 @@ class ASTDefinitionBuilder {
         ASTDefinition.writeLine();
         ASTDefinition.writeLine("import java.util.List;");
 
-        buildASTDefinitions();
+        // buildASTDefinitions();
     }
 
-    private void buildASTDefinitions() {
+    /*private void buildASTDefinitions() {
         Definition.TypeDefinition grammarDefinition = (Definition.TypeDefinition) grammar.getScope().lookupDefinition(grammar.getName());
         ClassBuilder grammarClassBuilder = new ClassBuilder(grammar.getClassName());
         List<Definition> queued = new ArrayList<>();
@@ -111,11 +116,5 @@ class ASTDefinitionBuilder {
     private String getTypeString(Property property) {
         String typeString = property.getType().getReferenceName();
         return property.isList() ? "List<" + typeString + ">" : typeString;
-    }
-
-    void createFiles() throws IOException {
-        String basePath = buildConfig.getFullPath() + "/";
-
-        ASTDefinition.writeToFile(new File(basePath + grammar.getClassName() + ".java"));
-    }
+    }*/
 }

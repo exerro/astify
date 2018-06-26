@@ -1,15 +1,34 @@
 package astify.GDL;
 
 import astify.core.Position;
-import astify.core.Source;
 import astify.token.Token;
 
 import java.util.*;
 
 class Grammar {
+    static class PatternExtension {
+        private final List<Pattern> patternList;
+        private final Definition.ExternDefinition definition;
+
+        PatternExtension(List<Pattern> patternList, Definition.ExternDefinition definition) {
+            this.patternList = patternList;
+            this.definition = definition;
+        }
+
+        List<Pattern> getPatternList() {
+            return patternList;
+        }
+
+        Definition.ExternDefinition getDefinition() {
+            return definition;
+        }
+    }
+
     private final Scope scope = new Scope();
-    private final List<String> definedTypes = new ArrayList<>();
     private final String name, className;
+
+    private final List<PatternExtension> patternExtensions = new ArrayList<>();
+    private final List<GDLException> exceptions = new ArrayList<>();
 
     Grammar(String name) {
         this.name = name;
@@ -22,10 +41,6 @@ class Grammar {
         return scope;
     }
 
-    List<String> getDefinedTypes() {
-        return definedTypes;
-    }
-
     String getName() {
         return name;
     }
@@ -34,53 +49,111 @@ class Grammar {
         return className;
     }
 
-    void load(ASTifyGrammar grammar) throws GDLException {
-        registerDefinitions(grammar.getDefinitions(), grammar.getGrammar());
-        registerAllProperties(grammar.getDefinitions());
-        registerAllUnionMembers(grammar.getDefinitions());
-        bindAllPatternLists(grammar.getDefinitions());
+    List<GDLException> getExceptions() {
+        return exceptions;
     }
 
-    private void registerDefinitions(List<ASTifyGrammar.Definition> definitions, ASTifyGrammar.Grammar grammar) throws GDLException {
-        for (ASTifyGrammar.Definition definition : definitions) {
-            registerDefinition(definition);
+    boolean hasException() {
+        return !exceptions.isEmpty();
+    }
+
+    void error(GDLException exception) {
+        exceptions.add(exception);
+    }
+
+    void error(String message, Position position) {
+        exceptions.add(new GDLException(message, position));
+    }
+
+    void load(ASTifyGrammar grammar) {
+        if (!hasException()) registerDefinitions(grammar.getStatements(), grammar.getGrammar());
+        /*registerAllProperties(grammar.getStatements());
+        registerAllUnionMembers(grammar.getStatements());
+        bindAllPatternLists(grammar.getStatements());*/
+
+        if (!hasException()) registerPatternExtensions(grammar.getStatements());
+    }
+
+    private void registerDefinitions(List<ASTifyGrammar.Statement> statements, ASTifyGrammar.Grammar grammar) {
+        for (ASTifyGrammar.Statement statement : statements) {
+            if (statement instanceof ASTifyGrammar.Definition) {
+                registerDefinition((ASTifyGrammar.Definition) statement);
+            }
         }
 
-        if (!scope.exists(name) || !(scope.lookupDefinition(name) instanceof Definition.TypeDefinition)) {
-            throw new GDLException("Type '" + name + "' not defined", grammar.getPosition());
+        if (!scope.isType(name) || !(scope.lookupType(name) instanceof Type.ObjectType)) {
+            error("Type '" + name + "' not defined to match grammar name", grammar.getPosition());
         }
     }
 
     private void registerDefinition(ASTifyGrammar.Definition definition) {
-        Definition d;
+        Definition resolvedDefinition = null;
+        Token name = null;
 
         if (definition instanceof ASTifyGrammar.AbstractTypeDefinition) {
-            String name = ((ASTifyGrammar.AbstractTypeDefinition) definition).getProperties().getName().getValue();
-            d = new Definition.TypeDefinition(name, true);
+            ASTifyGrammar.AbstractTypeDefinition def = (ASTifyGrammar.AbstractTypeDefinition) definition;
+
+            name = def.getProperties().getName();
+            resolvedDefinition = new Definition.TypeDefinition(new Type.ObjectType(name.getValue(), true), name.getPosition());
         }
         else if (definition instanceof ASTifyGrammar.TypeDefinition) {
-            String name = ((ASTifyGrammar.TypeDefinition) definition).getProperties().getName().getValue();
-            d = new Definition.TypeDefinition(name, false);
+            ASTifyGrammar.TypeDefinition def = (ASTifyGrammar.TypeDefinition) definition;
+
+            name = def.getProperties().getName();
+            resolvedDefinition = new Definition.TypeDefinition(new Type.ObjectType(name.getValue(), true), name.getPosition());
         }
         else if (definition instanceof ASTifyGrammar.Union) {
-            String name = ((ASTifyGrammar.Union) definition).getTypename().getValue();
-            d = new Definition.UnionDefinition(name);
+            ASTifyGrammar.Union def = (ASTifyGrammar.Union) definition;
+
+            name = def.getTypename();
+            resolvedDefinition = new Definition.TypeDefinition(new Type.Union(name.getValue()), name.getPosition());
+        }
+        else if (definition instanceof ASTifyGrammar.AliasDefinition) {
+            ASTifyGrammar.AliasDefinition def = (ASTifyGrammar.AliasDefinition) definition;
+
+            name = def.getName();
+            resolvedDefinition = new Definition.AliasDefinition(name.getValue(), name.getPosition());
+        }
+        else if (definition instanceof ASTifyGrammar.ExternDefinition) {
+            ASTifyGrammar.ExternDefinition def = (ASTifyGrammar.ExternDefinition) definition;
+
+            name = def.getName();
+            resolvedDefinition = new Definition.ExternDefinition(name.getValue(), name.getPosition());
         }
         else {
-            throw new Error("unknown class " + definition.getClass().getName());
+            assert false : definition.getClass().getName();
         }
 
-        scope.define(new Type.DefinedType(d));
-        definedTypes.add(d.getName());
+        if (scope.exists(resolvedDefinition.getName())) {
+            String message = "'" + resolvedDefinition.getName() + "' is already defined";
+            Position definitionPosition = scope.lookup(resolvedDefinition.getName()).getPosition();
+            error(new GDLException.TaggedGDLException(message, name.getPosition(), "previously defined at", definitionPosition));
+        }
+        else {
+            scope.define(resolvedDefinition);
+        }
     }
 
-    private void registerAllProperties(List<ASTifyGrammar.Definition> definitions) throws GDLException {
-        for (ASTifyGrammar.Definition definition : definitions) {
-            if (definition instanceof ASTifyGrammar.TypeDefinition) {
-                registerProperties(((ASTifyGrammar.TypeDefinition) definition).getProperties());
+    private void registerPatternExtensions(List<ASTifyGrammar.Statement> statements) {
+        for (ASTifyGrammar.Statement statement : statements) {
+            if (statement instanceof ASTifyGrammar.Extend) {
+                registerPatternExtension((ASTifyGrammar.Extend) statement);
             }
-            else if (definition instanceof ASTifyGrammar.AbstractTypeDefinition) {
-                registerProperties(((ASTifyGrammar.AbstractTypeDefinition) definition).getProperties());
+        }
+    }
+
+    private void registerPatternExtension(ASTifyGrammar.Extend extension) {
+
+    }
+
+    /*
+    private void registerAllProperties(List<ASTifyGrammar.Statement> statements) throws GDLException {
+        for (ASTifyGrammar.Statement statement : statements) {
+            if (statement instanceof ASTifyGrammar.TypeDefinition) {
+                registerProperties(((ASTifyGrammar.TypeDefinition) statement).getProperties());
+            }
+            else if (statement instanceof ASTifyGrammar.AbstractTypeDefinition) {
+                registerProperties(((ASTifyGrammar.AbstractTypeDefinition) statement).getProperties());
             }
         }
     }
@@ -110,10 +183,10 @@ class Grammar {
         }
     }
 
-    private void bindAllPatternLists(List<ASTifyGrammar.Definition> definitions) throws GDLException {
-        for (ASTifyGrammar.Definition definition : definitions) {
-            if (definition instanceof ASTifyGrammar.TypeDefinition) {
-                ASTifyGrammar.TypeDefinition castedDefinition = (ASTifyGrammar.TypeDefinition) definition;
+    private void bindAllPatternLists(List<ASTifyGrammar.Statement> statements) throws GDLException {
+        for (ASTifyGrammar.Statement statement: statements) {
+            if (statement instanceof ASTifyGrammar.TypeDefinition) {
+                ASTifyGrammar.TypeDefinition castedDefinition = (ASTifyGrammar.TypeDefinition) statement;
                 Definition.TypeDefinition resolvedDefinition = (Definition.TypeDefinition) scope.lookupDefinition(castedDefinition.getProperties().getName().getValue());
 
                 bindPatternLists(castedDefinition, resolvedDefinition);
@@ -174,10 +247,10 @@ class Grammar {
         }
     }
 
-    private void registerAllUnionMembers(List<ASTifyGrammar.Definition> definitions) throws GDLException {
-        for (ASTifyGrammar.Definition definition : definitions) {
-            if (definition instanceof ASTifyGrammar.Union) {
-                registerUnionMembers((ASTifyGrammar.Union) definition);
+    private void registerAllUnionMembers(List<ASTifyGrammar.Statement> statements) throws GDLException {
+        for (ASTifyGrammar.Statement statement : statements) {
+            if (statement instanceof ASTifyGrammar.Union) {
+                registerUnionMembers((ASTifyGrammar.Union) statement);
             }
         }
     }
@@ -200,5 +273,5 @@ class Grammar {
                 throw new GDLException("Undefined sub-type '" + subtypeToken.getValue() + "'", subtypeToken.getPosition());
             }
         }
-    }
+    }*/
 }

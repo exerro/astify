@@ -1,8 +1,5 @@
 package astify.GDL;
 
-import astify.token.Token;
-import astify.token.TokenType;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -146,7 +143,7 @@ abstract class Pattern {
         }
     }
 
-    static<T extends ASTifyGrammar.RootPattern> List<Pattern> createFromList(List<T> sourcePatterns, PropertyList properties, Scope scope) throws GDLException {
+    /*static<T extends ASTifyGrammar.RootPattern> List<Pattern> createFromList(List<T> sourcePatterns, PropertyList properties, Scope scope) throws GDLException {
         List<Pattern> result = new ArrayList<>();
 
         for (ASTifyGrammar.RootPattern pattern : sourcePatterns) {
@@ -319,5 +316,5 @@ abstract class Pattern {
         }
 
         return null;
-    }
+    }*/
 }

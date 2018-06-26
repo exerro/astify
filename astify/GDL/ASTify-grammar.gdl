@@ -19,6 +19,16 @@ PatternList(RootPattern[] patterns)
 NamedPropertyList(Word name, TypedName[] properties)
 : .name '(' [.properties(',')] ')'
 
+Call(Word functionName, Parameter[] parameters)
+: .functionName '(' [.parameters(',')] ')'
+
+Reference(Word reference)
+: .reference
+
+union Parameter
+: Reference
+: Call
+
 
 
 // patterns
@@ -28,9 +38,9 @@ TypeReference(Word type)
 Terminal(String terminal)
 : .terminal
 
-Function(Word name, UncapturingPattern[] patterns)
-: ('list' -> name) '(' (@Pattern -> patterns) ')'
-: ('delim' -> name) '(' (@Pattern -> patterns) ',' (@Pattern -> patterns) ')'
+Function(Keyword name, UncapturingPattern[] patterns)
+: ('list' -> name) '(' (@UncapturingPattern -> patterns) ')'
+: ('delim' -> name) '(' (@UncapturingPattern -> patterns) ',' (@UncapturingPattern -> patterns) ')'
 
 Matcher(UncapturingPattern source, MatcherTarget targetProperty)
 : '(' .source '->' .targetProperty ')'
@@ -72,11 +82,26 @@ TypeDefinition(NamedPropertyList properties, PatternList[] patterns)
 Union(Word typename, Word[] subtypes)
 : 'union' .typename ':' .subtypes(':')
 
+AliasDefinition(Word name, PatternList patternList)
+: 'alias' .name ':' .patternList
+
+ExternDefinition(Type returnType, Word name, TypedName[] parameters)
+: 'extern' .returnType .name '(' [.parameters(',')] ')'
+
+Extend(NamedPropertyList properties, PatternList patternList, Call call)
+: 'extend' .properties ':' .patternList 'in' .call
+
 // definition union
 union Definition
 : AbstractTypeDefinition
 : TypeDefinition
 : Union
+: AliasDefinition
+: ExternDefinition
+
+union Statement
+: Definition
+: Extend
 
 
 
@@ -84,7 +109,7 @@ union Definition
 Grammar(Word name)
 : 'grammar' .name
 
-ASTify-grammar(Grammar _grammar, Definition[] definitions)
-: ._grammar .definitions @EOF
+ASTify-grammar(Grammar _grammar, Statement[] statements)
+: ._grammar .statements @EOF
 
 
