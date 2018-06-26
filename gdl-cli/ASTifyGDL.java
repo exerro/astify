@@ -32,6 +32,12 @@ public class ASTifyGDL {
 
         BuildConfig config = new BuildConfig(packageName, outputPath);
 
+        if (options.containsKey("access-all")) {
+            config.setClassAccess(options.get("access-all"));
+            config.setGetterAccess(options.get("access-all"));
+            config.setConstructorAccess(options.get("access-all"));
+            config.setPatternBuilderConstructorAccess(options.get("access-all"));
+        }
         if (options.containsKey("access-classes")) {
             config.setClassAccess(options.get("access-classes"));
         }
@@ -132,6 +138,7 @@ public class ASTifyGDL {
         aliases.put("ag", "access-getters");
         aliases.put("an", "access-constructors");
         aliases.put("ap", "access-pattern-builder");
+        aliases.put("a", "access-all");
         aliases.put("o", "output");
         aliases.put("p", "package");
 
