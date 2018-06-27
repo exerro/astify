@@ -112,12 +112,12 @@ abstract class Type {
                 for (Iterator<Property> it = properties.iterator(); it.hasNext(); ) {
                     Property property = it.next();
 
-                    if (!memberProperties.exists(property.getPropertyName())) {
+                    if (!memberProperties.exists(property.getName())) {
                         it.remove();
                         continue;
                     }
 
-                    if (!property.equals(memberProperties.lookup(property.getPropertyName()))) {
+                    if (!property.equals(memberProperties.lookup(property.getName()))) {
                         it.remove();
                     }
                 }
@@ -205,6 +205,40 @@ abstract class Type {
 
         @Override boolean castsTo(Type type) {
             return type instanceof BooleanType;
+        }
+    }
+
+    static class ListType extends Type {
+        private final Type type;
+
+        ListType(Type type) {
+            super(type.getName() + "[]");
+            this.type = type;
+        }
+
+        @Override boolean isAbstract() {
+            return type.isAbstract();
+        }
+
+        @Override boolean castsTo(Type type) {
+            return type instanceof ListType && this.type.castsTo(((ListType) type).type);
+        }
+    }
+
+    static class OptionalType extends Type {
+        private final Type type;
+
+        OptionalType(Type type) {
+            super(type.getName() + "?");
+            this.type = type;
+        }
+
+        @Override boolean isAbstract() {
+            return type.isAbstract();
+        }
+
+        @Override boolean castsTo(Type type) {
+            return type instanceof OptionalType && this.type.castsTo(((OptionalType) type).type);
         }
     }
 }

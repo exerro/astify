@@ -1,12 +1,18 @@
 
 grammar G
 
-A(): .one
-A(): .two
-B(): .three
-B(): .four
+A(Word w)
+: .w
 
-alias A: @B
+B(Word[] w)
+: 'a' .w
+
+C(Word?[] w)
+: .w
+
+union U
+: A
+: B
 
 G()
 : 'hello'

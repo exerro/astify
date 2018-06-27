@@ -69,7 +69,7 @@ class ASTDefinitionBuilder {
                 builder.addExtends("astify.core.Positioned");
 
                 for (Property property : definition.getSharedProperties()) {
-                    builder.addAbstractGetter(property.getType().getReferenceName(), property.getPropertyName());
+                    builder.addAbstractGetter(property.getType().getReferenceName(), property.getName());
                 }
 
                 classBuilders.put(definition, builder);
@@ -109,7 +109,7 @@ class ASTDefinitionBuilder {
     private void addProperties(Definition.TypeDefinition definition, ClassBuilder builder) {
         for (Iterator<Property> it = definition.getProperties().iterator(); it.hasNext(); ) {
             Property property = it.next();
-            builder.addField(getTypeString(property), property.getPropertyName(), property.isOptional());
+            builder.addField(getTypeString(property), property.getName(), property.isOptional());
         }
     }
 

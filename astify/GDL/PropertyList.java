@@ -15,7 +15,7 @@ public class PropertyList {
 
     boolean exists(String name) {
         for (Property property : properties) {
-            if (property.getPropertyName().equals(name)) {
+            if (property.getName().equals(name)) {
                 return true;
             }
         }
@@ -28,7 +28,7 @@ public class PropertyList {
 
 
         for (Property property : properties) {
-            if (property.getPropertyName().equals(name)) {
+            if (property.getName().equals(name)) {
                 return property;
             }
         }

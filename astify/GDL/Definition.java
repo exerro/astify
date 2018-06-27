@@ -52,6 +52,7 @@ public abstract class Definition {
     }
 
     static class ExternDefinition extends Definition {
+        private Type returnType;
         private final List<Type> parameterTypes = new ArrayList<>();
         private final List<String> parameterNames = new ArrayList<>();
 
@@ -59,9 +60,9 @@ public abstract class Definition {
             super(name, definitionPosition);
         }
 
-        void addParameter(Type type, String name) {
-            parameterTypes.add(type);
-            parameterNames.add(name);
+        Type getReturnType() {
+            assert returnType != null;
+            return returnType;
         }
 
         Type getParameterType(int i) {
@@ -72,26 +73,37 @@ public abstract class Definition {
             return parameterNames.get(i);
         }
 
-        Iterator<Integer> parameterIterator() {
-            return new Iterator<Integer>() {
-                int i = 0;
+        Iterator parameterIterator() {
+            return new Iterator();
+        }
 
-                Type getType() {
-                    return getParameterType(i);
-                }
+        void setReturnType(Type returnType) {
+            this.returnType = returnType;
+        }
 
-                String getName() {
-                    return getParameterName(i);
-                }
+        void addParameter(Type type, String name) {
+            parameterTypes.add(type);
+            parameterNames.add(name);
+        }
 
-                @Override public boolean hasNext() {
-                    return i < parameterTypes.size();
-                }
+        class Iterator implements java.util.Iterator<Integer> {
+            private int i = 0;
 
-                @Override public Integer next() {
-                    return i++;
-                }
-            };
+            Type getType() {
+                return getParameterType(i);
+            }
+
+            String getName() {
+                return getParameterName(i);
+            }
+
+            @Override public boolean hasNext() {
+                return i < parameterTypes.size();
+            }
+
+            @Override public Integer next() {
+                return i++;
+            }
         }
     }
 }

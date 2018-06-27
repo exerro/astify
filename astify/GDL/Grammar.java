@@ -57,21 +57,26 @@ class Grammar {
         return !exceptions.isEmpty();
     }
 
-    void error(GDLException exception) {
-        exceptions.add(exception);
-    }
-
-    void error(String message, Position position) {
+    private void error(String message, Position position) {
         exceptions.add(new GDLException(message, position));
     }
 
-    void load(ASTifyGrammar grammar) {
-        if (!hasException()) registerDefinitions(grammar.getStatements(), grammar.getGrammar());
-        /*registerAllProperties(grammar.getStatements());
-        registerAllUnionMembers(grammar.getStatements());
-        bindAllPatternLists(grammar.getStatements());*/
+    private void error(String message, Position position, String tag, Position tagPosition) {
+        exceptions.add(new GDLException.TaggedGDLException(message, position, tag, tagPosition));
+    }
 
-        if (!hasException()) registerPatternExtensions(grammar.getStatements());
+    void load(ASTifyGrammar grammar) {
+        registerDefinitions(grammar.getStatements(), grammar.getGrammar());
+
+        if (!hasException()) {
+            registerAllProperties(grammar.getStatements());
+            registerAllUnionMembers(grammar.getStatements());
+        }
+
+        if (!hasException()) {
+            bindAllPatternLists(grammar.getStatements());
+            registerPatternExtensions(grammar.getStatements());
+        }
     }
 
     private void registerDefinitions(List<ASTifyGrammar.Statement> statements, ASTifyGrammar.Grammar grammar) {
@@ -127,11 +132,154 @@ class Grammar {
         if (scope.exists(resolvedDefinition.getName())) {
             String message = "'" + resolvedDefinition.getName() + "' is already defined";
             Position definitionPosition = scope.lookup(resolvedDefinition.getName()).getPosition();
-            error(new GDLException.TaggedGDLException(message, name.getPosition(), "previously defined at", definitionPosition));
+            error(message, name.getPosition(), "previously defined at", definitionPosition);
         }
         else {
             scope.define(resolvedDefinition);
         }
+    }
+
+    private void registerAllProperties(List<ASTifyGrammar.Statement> statements) {
+        for (ASTifyGrammar.Statement statement : statements) {
+            if (statement instanceof ASTifyGrammar.TypeDefinition) {
+                registerProperties(((ASTifyGrammar.TypeDefinition) statement).getProperties());
+            }
+            else if (statement instanceof ASTifyGrammar.AbstractTypeDefinition) {
+                registerProperties(((ASTifyGrammar.AbstractTypeDefinition) statement).getProperties());
+            }
+            else if (statement instanceof ASTifyGrammar.ExternDefinition) {
+                registerParameters((ASTifyGrammar.ExternDefinition) statement);
+            }
+        }
+    }
+
+    private void registerProperties(ASTifyGrammar.NamedPropertyList properties) {
+        Type.ObjectType object = (Type.ObjectType) scope.lookupType(properties.getName().getValue());
+        Set<Util.Pair<String, Position>> definedProperties = new HashSet<>();
+        Type propertyType;
+
+        for (ASTifyGrammar.TypedName typedName : properties.getProperties()) {
+            String propertyName = typedName.getName().getValue();
+            boolean wasFound = false;
+
+            for (Util.Pair<String, Position> pair : definedProperties) {
+                if (pair.a.equals(propertyName)) {
+                    error(
+                            "Redefinition of property '" + propertyName + "'",
+                            typedName.getPosition(),
+                            "previously defined at",
+                            pair.b
+                    );
+                    wasFound = true;
+                    break;
+                }
+            }
+
+            if (!wasFound) {
+                definedProperties.add(new Util.Pair<>(typedName.getName().getValue(), typedName.getPosition()));
+            }
+
+            if ((propertyType = resolveType(typedName.getType())) != null) {
+                object.addProperty(new Property(propertyType, typedName.getName().getValue()));
+            }
+        }
+    }
+
+    private void registerParameters(ASTifyGrammar.ExternDefinition definition) {
+        Definition.ExternDefinition def = (Definition.ExternDefinition) scope.lookup(definition.getName().getValue());
+        Set<Util.Pair<String, Position>> parameters = new HashSet<>();
+        Type resolvedType;
+
+        for (ASTifyGrammar.TypedName parameter : definition.getParameters()) {
+            boolean wasFound = false;
+
+            for (Util.Pair<String, Position> param : parameters) {
+                if (param.a.equals(parameter.getName().getValue())) {
+                    error(
+                            "Redefinition of parameter '" + param.a + "'",
+                            parameter.getPosition(),
+                            "previously defined at",
+                            param.b
+                    );
+                    wasFound = true;
+                    break;
+                }
+            }
+
+            if (!wasFound) {
+                parameters.add(new Util.Pair<>(parameter.getName().getValue(), parameter.getPosition()));
+            }
+
+            if ((resolvedType = resolveType(parameter.getType())) != null) {
+                def.addParameter(resolvedType, parameter.getName().getValue());
+            }
+        }
+
+        if ((resolvedType = resolveType(definition.getReturnType())) != null) {
+            def.setReturnType(resolvedType);
+        }
+    }
+
+    private Type resolveType(ASTifyGrammar.Type type) {
+        if (scope.isType(type.getName().getValue())) {
+            Type resolvedType = scope.lookupType(type.getName().getValue());
+
+            if (type.isOptional()) {
+                resolvedType = new Type.OptionalType(resolvedType);
+            }
+
+            if (type.isLst()) {
+                resolvedType = new Type.ListType(resolvedType);
+            }
+
+            return resolvedType;
+        }
+        else if (scope.exists(type.getName().getValue())) {
+            error(
+                    "'" + type.getName().getValue() + "' is not a type",
+                    type.getName().getPosition(),
+                    "defined at",
+                    scope.lookup(type.getName().getValue()).getPosition()
+            );
+        }
+        else {
+            error("Cannot find type '" + type.getName().getValue() + "'", type.getName().getPosition());
+        }
+
+        return null;
+    }
+
+    private void registerAllUnionMembers(List<ASTifyGrammar.Statement> statements) {
+        for (ASTifyGrammar.Statement statement : statements) {
+            if (statement instanceof ASTifyGrammar.Union) {
+                registerUnionMembers((ASTifyGrammar.Union) statement);
+            }
+        }
+    }
+
+    private void registerUnionMembers(ASTifyGrammar.Union statement) {
+        Type.Union union = (Type.Union) scope.lookupType(statement.getTypename().getValue());
+
+        for (Token subtypeToken : statement.getSubtypes()) {
+            if (scope.isType(subtypeToken.getValue())) {
+                union.addMember(scope.lookupType(subtypeToken.getValue()));
+            }
+            else if (scope.exists(subtypeToken.getValue())) {
+                error(
+                        "'" + subtypeToken.getValue() + "' is not a type",
+                        subtypeToken.getPosition(),
+                        "defined at",
+                        scope.lookup(subtypeToken.getValue()).getPosition()
+                );
+            }
+            else {
+                error("Cannot find type '" + subtypeToken.getValue() + "'", subtypeToken.getPosition());
+            }
+        }
+    }
+
+    private void bindAllPatternLists(List<ASTifyGrammar.Statement> statements) {
+
     }
 
     private void registerPatternExtensions(List<ASTifyGrammar.Statement> statements) {
@@ -143,46 +291,10 @@ class Grammar {
     }
 
     private void registerPatternExtension(ASTifyGrammar.Extend extension) {
-
+        // do stuff with patternExtensions
     }
 
     /*
-    private void registerAllProperties(List<ASTifyGrammar.Statement> statements) throws GDLException {
-        for (ASTifyGrammar.Statement statement : statements) {
-            if (statement instanceof ASTifyGrammar.TypeDefinition) {
-                registerProperties(((ASTifyGrammar.TypeDefinition) statement).getProperties());
-            }
-            else if (statement instanceof ASTifyGrammar.AbstractTypeDefinition) {
-                registerProperties(((ASTifyGrammar.AbstractTypeDefinition) statement).getProperties());
-            }
-        }
-    }
-
-    private void registerProperties(ASTifyGrammar.NamedPropertyList properties) throws GDLException {
-        Definition.TypeDefinition definition = (Definition.TypeDefinition) scope.lookupDefinition(properties.getName().getValue());
-        Set<String> definedProperties = new HashSet<>();
-
-        for (ASTifyGrammar.TypedName typedName : properties.getProperties()) {
-            String propertyName = typedName.getName().getValue();
-
-            if (definedProperties.contains(typedName.getName().getValue())) {
-                throw new GDLException("Redefinition of property '" + propertyName + "'", typedName.getName().getPosition());
-            }
-            else {
-                definedProperties.add(propertyName);
-            }
-
-            if (scope.exists(typedName.getType().getName().getValue())) {
-                Type t = scope.lookup(typedName.getType().getName().getValue());
-                Property property = new Property(t, propertyName, typedName.getType().isLst(), typedName.getType().isOptional());
-                definition.addProperty(property);
-            }
-            else {
-                throw new GDLException("Cannot find type '" + typedName.getType().getName().getValue() + "'", typedName.getType().getName().getPosition());
-            }
-        }
-    }
-
     private void bindAllPatternLists(List<ASTifyGrammar.Statement> statements) throws GDLException {
         for (ASTifyGrammar.Statement statement: statements) {
             if (statement instanceof ASTifyGrammar.TypeDefinition) {
@@ -214,7 +326,7 @@ class Grammar {
             Property property = it.next();
 
             if (!property.isOptional() && !property.isList()) {
-                requiredProperties.add(property.getPropertyName());
+                requiredProperties.add(property.getName());
             }
         }
 
@@ -225,7 +337,7 @@ class Grammar {
                 propertyName = ((Pattern.Matcher) p).getTargetProperty();
             }
             else if (p instanceof Pattern.OptionalCapture) {
-                propertyName = ((Pattern.OptionalCapture) p).getPropertyName();
+                propertyName = ((Pattern.OptionalCapture) p).getName();
             }
 
             if (propertyName != null) {
@@ -247,31 +359,5 @@ class Grammar {
         }
     }
 
-    private void registerAllUnionMembers(List<ASTifyGrammar.Statement> statements) throws GDLException {
-        for (ASTifyGrammar.Statement statement : statements) {
-            if (statement instanceof ASTifyGrammar.Union) {
-                registerUnionMembers((ASTifyGrammar.Union) statement);
-            }
-        }
-    }
-
-    private void registerUnionMembers(ASTifyGrammar.Union source) throws GDLException {
-        Definition.UnionDefinition union = (Definition.UnionDefinition) scope.lookupDefinition(source.getTypename().getValue());
-
-        for (Token subtypeToken : source.getSubtypes()) {
-            if (scope.exists(subtypeToken.getValue())) {
-                Definition subtypeDefinition = scope.lookupDefinition(subtypeToken.getValue());
-
-                if (subtypeDefinition == null) {
-                    throw new GDLException("Referenced type '" + subtypeToken.getValue() + "' is not a type definition or union", subtypeToken.getPosition());
-                }
-                else {
-                    union.addMember(subtypeDefinition);
-                }
-            }
-            else {
-                throw new GDLException("Undefined sub-type '" + subtypeToken.getValue() + "'", subtypeToken.getPosition());
-            }
-        }
-    }*/
+  */
 }

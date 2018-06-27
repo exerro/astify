@@ -196,7 +196,7 @@ class PatternBuilder {
             }
             else if (pattern instanceof Pattern.OptionalCapture) {
                 Pattern.OptionalCapture optional = (Pattern.OptionalCapture) pattern;
-                Property property = definition.getProperties().lookup(optional.getPropertyName());
+                Property property = definition.getProperties().lookup(optional.getName());
 
                 definedValues.put(property, "!(captures.get(" + i + ") instanceof Capture.EmptyCapture)");
             }
@@ -209,7 +209,7 @@ class PatternBuilder {
             output.ensureLines(1);
             output.write(getClassName(property));
             output.write(" ");
-            output.write(property.getPropertyName());
+            output.write(property.getName());
             output.write(" = ");
             output.write(definedValues.get(property));
             output.write(";");
@@ -235,7 +235,7 @@ class PatternBuilder {
 
         for (Iterator<Property> it = definition.getProperties().iterator(); it.hasNext(); ) {
             output.write(", ");
-            output.write(it.next().getPropertyName());
+            output.write(it.next().getName());
         }
 
         output.write(");");
@@ -257,11 +257,11 @@ class PatternBuilder {
                     output.ensureLines(2);
                     output.write("for (Iterator<Capture> it = ((Capture.ListCapture) " + source + ").iterator(); it.hasNext(); )");
                     output.enterBlock();
-                        output.write(property.getPropertyName() + ".add(" + castValue("it.next()", property.getType()) + ");");
+                        output.write(property.getName() + ".add(" + castValue("it.next()", property.getType()) + ");");
                     output.exitBlock();
                 }
                 else {
-                    output.write(property.getPropertyName() + ".add(" + castValue(source, property.getType()) + ");");
+                    output.write(property.getName() + ".add(" + castValue(source, property.getType()) + ");");
                 }
             }
             else {
@@ -271,10 +271,10 @@ class PatternBuilder {
             }
         }
         else if (pattern instanceof Pattern.OptionalCapture) {
-            Property property = definition.getProperties().lookup(((Pattern.OptionalCapture) pattern).getPropertyName());
+            Property property = definition.getProperties().lookup(((Pattern.OptionalCapture) pattern).getName());
 
             output.ensureLines(1);
-            output.write(property.getPropertyName() + " = !(" + source + " instanceof Capture.EmptyCapture);");
+            output.write(property.getName() + " = !(" + source + " instanceof Capture.EmptyCapture);");
         }
         else if (pattern instanceof Pattern.Optional) {
             if (!optionalHasCapture((Pattern.Optional) pattern)) return;

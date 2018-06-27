@@ -51,8 +51,9 @@ public class ASTifyGDL {
         try {
             List<GDLException> exceptions = GrammarDefinition.parseAndBuild(file, config);
 
-            for (GDLException exception : exceptions) {
-                System.err.println(exception.toString());
+            for (int i = 0; i < exceptions.size(); ++i) {
+                if (i > 0) System.err.println();
+                System.err.println(exceptions.get(i).toString());
             }
         }
         catch (TokenException | ParserException e) {

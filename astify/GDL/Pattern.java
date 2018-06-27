@@ -295,16 +295,16 @@ abstract class Pattern {
 
             // if the targetProperty property is a list, we need a ListPattern(pat [, delim])
             if (property.isList()) {
-                resultingPattern = new Matcher(new ListPattern(new TypeReference(expectedType), qualifier.size() > 0 ? qualifier : null), property.getPropertyName());
+                resultingPattern = new Matcher(new ListPattern(new TypeReference(expectedType), qualifier.size() > 0 ? qualifier : null), property.getName());
             }
             // if the targetProperty property is a boolean, its value is true if a match is found
             else if (expectedType instanceof Type.BooleanType) {
                 // property will not be optional
-                resultingPattern = new OptionalCapture(qualifier, property.getPropertyName());
+                resultingPattern = new OptionalCapture(qualifier, property.getName());
             }
             // otherwise, simply refer a type ref
             else {
-                resultingPattern = new Matcher(new TypeReference(expectedType), property.getPropertyName());
+                resultingPattern = new Matcher(new TypeReference(expectedType), property.getName());
             }
 
             return resultingPattern;

@@ -4,7 +4,34 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Objects.hash;
+
 class Util {
+    static class Pair<A, B> {
+        A a;
+        B b;
+
+        Pair(A a, B b) {
+            assert a != null;
+            assert b != null;
+            this.a = a;
+            this.b = b;
+        }
+
+        @Override public String toString() {
+            return "(" + a.toString() + ", " + b.toString() + ")";
+        }
+
+        @Override public boolean equals(Object other) {
+            if (!(other instanceof Pair)) return false;
+            return a.equals(((Pair) other).a) && b.equals(((Pair) other).b);
+        }
+
+        @Override public int hashCode() {
+            return hash(a, b);
+        }
+    }
+
     static<T, R> List<R> map(List<T> list, java.util.function.Function<T, R> f) {
         List<R> result = new ArrayList<>();
 
