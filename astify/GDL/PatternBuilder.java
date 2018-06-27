@@ -6,7 +6,7 @@ import java.util.*;
 
 class PatternBuilder {
     private final OutputHelper patternBuilder = new OutputHelper();
-    private final ClassBuilder patternBuilderClass;
+    private final Builder.ClassBuilder patternBuilderClass;
     private final List<String> builtPatterns = new ArrayList<>();
     private final BuildConfig buildConfig;
     private final Grammar grammar;
@@ -14,7 +14,7 @@ class PatternBuilder {
     PatternBuilder(Grammar grammar, BuildConfig buildConfig) {
         this.grammar = grammar;
         this.buildConfig = buildConfig;
-        this.patternBuilderClass = new ClassBuilder(grammar.getClassName() + "PatternBuilder");
+        this.patternBuilderClass = new Builder.ClassBuilder(grammar.getClassName() + "PatternBuilder");
     }
 
     void createFiles() throws IOException {
@@ -34,11 +34,9 @@ class PatternBuilder {
         patternBuilder.writeLine("import java.util.Iterator;");
         patternBuilder.writeLine("import java.util.List;");
 
-        patternBuilderClass.addExtends("astify.PatternBuilder");
-        patternBuilderClass.setFlag(ClassBuilder.ENABLE_CONSTRUCTOR, false);
-        patternBuilderClass.setFlag(ClassBuilder.ENABLE_METHODS, false);
+        patternBuilderClass.setExtends("astify.PatternBuilder");
 
-        patternBuilderClass.addMethod((helper) -> {
+        /*patternBuilderClass.addMethod((helper) -> {
             boolean first = true;
 
             helper.write(buildConfig.getPatternBuilderConstructorAccess().equals("default") ? "" : buildConfig.getPatternBuilderConstructorAccess() + " ");
@@ -62,7 +60,7 @@ class PatternBuilder {
             helper.write("return lookup(\"" + NameHelper.toLowerLispCase(grammar.getName()) + "\");");
 
             helper.exitBlock();
-        });
+        });*/
 
         // buildPatterns();
     }

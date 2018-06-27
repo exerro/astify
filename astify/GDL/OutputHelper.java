@@ -33,6 +33,12 @@ class OutputHelper {
         }
     }
 
+    void ensureLinesIf(int lines, boolean cond) {
+        while (cond && newlines < lines && lastChar != 0) {
+            write("\n");
+        }
+    }
+
     void write(String text) {
         int oldNewlines = this.newlines;
         int newlines = 0;
@@ -47,6 +53,10 @@ class OutputHelper {
         String toWrite = text.replace("\n", "\n" + indentationString);
         lastChar = toWrite.length() > 0 ? toWrite.charAt(toWrite.length() - 1) : lastChar;
         result.append(toWrite);
+    }
+
+    void writeIf(String str, boolean condition) {
+        if (condition) write(str);
     }
 
     public void writef(String fmt, Object... params) {

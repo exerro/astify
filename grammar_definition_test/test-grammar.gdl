@@ -4,11 +4,8 @@ grammar G
 A(Word w)
 : .w
 
-B(Word[] w)
-: 'a' .w
-
-C(Word?[] w)
-: .w
+B(Word w)
+: 'b' .w
 
 union U
 : A

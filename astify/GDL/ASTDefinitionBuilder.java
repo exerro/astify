@@ -2,6 +2,10 @@ package astify.GDL;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 class ASTDefinitionBuilder {
     private final OutputHelper ASTDefinition = new OutputHelper();
@@ -26,95 +30,103 @@ class ASTDefinitionBuilder {
         ASTDefinition.writeLine("import astify.core.Position;");
         ASTDefinition.writeLine("import astify.token.Token;");
         ASTDefinition.writeLine();
+        ASTDefinition.writeLine("import static java.util.Objects.hash;");
         ASTDefinition.writeLine("import java.util.List;");
 
-        // buildASTDefinitions();
+        buildASTDefinitions();
     }
 
-    /*private void buildASTDefinitions() {
-        Definition.TypeDefinition grammarDefinition = (Definition.TypeDefinition) grammar.getScope().lookupDefinition(grammar.getName());
-        ClassBuilder grammarClassBuilder = new ClassBuilder(grammar.getClassName());
-        List<Definition> queued = new ArrayList<>();
-        Map<Definition, ClassBuilder> classBuilders = new HashMap<>();
+    private void buildASTDefinitions() {
+        Type.ObjectType grammarType = (Type.ObjectType) grammar.getScope().lookupType(grammar.getName());
+        Builder.ClassBuilder builder = new Builder.ClassBuilder(grammar.getClassName());
+        Map<Type, Builder> builders = new HashMap<>();
 
-        classBuilders.put(grammarDefinition, grammarClassBuilder);
-        setupClass(grammarClassBuilder);
-        addProperties(grammarDefinition, grammarClassBuilder);
+        builders.put(grammarType, builder);
 
-        for (String s : grammar.getDefinedTypes()) {
-            if (!s.equals(grammar.getName())) {
-                assert grammar.getScope().lookupDefinition(s) != null;
-                queued.add(grammar.getScope().lookupDefinition(s));
+        for (Definition definition : grammar.getScope().values()) {
+            if (definition instanceof Definition.TypeDefinition) {
+                Type type = ((Definition.TypeDefinition) definition).getType();
+
+                if (type != grammarType) {
+                    Builder subBuilder = null;
+
+                    if (type instanceof Type.ObjectType) {
+                        builders.put(type, subBuilder = new Builder.ClassBuilder(type.getReferenceName()));
+                        ((Builder.ClassBuilder) subBuilder).setStatic(true);
+                    }
+                    else if (type instanceof Type.Union) {
+                        builders.put(type, subBuilder = new Builder.InterfaceBuilder(type.getReferenceName()));
+                    }
+
+                    if (subBuilder != null) {
+                        builder.addSubtype(subBuilder);
+                    }
+                }
             }
         }
 
-        for (Definition d : queued) {
-            if (d instanceof Definition.TypeDefinition) {
-                Definition.TypeDefinition definition = (Definition.TypeDefinition) d;
-                ClassBuilder builder = new ClassBuilder(definition.getStructName());
-
-                setupClass(builder);
-                addProperties(definition, builder);
-
-                classBuilders.put(definition, builder);
-                grammarClassBuilder.addClass(builder, buildConfig.getClassAccess());
+        for (Type t : builders.keySet()) {
+            if (t instanceof Type.ObjectType) {
+                loadClassBuilder((Builder.ClassBuilder) builders.get(t), (Type.ObjectType) t);
             }
-            else if (d instanceof Definition.UnionDefinition) {
-                Definition.UnionDefinition definition = (Definition.UnionDefinition) d;
-                ClassBuilder builder = new ClassBuilder(definition.getStructName());
-
-                builder.setClassType(ClassBuilder.ClassType.Interface);
-                builder.setFlag(ClassBuilder.ENABLE_CONSTRUCTOR, false);
-                builder.setFlag(ClassBuilder.ENABLE_METHODS, false);
-                builder.addExtends("astify.core.Positioned");
-
-                for (Property property : definition.getSharedProperties()) {
-                    builder.addAbstractGetter(property.getType().getReferenceName(), property.getName());
-                }
-
-                classBuilders.put(definition, builder);
-                grammarClassBuilder.addClass(builder, buildConfig.getClassAccess());
-            }
-            else {
-                assert false;
-            }
-        }
-
-        for (Definition d : queued) {
-            if (d instanceof Definition.UnionDefinition) {
-                Definition.UnionDefinition definition = (Definition.UnionDefinition) d;
-
-                for (Definition member : definition.getRawMembers()) {
-                    if (member instanceof Definition.UnionDefinition) {
-                        classBuilders.get(member).addExtends(definition.getStructName());
-                    }
-                    else {
-                        classBuilders.get(member).addImplements(definition.getStructName());
-                    }
-                }
+            else if (t instanceof Type.Union) {
+                loadInterfaceBuilder((Builder.InterfaceBuilder) builders.get(t), (Type.Union) t, builders);
             }
         }
 
         ASTDefinition.ensureLines(2);
-        grammarClassBuilder.buildToModified(ASTDefinition, buildConfig.getClassAccess());
+        builder.buildTo(ASTDefinition);
     }
 
-    private void setupClass(ClassBuilder builder) {
-        builder.setConstructorAccess(buildConfig.getConstructorAccess());
+    private void loadClassBuilder(Builder.ClassBuilder builder, Type.ObjectType type) {
+        builder.setAccess(buildConfig.getClassAccess());
         builder.setGetterAccess(buildConfig.getGetterAccess());
-        builder.addExtends("Capture.ObjectCapture");
-        builder.addConstructorField("Position", "spanningPosition");
-    }
+        builder.setConstructorAccess(buildConfig.getConstructorAccess());
+        builder.setExtends("Capture.ObjectCapture");
+        builder.addSuperField("Position", "spanningPosition");
 
-    private void addProperties(Definition.TypeDefinition definition, ClassBuilder builder) {
-        for (Iterator<Property> it = definition.getProperties().iterator(); it.hasNext(); ) {
+        for (Iterator<Property> it = type.getProperties().iterator(); it.hasNext(); ) {
             Property property = it.next();
-            builder.addField(getTypeString(property), property.getName(), property.isOptional());
+
+            builder.addField(toString(property.getType()), property.getName(), isOptionalType(property.getType()));
         }
     }
 
-    private String getTypeString(Property property) {
-        String typeString = property.getType().getReferenceName();
-        return property.isList() ? "List<" + typeString + ">" : typeString;
-    }*/
+    private void loadInterfaceBuilder(Builder.InterfaceBuilder builder, Type.Union type, Map<Type, Builder> builders) {
+        builder.setAccess(buildConfig.getClassAccess());
+        builder.setGetterAccess(buildConfig.getGetterAccess());
+        builder.addExtends("astify.core.Positioned");
+
+        for (Type subtype : type.getRawMembers()) {
+            Builder subBuilder = builders.get(subtype);
+
+            if (subBuilder instanceof Builder.ClassBuilder) {
+                ((Builder.ClassBuilder) subBuilder).addImplements(type.getReferenceName());
+            }
+            else if (subBuilder instanceof Builder.InterfaceBuilder) {
+                ((Builder.InterfaceBuilder) subBuilder).addExtends(type.getReferenceName());
+            }
+        }
+
+        Set<Property> properties = type.getSharedProperties();
+
+        for (Property property : properties) {
+            builder.addAbstractGetter(toString(property.getType()), property.getName());
+        }
+    }
+
+    private String toString(Type type) {
+        if (type instanceof Type.ListType) {
+            return "List<" + toString(((Type.ListType) type).getType()) + ">";
+        }
+        if (type instanceof Type.OptionalType) {
+            return toString(((Type.OptionalType) type).getType());
+        }
+
+        return type.getReferenceName();
+    }
+
+    private boolean isOptionalType(Type type) {
+        return type instanceof Type.OptionalType;
+    }
 }

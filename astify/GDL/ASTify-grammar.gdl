@@ -5,7 +5,8 @@ grammar ASTify-grammar
 
 // utilities
 Type(Word name, bool optional, bool lst)
-: .name .optional('?') .lst('[' ']')
+: .name .optional('?')
+: .name .lst('[' ']')
 
 TypedName(Type type, Word name)
 : .type .name

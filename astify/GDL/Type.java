@@ -216,6 +216,10 @@ abstract class Type {
             this.type = type;
         }
 
+        Type getType() {
+            return type;
+        }
+
         @Override boolean isAbstract() {
             return type.isAbstract();
         }
@@ -231,6 +235,10 @@ abstract class Type {
         OptionalType(Type type) {
             super(type.getName() + "?");
             this.type = type;
+        }
+
+        Type getType() {
+            return type;
         }
 
         @Override boolean isAbstract() {
