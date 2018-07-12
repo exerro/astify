@@ -8,6 +8,7 @@ import java.util.*;
 
 class Scope {
     private final Map<String, Definition> scope = new HashMap<>();
+    private final List<Definition> additionOrder = new ArrayList<>();
 
     boolean exists(String name) {
         assert name != null;
@@ -34,11 +35,8 @@ class Scope {
     void define(Definition value) {
         assert value != null;
         assert !exists(value.getName()) : value.getName();
+        additionOrder.add(value);
         scope.put(value.getName(), value);
-    }
-
-    void define(Type type, Position position) {
-        define(new Definition.TypeDefinition(type, position));
     }
 
     void defineNativeTypes() {
@@ -55,14 +53,14 @@ class Scope {
 
         Source source = new Source.VirtualSource("native", sourceContent.toString());
 
-        define(new Type.BooleanType(), new Position(source, 1, 1, 4));
+        define(new Definition.TypeDefinition(new Type.BooleanType(), new Position(source, 1, 1, 4)));
 
         for (int i = 0; i < tokenTypes.size(); ++i) {
-            define(new Type.TokenType(tokenTypes.get(i)), new Position(source, i + 2, 1, tokenTypes.get(i).name().length()));
+            define(new Definition.TypeDefinition(new Type.TokenType(tokenTypes.get(i)), new Position(source, i + 2, 1, tokenTypes.get(i).name().length())));
         }
     }
 
-    Collection<Definition> values() {
-        return scope.values();
+    List<Definition> values() {
+        return additionOrder;
     }
 }

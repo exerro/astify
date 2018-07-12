@@ -1,159 +1,168 @@
 package astify.GDL;
 
-import astify.Capture;
-import astify.core.Position;
-import astify.token.Token;
-
+import static java.util.Objects.hash;
 import java.util.List;
 
-class ASTifyGrammar extends Capture.ObjectCapture {
+class ASTifyGrammar extends astify.Capture.ObjectCapture {
 	private final Grammar _grammar;
 	private final List<Statement> statements;
 	
-	protected ASTifyGrammar(Position spanningPosition, Grammar _grammar, List<Statement> statements) {
+	ASTifyGrammar(astify.core.Position spanningPosition, Grammar _grammar, List<Statement> statements) {
 		super(spanningPosition);
-		assert _grammar != null;
-		assert statements != null;
+		
+		assert _grammar != null : "'_grammar' is null";
+		assert statements != null : "'statements' is null";
+		
 		this._grammar = _grammar;
 		this.statements = statements;
 	}
 	
-	public Grammar getGrammar() {
+	Grammar getGrammar() {
 		return _grammar;
 	}
 	
-	public List<Statement> getStatements() {
+	List<Statement> getStatements() {
 		return statements;
 	}
 	
 	@Override
 	public String toString() {
-		return "(ASTifyGrammar"
-		     + "\n\t_grammar = " + _grammar.toString().replace("\n", "\n\t")
-		     + "\n\tstatements = " + statements.toString().replace("\n", "\n\t")
-		     + "\n)";
+		return "(ASTifyGrammar\n"
+			 + "	_grammar = " + _grammar.toString().replace("\n", "\n\t") + "\n"
+			 + "	statements = " + statements.toString().replace("\n", "\n\t") + "\n"
+			 + ")";
 	}
 	
 	@Override
 	public boolean equals(Object other) {
 		if (!(other instanceof ASTifyGrammar)) return false;
 		ASTifyGrammar otherCasted = (ASTifyGrammar) other;
-		return _grammar.equals(otherCasted._grammar) && statements.equals(otherCasted.statements);
+		return _grammar.equals(otherCasted._grammar)
+			&& statements.equals(otherCasted.statements);
 	}
 	
 	@Override
 	public int hashCode() {
-		return _grammar.hashCode() + 31 * statements.hashCode();
+		return hash(_grammar, statements);
 	}
 	
-	static class Type extends Capture.ObjectCapture {
-		private final Token name;
+	static class Type extends astify.Capture.ObjectCapture {
+		private final astify.token.Token name;
 		private final Boolean optional;
 		private final Boolean lst;
 		
-		protected Type(Position spanningPosition, Token name, Boolean optional, Boolean lst) {
+		Type(astify.core.Position spanningPosition, astify.token.Token name, Boolean optional, Boolean lst) {
 			super(spanningPosition);
-			assert name != null;
-			assert optional != null;
-			assert lst != null;
+			
+			assert name != null : "'name' is null";
+			assert optional != null : "'optional' is null";
+			assert lst != null : "'lst' is null";
+			
 			this.name = name;
 			this.optional = optional;
 			this.lst = lst;
 		}
 		
-		public Token getName() {
+		astify.token.Token getName() {
 			return name;
 		}
 		
-		public Boolean isOptional() {
+		Boolean isOptional() {
 			return optional;
 		}
 		
-		public Boolean isLst() {
+		Boolean isLst() {
 			return lst;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Type"
-			     + "\n\tname = " + name.toString().replace("\n", "\n\t")
-			     + "\n\toptional = " + optional.toString().replace("\n", "\n\t")
-			     + "\n\tlst = " + lst.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Type\n"
+				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
+				 + "	optional = " + optional.toString().replace("\n", "\n\t") + "\n"
+				 + "	lst = " + lst.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof Type)) return false;
 			Type otherCasted = (Type) other;
-			return name.equals(otherCasted.name) && optional.equals(otherCasted.optional) && lst.equals(otherCasted.lst);
+			return name.equals(otherCasted.name)
+				&& optional.equals(otherCasted.optional)
+				&& lst.equals(otherCasted.lst);
 		}
 		
 		@Override
 		public int hashCode() {
-			return name.hashCode() + 31 * optional.hashCode() + 961 * lst.hashCode();
+			return hash(name, optional, lst);
 		}
 	}
 	
-	static class TypedName extends Capture.ObjectCapture {
+	static class TypedName extends astify.Capture.ObjectCapture {
 		private final Type type;
-		private final Token name;
+		private final astify.token.Token name;
 		
-		protected TypedName(Position spanningPosition, Type type, Token name) {
+		TypedName(astify.core.Position spanningPosition, Type type, astify.token.Token name) {
 			super(spanningPosition);
-			assert type != null;
-			assert name != null;
+			
+			assert type != null : "'type' is null";
+			assert name != null : "'name' is null";
+			
 			this.type = type;
 			this.name = name;
 		}
 		
-		public Type getType() {
+		Type getType() {
 			return type;
 		}
 		
-		public Token getName() {
+		astify.token.Token getName() {
 			return name;
 		}
 		
 		@Override
 		public String toString() {
-			return "(TypedName"
-			     + "\n\ttype = " + type.toString().replace("\n", "\n\t")
-			     + "\n\tname = " + name.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(TypedName\n"
+				 + "	type = " + type.toString().replace("\n", "\n\t") + "\n"
+				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof TypedName)) return false;
 			TypedName otherCasted = (TypedName) other;
-			return type.equals(otherCasted.type) && name.equals(otherCasted.name);
+			return type.equals(otherCasted.type)
+				&& name.equals(otherCasted.name);
 		}
 		
 		@Override
 		public int hashCode() {
-			return type.hashCode() + 31 * name.hashCode();
+			return hash(type, name);
 		}
 	}
 	
-	static class MatcherTarget extends Capture.ObjectCapture {
-		private final Token property;
+	static class MatcherTarget extends astify.Capture.ObjectCapture {
+		private final astify.token.Token property;
 		
-		protected MatcherTarget(Position spanningPosition, Token property) {
+		MatcherTarget(astify.core.Position spanningPosition, astify.token.Token property) {
 			super(spanningPosition);
-			assert property != null;
+			
+			assert property != null : "'property' is null";
+			
 			this.property = property;
 		}
 		
-		public Token getProperty() {
+		astify.token.Token getProperty() {
 			return property;
 		}
 		
 		@Override
 		public String toString() {
-			return "(MatcherTarget"
-			     + "\n\tproperty = " + property.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(MatcherTarget\n"
+				 + "	property = " + property.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -165,28 +174,30 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return property.hashCode();
+			return hash(property);
 		}
 	}
 	
-	static class PatternList extends Capture.ObjectCapture {
+	static class PatternList extends astify.Capture.ObjectCapture {
 		private final List<RootPattern> patterns;
 		
-		protected PatternList(Position spanningPosition, List<RootPattern> patterns) {
+		PatternList(astify.core.Position spanningPosition, List<RootPattern> patterns) {
 			super(spanningPosition);
-			assert patterns != null;
+			
+			assert patterns != null : "'patterns' is null";
+			
 			this.patterns = patterns;
 		}
 		
-		public List<RootPattern> getPatterns() {
+		List<RootPattern> getPatterns() {
 			return patterns;
 		}
 		
 		@Override
 		public String toString() {
-			return "(PatternList"
-			     + "\n\tpatterns = " + patterns.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(PatternList\n"
+				 + "	patterns = " + patterns.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -198,110 +209,118 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return patterns.hashCode();
+			return hash(patterns);
 		}
 	}
 	
-	static class NamedPropertyList extends Capture.ObjectCapture {
-		private final Token name;
+	static class NamedPropertyList extends astify.Capture.ObjectCapture {
+		private final astify.token.Token name;
 		private final List<TypedName> properties;
 		
-		protected NamedPropertyList(Position spanningPosition, Token name, List<TypedName> properties) {
+		NamedPropertyList(astify.core.Position spanningPosition, astify.token.Token name, List<TypedName> properties) {
 			super(spanningPosition);
-			assert name != null;
-			assert properties != null;
+			
+			assert name != null : "'name' is null";
+			assert properties != null : "'properties' is null";
+			
 			this.name = name;
 			this.properties = properties;
 		}
 		
-		public Token getName() {
+		astify.token.Token getName() {
 			return name;
 		}
 		
-		public List<TypedName> getProperties() {
+		List<TypedName> getProperties() {
 			return properties;
 		}
 		
 		@Override
 		public String toString() {
-			return "(NamedPropertyList"
-			     + "\n\tname = " + name.toString().replace("\n", "\n\t")
-			     + "\n\tproperties = " + properties.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(NamedPropertyList\n"
+				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
+				 + "	properties = " + properties.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof NamedPropertyList)) return false;
 			NamedPropertyList otherCasted = (NamedPropertyList) other;
-			return name.equals(otherCasted.name) && properties.equals(otherCasted.properties);
+			return name.equals(otherCasted.name)
+				&& properties.equals(otherCasted.properties);
 		}
 		
 		@Override
 		public int hashCode() {
-			return name.hashCode() + 31 * properties.hashCode();
+			return hash(name, properties);
 		}
 	}
 	
-	static class Call extends Capture.ObjectCapture implements Parameter {
-		private final Token functionName;
+	static class Call extends astify.Capture.ObjectCapture implements Parameter {
+		private final astify.token.Token functionName;
 		private final List<Parameter> parameters;
 		
-		protected Call(Position spanningPosition, Token functionName, List<Parameter> parameters) {
+		Call(astify.core.Position spanningPosition, astify.token.Token functionName, List<Parameter> parameters) {
 			super(spanningPosition);
-			assert functionName != null;
-			assert parameters != null;
+			
+			assert functionName != null : "'functionName' is null";
+			assert parameters != null : "'parameters' is null";
+			
 			this.functionName = functionName;
 			this.parameters = parameters;
 		}
 		
-		public Token getFunctionName() {
+		astify.token.Token getFunctionName() {
 			return functionName;
 		}
 		
-		public List<Parameter> getParameters() {
+		List<Parameter> getParameters() {
 			return parameters;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Call"
-			     + "\n\tfunctionName = " + functionName.toString().replace("\n", "\n\t")
-			     + "\n\tparameters = " + parameters.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Call\n"
+				 + "	functionName = " + functionName.toString().replace("\n", "\n\t") + "\n"
+				 + "	parameters = " + parameters.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof Call)) return false;
 			Call otherCasted = (Call) other;
-			return functionName.equals(otherCasted.functionName) && parameters.equals(otherCasted.parameters);
+			return functionName.equals(otherCasted.functionName)
+				&& parameters.equals(otherCasted.parameters);
 		}
 		
 		@Override
 		public int hashCode() {
-			return functionName.hashCode() + 31 * parameters.hashCode();
+			return hash(functionName, parameters);
 		}
 	}
 	
-	static class Reference extends Capture.ObjectCapture implements Parameter {
-		private final Token reference;
+	static class Reference extends astify.Capture.ObjectCapture implements Parameter {
+		private final astify.token.Token reference;
 		
-		protected Reference(Position spanningPosition, Token reference) {
+		Reference(astify.core.Position spanningPosition, astify.token.Token reference) {
 			super(spanningPosition);
-			assert reference != null;
+			
+			assert reference != null : "'reference' is null";
+			
 			this.reference = reference;
 		}
 		
-		public Token getReference() {
+		astify.token.Token getReference() {
 			return reference;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Reference"
-			     + "\n\treference = " + reference.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Reference\n"
+				 + "	reference = " + reference.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -313,32 +332,33 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return reference.hashCode();
+			return hash(reference);
 		}
 	}
 	
 	interface Parameter extends astify.core.Positioned {
-		
-	}
+		}
 	
-	static class TypeReference extends Capture.ObjectCapture implements UncapturingPattern {
-		private final Token type;
+	static class TypeReference extends astify.Capture.ObjectCapture implements UncapturingPattern {
+		private final astify.token.Token type;
 		
-		protected TypeReference(Position spanningPosition, Token type) {
+		TypeReference(astify.core.Position spanningPosition, astify.token.Token type) {
 			super(spanningPosition);
-			assert type != null;
+			
+			assert type != null : "'type' is null";
+			
 			this.type = type;
 		}
 		
-		public Token getType() {
+		astify.token.Token getType() {
 			return type;
 		}
 		
 		@Override
 		public String toString() {
-			return "(TypeReference"
-			     + "\n\ttype = " + type.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(TypeReference\n"
+				 + "	type = " + type.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -350,28 +370,30 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return type.hashCode();
+			return hash(type);
 		}
 	}
 	
-	static class Terminal extends Capture.ObjectCapture implements UncapturingPattern {
-		private final Token terminal;
+	static class Terminal extends astify.Capture.ObjectCapture implements UncapturingPattern {
+		private final astify.token.Token terminal;
 		
-		protected Terminal(Position spanningPosition, Token terminal) {
+		Terminal(astify.core.Position spanningPosition, astify.token.Token terminal) {
 			super(spanningPosition);
-			assert terminal != null;
+			
+			assert terminal != null : "'terminal' is null";
+			
 			this.terminal = terminal;
 		}
 		
-		public Token getTerminal() {
+		astify.token.Token getTerminal() {
 			return terminal;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Terminal"
-			     + "\n\tterminal = " + terminal.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Terminal\n"
+				 + "	terminal = " + terminal.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -383,151 +405,162 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return terminal.hashCode();
+			return hash(terminal);
 		}
 	}
 	
-	static class Function extends Capture.ObjectCapture implements UncapturingPattern {
-		private final Token name;
+	static class Function extends astify.Capture.ObjectCapture implements UncapturingPattern {
+		private final astify.token.Token name;
 		private final List<UncapturingPattern> patterns;
 		
-		protected Function(Position spanningPosition, Token name, List<UncapturingPattern> patterns) {
+		Function(astify.core.Position spanningPosition, astify.token.Token name, List<UncapturingPattern> patterns) {
 			super(spanningPosition);
-			assert name != null;
-			assert patterns != null;
+			
+			assert name != null : "'name' is null";
+			assert patterns != null : "'patterns' is null";
+			
 			this.name = name;
 			this.patterns = patterns;
 		}
 		
-		public Token getName() {
+		astify.token.Token getName() {
 			return name;
 		}
 		
-		public List<UncapturingPattern> getPatterns() {
+		List<UncapturingPattern> getPatterns() {
 			return patterns;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Function"
-			     + "\n\tname = " + name.toString().replace("\n", "\n\t")
-			     + "\n\tpatterns = " + patterns.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Function\n"
+				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
+				 + "	patterns = " + patterns.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof Function)) return false;
 			Function otherCasted = (Function) other;
-			return name.equals(otherCasted.name) && patterns.equals(otherCasted.patterns);
+			return name.equals(otherCasted.name)
+				&& patterns.equals(otherCasted.patterns);
 		}
 		
 		@Override
 		public int hashCode() {
-			return name.hashCode() + 31 * patterns.hashCode();
+			return hash(name, patterns);
 		}
 	}
 	
-	static class Matcher extends Capture.ObjectCapture implements Pattern {
+	static class Matcher extends astify.Capture.ObjectCapture implements Pattern {
 		private final UncapturingPattern source;
 		private final MatcherTarget targetProperty;
 		
-		protected Matcher(Position spanningPosition, UncapturingPattern source, MatcherTarget targetProperty) {
+		Matcher(astify.core.Position spanningPosition, UncapturingPattern source, MatcherTarget targetProperty) {
 			super(spanningPosition);
-			assert source != null;
-			assert targetProperty != null;
+			
+			assert source != null : "'source' is null";
+			assert targetProperty != null : "'targetProperty' is null";
+			
 			this.source = source;
 			this.targetProperty = targetProperty;
 		}
 		
-		public UncapturingPattern getSource() {
+		UncapturingPattern getSource() {
 			return source;
 		}
 		
-		public MatcherTarget getTargetProperty() {
+		MatcherTarget getTargetProperty() {
 			return targetProperty;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Matcher"
-			     + "\n\tsource = " + source.toString().replace("\n", "\n\t")
-			     + "\n\ttargetProperty = " + targetProperty.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Matcher\n"
+				 + "	source = " + source.toString().replace("\n", "\n\t") + "\n"
+				 + "	targetProperty = " + targetProperty.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof Matcher)) return false;
 			Matcher otherCasted = (Matcher) other;
-			return source.equals(otherCasted.source) && targetProperty.equals(otherCasted.targetProperty);
+			return source.equals(otherCasted.source)
+				&& targetProperty.equals(otherCasted.targetProperty);
 		}
 		
 		@Override
 		public int hashCode() {
-			return source.hashCode() + 31 * targetProperty.hashCode();
+			return hash(source, targetProperty);
 		}
 	}
 	
-	static class PropertyReference extends Capture.ObjectCapture implements Pattern {
-		private final Token property;
+	static class PropertyReference extends astify.Capture.ObjectCapture implements Pattern {
+		private final astify.token.Token property;
 		private final List<UncapturingPattern> qualifier;
 		
-		protected PropertyReference(Position spanningPosition, Token property, List<UncapturingPattern> qualifier) {
+		PropertyReference(astify.core.Position spanningPosition, astify.token.Token property, List<UncapturingPattern> qualifier) {
 			super(spanningPosition);
-			assert property != null;
-			assert qualifier != null;
+			
+			assert property != null : "'property' is null";
+			assert qualifier != null : "'qualifier' is null";
+			
 			this.property = property;
 			this.qualifier = qualifier;
 		}
 		
-		public Token getProperty() {
+		astify.token.Token getProperty() {
 			return property;
 		}
 		
-		public List<UncapturingPattern> getQualifier() {
+		List<UncapturingPattern> getQualifier() {
 			return qualifier;
 		}
 		
 		@Override
 		public String toString() {
-			return "(PropertyReference"
-			     + "\n\tproperty = " + property.toString().replace("\n", "\n\t")
-			     + "\n\tqualifier = " + qualifier.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(PropertyReference\n"
+				 + "	property = " + property.toString().replace("\n", "\n\t") + "\n"
+				 + "	qualifier = " + qualifier.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof PropertyReference)) return false;
 			PropertyReference otherCasted = (PropertyReference) other;
-			return property.equals(otherCasted.property) && qualifier.equals(otherCasted.qualifier);
+			return property.equals(otherCasted.property)
+				&& qualifier.equals(otherCasted.qualifier);
 		}
 		
 		@Override
 		public int hashCode() {
-			return property.hashCode() + 31 * qualifier.hashCode();
+			return hash(property, qualifier);
 		}
 	}
 	
-	static class Optional extends Capture.ObjectCapture implements RootPattern {
+	static class Optional extends astify.Capture.ObjectCapture implements RootPattern {
 		private final List<Pattern> patterns;
 		
-		protected Optional(Position spanningPosition, List<Pattern> patterns) {
+		Optional(astify.core.Position spanningPosition, List<Pattern> patterns) {
 			super(spanningPosition);
-			assert patterns != null;
+			
+			assert patterns != null : "'patterns' is null";
+			
 			this.patterns = patterns;
 		}
 		
-		public List<Pattern> getPatterns() {
+		List<Pattern> getPatterns() {
 			return patterns;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Optional"
-			     + "\n\tpatterns = " + patterns.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Optional\n"
+				 + "	patterns = " + patterns.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -539,89 +572,92 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return patterns.hashCode();
+			return hash(patterns);
 		}
 	}
 	
-	static class Extend extends Capture.ObjectCapture {
+	static class Extend extends astify.Capture.ObjectCapture {
 		private final NamedPropertyList properties;
 		private final List<PatternList> patterns;
 		private final Call call;
 		
-		protected Extend(Position spanningPosition, NamedPropertyList properties, List<PatternList> patterns, Call call) {
+		Extend(astify.core.Position spanningPosition, NamedPropertyList properties, List<PatternList> patterns, Call call) {
 			super(spanningPosition);
-			assert properties != null;
-			assert patterns != null;
-			assert call != null;
+			
+			assert properties != null : "'properties' is null";
+			assert patterns != null : "'patterns' is null";
+			assert call != null : "'call' is null";
+			
 			this.properties = properties;
 			this.patterns = patterns;
 			this.call = call;
 		}
 		
-		public NamedPropertyList getProperties() {
+		NamedPropertyList getProperties() {
 			return properties;
 		}
 		
-		public List<PatternList> getPatterns() {
+		List<PatternList> getPatterns() {
 			return patterns;
 		}
 		
-		public Call getCall() {
+		Call getCall() {
 			return call;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Extend"
-			     + "\n\tproperties = " + properties.toString().replace("\n", "\n\t")
-			     + "\n\tpatterns = " + patterns.toString().replace("\n", "\n\t")
-			     + "\n\tcall = " + call.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Extend\n"
+				 + "	properties = " + properties.toString().replace("\n", "\n\t") + "\n"
+				 + "	patterns = " + patterns.toString().replace("\n", "\n\t") + "\n"
+				 + "	call = " + call.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof Extend)) return false;
 			Extend otherCasted = (Extend) other;
-			return properties.equals(otherCasted.properties) && patterns.equals(otherCasted.patterns) && call.equals(otherCasted.call);
+			return properties.equals(otherCasted.properties)
+				&& patterns.equals(otherCasted.patterns)
+				&& call.equals(otherCasted.call);
 		}
 		
 		@Override
 		public int hashCode() {
-			return properties.hashCode() + 31 * patterns.hashCode() + 961 * call.hashCode();
+			return hash(properties, patterns, call);
 		}
 	}
 	
-	interface UncapturingPattern extends astify.core.Positioned, Pattern {
-		
-	}
+	interface UncapturingPattern extends Pattern, astify.core.Positioned {
+		}
 	
-	interface Pattern extends astify.core.Positioned, RootPattern {
-		
-	}
+	interface Pattern extends RootPattern, astify.core.Positioned {
+		}
 	
 	interface RootPattern extends astify.core.Positioned {
-		
-	}
+		}
 	
-	static class AbstractTypeDefinition extends Capture.ObjectCapture implements Definition {
+	static class AbstractTypeDefinition extends astify.Capture.ObjectCapture implements Definition {
 		private final NamedPropertyList properties;
 		
-		protected AbstractTypeDefinition(Position spanningPosition, NamedPropertyList properties) {
+		AbstractTypeDefinition(astify.core.Position spanningPosition, NamedPropertyList properties) {
 			super(spanningPosition);
-			assert properties != null;
+			
+			assert properties != null : "'properties' is null";
+			
 			this.properties = properties;
 		}
 		
-		public NamedPropertyList getProperties() {
+		NamedPropertyList getProperties() {
 			return properties;
 		}
 		
 		@Override
 		public String toString() {
-			return "(AbstractTypeDefinition"
-			     + "\n\tproperties = " + properties.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(AbstractTypeDefinition\n"
+				 + "	properties = " + properties.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -633,264 +669,282 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return properties.hashCode();
+			return hash(properties);
 		}
 	}
 	
-	static class TypeDefinition extends Capture.ObjectCapture implements Definition {
+	static class TypeDefinition extends astify.Capture.ObjectCapture implements Definition {
 		private final NamedPropertyList properties;
 		private final List<PatternList> patternLists;
 		
-		protected TypeDefinition(Position spanningPosition, NamedPropertyList properties, List<PatternList> patternLists) {
+		TypeDefinition(astify.core.Position spanningPosition, NamedPropertyList properties, List<PatternList> patternLists) {
 			super(spanningPosition);
-			assert properties != null;
-			assert patternLists != null;
+			
+			assert properties != null : "'properties' is null";
+			assert patternLists != null : "'patternLists' is null";
+			
 			this.properties = properties;
 			this.patternLists = patternLists;
 		}
 		
-		public NamedPropertyList getProperties() {
+		NamedPropertyList getProperties() {
 			return properties;
 		}
 		
-		public List<PatternList> getPatternLists() {
+		List<PatternList> getPatternLists() {
 			return patternLists;
 		}
 		
 		@Override
 		public String toString() {
-			return "(TypeDefinition"
-			     + "\n\tproperties = " + properties.toString().replace("\n", "\n\t")
-			     + "\n\tpatternLists = " + patternLists.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(TypeDefinition\n"
+				 + "	properties = " + properties.toString().replace("\n", "\n\t") + "\n"
+				 + "	patternLists = " + patternLists.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof TypeDefinition)) return false;
 			TypeDefinition otherCasted = (TypeDefinition) other;
-			return properties.equals(otherCasted.properties) && patternLists.equals(otherCasted.patternLists);
+			return properties.equals(otherCasted.properties)
+				&& patternLists.equals(otherCasted.patternLists);
 		}
 		
 		@Override
 		public int hashCode() {
-			return properties.hashCode() + 31 * patternLists.hashCode();
+			return hash(properties, patternLists);
 		}
 	}
 	
-	static class Union extends Capture.ObjectCapture implements Definition {
-		private final Token typename;
-		private final List<Token> subtypes;
+	static class Union extends astify.Capture.ObjectCapture implements Definition {
+		private final astify.token.Token typename;
+		private final List<astify.token.Token> subtypes;
 		
-		protected Union(Position spanningPosition, Token typename, List<Token> subtypes) {
+		Union(astify.core.Position spanningPosition, astify.token.Token typename, List<astify.token.Token> subtypes) {
 			super(spanningPosition);
-			assert typename != null;
-			assert subtypes != null;
+			
+			assert typename != null : "'typename' is null";
+			assert subtypes != null : "'subtypes' is null";
+			
 			this.typename = typename;
 			this.subtypes = subtypes;
 		}
 		
-		public Token getTypename() {
+		astify.token.Token getTypename() {
 			return typename;
 		}
 		
-		public List<Token> getSubtypes() {
+		List<astify.token.Token> getSubtypes() {
 			return subtypes;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Union"
-			     + "\n\ttypename = " + typename.toString().replace("\n", "\n\t")
-			     + "\n\tsubtypes = " + subtypes.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Union\n"
+				 + "	typename = " + typename.toString().replace("\n", "\n\t") + "\n"
+				 + "	subtypes = " + subtypes.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof Union)) return false;
 			Union otherCasted = (Union) other;
-			return typename.equals(otherCasted.typename) && subtypes.equals(otherCasted.subtypes);
+			return typename.equals(otherCasted.typename)
+				&& subtypes.equals(otherCasted.subtypes);
 		}
 		
 		@Override
 		public int hashCode() {
-			return typename.hashCode() + 31 * subtypes.hashCode();
+			return hash(typename, subtypes);
 		}
 	}
 	
-	static class AliasDefinition extends Capture.ObjectCapture implements Definition {
-		private final Token name;
+	static class AliasDefinition extends astify.Capture.ObjectCapture implements Definition {
+		private final astify.token.Token name;
 		private final TypedName property;
 		private final List<PatternList> patternLists;
 		
-		protected AliasDefinition(Position spanningPosition, Token name, TypedName property, List<PatternList> patternLists) {
+		AliasDefinition(astify.core.Position spanningPosition, astify.token.Token name, TypedName property, List<PatternList> patternLists) {
 			super(spanningPosition);
-			assert name != null;
-			assert patternLists != null;
+			
+			assert name != null : "'name' is null";
+			assert patternLists != null : "'patternLists' is null";
+			
 			this.name = name;
 			this.property = property;
 			this.patternLists = patternLists;
 		}
 		
-		public Token getName() {
+		astify.token.Token getName() {
 			return name;
 		}
 		
-		public TypedName getProperty() {
+		TypedName getProperty() {
 			return property;
 		}
 		
-		public List<PatternList> getPatternLists() {
+		List<PatternList> getPatternLists() {
 			return patternLists;
 		}
 		
 		@Override
 		public String toString() {
-			return "(AliasDefinition"
-			     + "\n\tname = " + name.toString().replace("\n", "\n\t")
-			     + "\n\tproperty = " + property.toString().replace("\n", "\n\t")
-			     + "\n\tpatternLists = " + patternLists.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(AliasDefinition\n"
+				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
+				 + "	property = " + (property == null ? "null" : property.toString().replace("\n", "\n\t")) + "\n"
+				 + "	patternLists = " + patternLists.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof AliasDefinition)) return false;
 			AliasDefinition otherCasted = (AliasDefinition) other;
-			return name.equals(otherCasted.name) && property.equals(otherCasted.property) && patternLists.equals(otherCasted.patternLists);
+			return name.equals(otherCasted.name)
+				&& (property == null ? otherCasted.property == null : property.equals(otherCasted.property))
+				&& patternLists.equals(otherCasted.patternLists);
 		}
 		
 		@Override
 		public int hashCode() {
-			return name.hashCode() + 31 * property.hashCode() + 961 * patternLists.hashCode();
+			return hash(name, property, patternLists);
 		}
 	}
 	
-	static class ExternDefinition extends Capture.ObjectCapture implements Definition {
+	static class ExternDefinition extends astify.Capture.ObjectCapture implements Definition {
 		private final Type returnType;
-		private final Token name;
+		private final astify.token.Token name;
 		private final List<TypedName> parameters;
 		private final List<PatternList> patternLists;
 		
-		protected ExternDefinition(Position spanningPosition, Type returnType, Token name, List<TypedName> parameters, List<PatternList> patternLists) {
+		ExternDefinition(astify.core.Position spanningPosition, Type returnType, astify.token.Token name, List<TypedName> parameters, List<PatternList> patternLists) {
 			super(spanningPosition);
-			assert returnType != null;
-			assert name != null;
-			assert parameters != null;
-			assert patternLists != null;
+			
+			assert returnType != null : "'returnType' is null";
+			assert name != null : "'name' is null";
+			assert parameters != null : "'parameters' is null";
+			assert patternLists != null : "'patternLists' is null";
+			
 			this.returnType = returnType;
 			this.name = name;
 			this.parameters = parameters;
 			this.patternLists = patternLists;
 		}
 		
-		public Type getReturnType() {
+		Type getReturnType() {
 			return returnType;
 		}
 		
-		public Token getName() {
+		astify.token.Token getName() {
 			return name;
 		}
 		
-		public List<TypedName> getParameters() {
+		List<TypedName> getParameters() {
 			return parameters;
 		}
 		
-		public List<PatternList> getPatternLists() {
+		List<PatternList> getPatternLists() {
 			return patternLists;
 		}
 		
 		@Override
 		public String toString() {
-			return "(ExternDefinition"
-			     + "\n\treturnType = " + returnType.toString().replace("\n", "\n\t")
-			     + "\n\tname = " + name.toString().replace("\n", "\n\t")
-			     + "\n\tparameters = " + parameters.toString().replace("\n", "\n\t")
-			     + "\n\tpatternLists = " + patternLists.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(ExternDefinition\n"
+				 + "	returnType = " + returnType.toString().replace("\n", "\n\t") + "\n"
+				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
+				 + "	parameters = " + parameters.toString().replace("\n", "\n\t") + "\n"
+				 + "	patternLists = " + patternLists.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof ExternDefinition)) return false;
 			ExternDefinition otherCasted = (ExternDefinition) other;
-			return returnType.equals(otherCasted.returnType) && name.equals(otherCasted.name) && parameters.equals(otherCasted.parameters) && patternLists.equals(otherCasted.patternLists);
+			return returnType.equals(otherCasted.returnType)
+				&& name.equals(otherCasted.name)
+				&& parameters.equals(otherCasted.parameters)
+				&& patternLists.equals(otherCasted.patternLists);
 		}
 		
 		@Override
 		public int hashCode() {
-			return returnType.hashCode() + 31 * name.hashCode() + 961 * parameters.hashCode() + 29791 * patternLists.hashCode();
+			return hash(returnType, name, parameters, patternLists);
 		}
 	}
 	
-	static class ApplyStatement extends Capture.ObjectCapture implements Statement {
+	static class ApplyStatement extends astify.Capture.ObjectCapture implements Statement {
 		private final Call call;
 		private final List<PatternList> patternLists;
 		
-		protected ApplyStatement(Position spanningPosition, Call call, List<PatternList> patternLists) {
+		ApplyStatement(astify.core.Position spanningPosition, Call call, List<PatternList> patternLists) {
 			super(spanningPosition);
-			assert call != null;
-			assert patternLists != null;
+			
+			assert call != null : "'call' is null";
+			assert patternLists != null : "'patternLists' is null";
+			
 			this.call = call;
 			this.patternLists = patternLists;
 		}
 		
-		public Call getCall() {
+		Call getCall() {
 			return call;
 		}
 		
-		public List<PatternList> getPatternLists() {
+		List<PatternList> getPatternLists() {
 			return patternLists;
 		}
 		
 		@Override
 		public String toString() {
-			return "(ApplyStatement"
-			     + "\n\tcall = " + call.toString().replace("\n", "\n\t")
-			     + "\n\tpatternLists = " + patternLists.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(ApplyStatement\n"
+				 + "	call = " + call.toString().replace("\n", "\n\t") + "\n"
+				 + "	patternLists = " + patternLists.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof ApplyStatement)) return false;
 			ApplyStatement otherCasted = (ApplyStatement) other;
-			return call.equals(otherCasted.call) && patternLists.equals(otherCasted.patternLists);
+			return call.equals(otherCasted.call)
+				&& patternLists.equals(otherCasted.patternLists);
 		}
 		
 		@Override
 		public int hashCode() {
-			return call.hashCode() + 31 * patternLists.hashCode();
+			return hash(call, patternLists);
 		}
 	}
 	
-	interface Definition extends astify.core.Positioned, Statement {
-		
-	}
+	interface Definition extends Statement, astify.core.Positioned {
+		}
 	
 	interface Statement extends astify.core.Positioned {
-		
-	}
+		}
 	
-	static class Grammar extends Capture.ObjectCapture {
-		private final Token name;
+	static class Grammar extends astify.Capture.ObjectCapture {
+		private final astify.token.Token name;
 		
-		protected Grammar(Position spanningPosition, Token name) {
+		Grammar(astify.core.Position spanningPosition, astify.token.Token name) {
 			super(spanningPosition);
-			assert name != null;
+			
+			assert name != null : "'name' is null";
+			
 			this.name = name;
 		}
 		
-		public Token getName() {
+		astify.token.Token getName() {
 			return name;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Grammar"
-			     + "\n\tname = " + name.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Grammar\n"
+				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -902,7 +956,7 @@ class ASTifyGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return name.hashCode();
+			return hash(name);
 		}
 	}
 }

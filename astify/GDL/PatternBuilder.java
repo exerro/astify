@@ -57,6 +57,11 @@ class PatternBuilder {
 
         patternBuilderClass.addMethod("private void init" + grammar.getClassName() + "() {\n\t" + String.join("\n\n", builtPatterns).replace("\n", "\n\t") + " \n}");
 
+        patternBuilderClass.addMethod("@Override\n" +
+                "public astify.Pattern getMain() {\n" +
+                "\treturn lookup(\"" + NameHelper.toLowerLispCase(grammar.getName()) + "\");\n" +
+                "}");
+
         for (HandlerBuilder handlerBuilder : handlerBuilders) {
             patternBuilderClass.addMethod(handlerBuilder.build());
         }
@@ -118,7 +123,7 @@ class PatternBuilder {
             String s = buildPatternList(patternList);
 
             names.add("ref(\"" + thisName + "\")");
-            builtPatterns.add("define(\"" + thisName + "\", this::" + callName + ",\n\t" + s.replace("\n", "\n\t") + "\n);");
+            builtPatterns.add("sequence(\"" + thisName + "\", this::" + callName + ",\n\t" + s.replace("\n", "\n\t") + "\n);");
             handlerBuilders.add(new ObjectTypeHandlerBuilder(callName, type, patternList));
         }
 
@@ -128,7 +133,7 @@ class PatternBuilder {
             String s = buildPatternList(application.getPatternList());
 
             names.add("ref(\"" + thisName + "\")");
-            builtPatterns.add("define(\"" + thisName + "\", this::" + callName + ",\n\t" + s.replace("\n", "\n\t") + "\n);");
+            builtPatterns.add("sequence(\"" + thisName + "\", this::" + callName + ",\n\t" + s.replace("\n", "\n\t") + "\n);");
             handlerBuilders.add(new ExternApplicationHandlerBuilder(callName, application));
         }
 
@@ -162,7 +167,7 @@ class PatternBuilder {
             String s = buildPatternList(patternList);
 
             names.add("ref(\"" + thisName + "\")");
-            builtPatterns.add("define(\"" + thisName + "\"" + (needsHandler ? ", this::" + callName : "") + ",\n\t" + s.replace("\n", "\n\t") + "\n);");
+            builtPatterns.add("sequence(\"" + thisName + "\"" + (needsHandler ? ", this::" + callName : "") + ",\n\t" + s.replace("\n", "\n\t") + "\n);");
 
             if (needsHandler) {
                 handlerBuilders.add(new AliasHandlerBuilder(callName, definition.getResult().getName(), patternList));
@@ -189,7 +194,14 @@ class PatternBuilder {
             return buildPattern(((Pattern.Matcher) pattern).getSource());
         }
         else if (pattern instanceof Pattern.TypeReference) {
-            return "ref(\"" + NameHelper.toLowerLispCase(((Pattern.TypeReference) pattern).getReference().getName()) + "\")";
+            Type type = ((Pattern.TypeReference) pattern).getReference();
+
+            if (type instanceof Type.TokenType) {
+                return "token(" + type.getName() + ")";
+            }
+            else {
+                return "ref(\"" + NameHelper.toLowerLispCase(type.getName()) + "\")";
+            }
         }
         else if (pattern instanceof Pattern.ListPattern) {
             if (((Pattern.ListPattern) pattern).hasSeparator()) {
@@ -209,7 +221,9 @@ class PatternBuilder {
             return "optional(sequence(\n\t" + buildPatternList(((Pattern.Optional) pattern).getPatterns()).replace("\n", "\n\t") + "\n))";
         }
         else if (pattern instanceof Pattern.Terminal) {
-            return (((Pattern.Terminal) pattern).isKeyword() ? "keyword" : "symbol") + "(" + ((Pattern.Terminal) pattern).getValue() + ")";
+            String value = ((Pattern.Terminal) pattern).getValue();
+            value = "\"" + value.substring(1, value.length() - 1).replace("\"", "\\\"").replace("\\'", "'") + "\"";
+            return (((Pattern.Terminal) pattern).isKeyword() ? "keyword" : "symbol") + "(" + value + ")";
         }
 
         throw new Error("what " + pattern.getClass().getName());

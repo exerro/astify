@@ -25,7 +25,7 @@ public class GrammarDefinition {
 
     public static ASTifyGrammar parse(String filename) throws TokenException, ParserException, FileNotFoundException {
         Source source = new Source.FileSource(filename);
-        ASTifyGrammarPatternBuilder builder = new ASTifyGrammarPatternBuilder();
+        astify.PatternBuilder builder = new ASTifyGrammarPatternBuilderBase();
         TokenGenerator generator = new ASTifyGrammarTokenGenerator(source, builder.getKeywords());
         Parser parser = new Parser();
 

@@ -147,17 +147,17 @@ public abstract class Builder {
             constructorParameters.add(type + " " + name);
             constructorBody.add("this." + name + " = " + name + ";");
             fields.add("private final " + type + " " + name + ";");
-            getters.add(toString(getterAccess) + type + " get" + NameHelper.toUpperCamelCase(name) + "() {\n" +
+            getters.add(toString(getterAccess) + type + " " + NameHelper.getGetterName(name, type.toLowerCase().equals("boolean")) + "() {\n" +
                     "\treturn " + name + ";\n" +
                     "}");
 
             if (isOptional) {
-                toStringBodyTerms.add("\"\t" + name + " = \" + (" + name + " == null ? \"null\" : " + name + ".toString()) + \"\\n\"");
+                toStringBodyTerms.add("\"\t" + name + " = \" + (" + name + " == null ? \"null\" : " + name + ".toString().replace(\"\\n\", \"\\n\\t\")) + \"\\n\"");
                 equalsBodyTerms.add("(" + name + " == null ? otherCasted." + name + " == null : " + name + ".equals(otherCasted." + name + "))");
             }
             else {
                 constructorBodyAssertions.add("assert " + name + " != null : \"'" + name + "' is null\";");
-                toStringBodyTerms.add("\"\t" + name + " = \" + " + name + ".toString() + \"\\n\"");
+                toStringBodyTerms.add("\"\t" + name + " = \" + " + name + ".toString().replace(\"\\n\", \"\\n\\t\") + \"\\n\"");
                 equalsBodyTerms.add(name + ".equals(otherCasted." + name + ")");
             }
 
