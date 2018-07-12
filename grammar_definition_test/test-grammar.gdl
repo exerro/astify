@@ -1,14 +1,43 @@
 
-grammar TestGrammar
+grammar G
 
-abstract Number(Word value)
+NameStatement(Word name)
+: 'My' 'name' 'is' .name '.'
 
-Reference(Word reference)
-: .reference
+AgeStatement(Integer age)
+: 'I' 'am' .age 'years' 'old' '.'
 
-TestGrammar(Value[] values)
-: .values
+union Statement
+: NameStatement
+: AgeStatement
 
-union Value
-: Number
-: Reference
+G(Statement[] statements)
+: .statements
+
+/*
+Generated code will take some text like:
+
+	I am 3 years old. My name is Ben.
+
+And output:
+
+	[
+		(AgeStatement
+			age = 3
+		),
+		(NameStatement
+			name = "Ben"
+		)
+	]
+
+And if you give it this:
+	
+	I am 3 years old
+
+It'll complain like this:
+
+	myfile.txt: expected '.', got EOF
+	1 | I am 3 years old
+	                    ^
+
+*/

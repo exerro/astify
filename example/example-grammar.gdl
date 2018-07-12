@@ -1,5 +1,5 @@
 
-grammar ExampleGrammar
+grammar example-grammar
 
 NamedType(Word typename)
 : .typename
@@ -34,7 +34,7 @@ Operator(Symbol symbol)
 ExpressionStatement(Value value)
 : 'eval' .value
 
-ExampleGrammar(Statement[] statements)
+example-grammar(Statement[] statements)
 : .statements @EOF
 
 union Type

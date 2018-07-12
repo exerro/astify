@@ -7,6 +7,7 @@ import astify.ParserException;
 import astify.PatternBuilder;
 import astify.core.Source;
 import astify.token.DefaultTokenGenerator;
+import astify.token.Token;
 import astify.token.TokenException;
 import astify.token.TokenGenerator;
 
@@ -15,7 +16,7 @@ import java.io.FileNotFoundException;
 public class ExampleParser {
     public static void parse(String filePath) throws TokenException, ParserException, FileNotFoundException {
         Source source = new Source.FileSource(filePath);
-        PatternBuilder builder = new ExampleGrammarPatternBuilder();
+        PatternBuilder builder = new ExampleGrammarPatternBuilderBase();
         TokenGenerator generator = new DefaultTokenGenerator(source, builder.getKeywords());
         Parser parser = new Parser();
 

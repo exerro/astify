@@ -1,29 +1,28 @@
 package example;
 
-import astify.Capture;
-import astify.core.Position;
-import astify.token.Token;
-
+import static java.util.Objects.hash;
 import java.util.List;
 
-class ExampleGrammar extends Capture.ObjectCapture {
+class ExampleGrammar extends astify.Capture.ObjectCapture {
 	private final List<Statement> statements;
 	
-	protected ExampleGrammar(Position spanningPosition, List<Statement> statements) {
+	ExampleGrammar(astify.core.Position spanningPosition, List<Statement> statements) {
 		super(spanningPosition);
-		assert statements != null;
+		
+		assert statements != null : "'statements' is null";
+		
 		this.statements = statements;
 	}
 	
-	public List<Statement> getStatements() {
+	List<Statement> getStatements() {
 		return statements;
 	}
 	
 	@Override
 	public String toString() {
-		return "(ExampleGrammar"
-		     + "\n\tstatements = " + statements.toString().replace("\n", "\n\t")
-		     + "\n)";
+		return "(ExampleGrammar\n"
+			 + "	statements = " + statements.toString().replace("\n", "\n\t") + "\n"
+			 + ")";
 	}
 	
 	@Override
@@ -35,27 +34,29 @@ class ExampleGrammar extends Capture.ObjectCapture {
 	
 	@Override
 	public int hashCode() {
-		return statements.hashCode();
+		return hash(statements);
 	}
 	
-	static class NamedType extends Capture.ObjectCapture implements Type {
-		private final Token typename;
+	static class NamedType extends astify.Capture.ObjectCapture implements Type {
+		private final astify.token.Token typename;
 		
-		protected NamedType(Position spanningPosition, Token typename) {
+		NamedType(astify.core.Position spanningPosition, astify.token.Token typename) {
 			super(spanningPosition);
-			assert typename != null;
+			
+			assert typename != null : "'typename' is null";
+			
 			this.typename = typename;
 		}
 		
-		public Token getTypename() {
+		astify.token.Token getTypename() {
 			return typename;
 		}
 		
 		@Override
 		public String toString() {
-			return "(NamedType"
-			     + "\n\ttypename = " + typename.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(NamedType\n"
+				 + "	typename = " + typename.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -67,28 +68,30 @@ class ExampleGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return typename.hashCode();
+			return hash(typename);
 		}
 	}
 	
-	static class ListType extends Capture.ObjectCapture implements Type {
+	static class ListType extends astify.Capture.ObjectCapture implements Type {
 		private final Type subtype;
 		
-		protected ListType(Position spanningPosition, Type subtype) {
+		ListType(astify.core.Position spanningPosition, Type subtype) {
 			super(spanningPosition);
-			assert subtype != null;
+			
+			assert subtype != null : "'subtype' is null";
+			
 			this.subtype = subtype;
 		}
 		
-		public Type getSubtype() {
+		Type getSubtype() {
 			return subtype;
 		}
 		
 		@Override
 		public String toString() {
-			return "(ListType"
-			     + "\n\tsubtype = " + subtype.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(ListType\n"
+				 + "	subtype = " + subtype.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -100,28 +103,30 @@ class ExampleGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return subtype.hashCode();
+			return hash(subtype);
 		}
 	}
 	
-	static class IntegerValue extends Capture.ObjectCapture implements LiteralValue {
-		private final Token value;
+	static class IntegerValue extends astify.Capture.ObjectCapture implements LiteralValue {
+		private final astify.token.Token value;
 		
-		protected IntegerValue(Position spanningPosition, Token value) {
+		IntegerValue(astify.core.Position spanningPosition, astify.token.Token value) {
 			super(spanningPosition);
-			assert value != null;
+			
+			assert value != null : "'value' is null";
+			
 			this.value = value;
 		}
 		
-		public Token getValue() {
+		astify.token.Token getValue() {
 			return value;
 		}
 		
 		@Override
 		public String toString() {
-			return "(IntegerValue"
-			     + "\n\tvalue = " + value.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(IntegerValue\n"
+				 + "	value = " + value.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -133,28 +138,30 @@ class ExampleGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return value.hashCode();
+			return hash(value);
 		}
 	}
 	
-	static class StringValue extends Capture.ObjectCapture implements LiteralValue {
-		private final Token value;
+	static class StringValue extends astify.Capture.ObjectCapture implements LiteralValue {
+		private final astify.token.Token value;
 		
-		protected StringValue(Position spanningPosition, Token value) {
+		StringValue(astify.core.Position spanningPosition, astify.token.Token value) {
 			super(spanningPosition);
-			assert value != null;
+			
+			assert value != null : "'value' is null";
+			
 			this.value = value;
 		}
 		
-		public Token getValue() {
+		astify.token.Token getValue() {
 			return value;
 		}
 		
 		@Override
 		public String toString() {
-			return "(StringValue"
-			     + "\n\tvalue = " + value.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(StringValue\n"
+				 + "	value = " + value.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -166,28 +173,30 @@ class ExampleGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return value.hashCode();
+			return hash(value);
 		}
 	}
 	
-	static class IdentifierValue extends Capture.ObjectCapture implements PrimaryExpression {
-		private final Token identifier;
+	static class IdentifierValue extends astify.Capture.ObjectCapture implements PrimaryExpression {
+		private final astify.token.Token identifier;
 		
-		protected IdentifierValue(Position spanningPosition, Token identifier) {
+		IdentifierValue(astify.core.Position spanningPosition, astify.token.Token identifier) {
 			super(spanningPosition);
-			assert identifier != null;
+			
+			assert identifier != null : "'identifier' is null";
+			
 			this.identifier = identifier;
 		}
 		
-		public Token getIdentifier() {
+		astify.token.Token getIdentifier() {
 			return identifier;
 		}
 		
 		@Override
 		public String toString() {
-			return "(IdentifierValue"
-			     + "\n\tidentifier = " + identifier.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(IdentifierValue\n"
+				 + "	identifier = " + identifier.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -199,125 +208,135 @@ class ExampleGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return identifier.hashCode();
+			return hash(identifier);
 		}
 	}
 	
-	static class Declaration extends Capture.ObjectCapture implements Statement {
+	static class Declaration extends astify.Capture.ObjectCapture implements Statement {
 		private final Type type;
-		private final Token variable;
+		private final astify.token.Token variable;
 		private final Value value;
 		
-		protected Declaration(Position spanningPosition, Type type, Token variable, Value value) {
+		Declaration(astify.core.Position spanningPosition, Type type, astify.token.Token variable, Value value) {
 			super(spanningPosition);
-			assert type != null;
-			assert variable != null;
+			
+			assert type != null : "'type' is null";
+			assert variable != null : "'variable' is null";
+			
 			this.type = type;
 			this.variable = variable;
 			this.value = value;
 		}
 		
-		public Type getType() {
+		Type getType() {
 			return type;
 		}
 		
-		public Token getVariable() {
+		astify.token.Token getVariable() {
 			return variable;
 		}
 		
-		public Value getValue() {
+		Value getValue() {
 			return value;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Declaration"
-			     + "\n\ttype = " + type.toString().replace("\n", "\n\t")
-			     + "\n\tvariable = " + variable.toString().replace("\n", "\n\t")
-			     + "\n\tvalue = " + value.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Declaration\n"
+				 + "	type = " + type.toString().replace("\n", "\n\t") + "\n"
+				 + "	variable = " + variable.toString().replace("\n", "\n\t") + "\n"
+				 + "	value = " + (value == null ? "null" : value.toString().replace("\n", "\n\t")) + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof Declaration)) return false;
 			Declaration otherCasted = (Declaration) other;
-			return type.equals(otherCasted.type) && variable.equals(otherCasted.variable) && value.equals(otherCasted.value);
+			return type.equals(otherCasted.type)
+				&& variable.equals(otherCasted.variable)
+				&& (value == null ? otherCasted.value == null : value.equals(otherCasted.value));
 		}
 		
 		@Override
 		public int hashCode() {
-			return type.hashCode() + 31 * variable.hashCode() + 961 * value.hashCode();
+			return hash(type, variable, value);
 		}
 	}
 	
-	static class BinaryExpression extends Capture.ObjectCapture implements Value {
+	static class BinaryExpression extends astify.Capture.ObjectCapture implements Value {
 		private final PrimaryExpression lvalue;
 		private final Operator operator;
 		private final Value rvalue;
 		
-		protected BinaryExpression(Position spanningPosition, PrimaryExpression lvalue, Operator operator, Value rvalue) {
+		BinaryExpression(astify.core.Position spanningPosition, PrimaryExpression lvalue, Operator operator, Value rvalue) {
 			super(spanningPosition);
-			assert lvalue != null;
-			assert operator != null;
-			assert rvalue != null;
+			
+			assert lvalue != null : "'lvalue' is null";
+			assert operator != null : "'operator' is null";
+			assert rvalue != null : "'rvalue' is null";
+			
 			this.lvalue = lvalue;
 			this.operator = operator;
 			this.rvalue = rvalue;
 		}
 		
-		public PrimaryExpression getLvalue() {
+		PrimaryExpression getLvalue() {
 			return lvalue;
 		}
 		
-		public Operator getOperator() {
+		Operator getOperator() {
 			return operator;
 		}
 		
-		public Value getRvalue() {
+		Value getRvalue() {
 			return rvalue;
 		}
 		
 		@Override
 		public String toString() {
-			return "(BinaryExpression"
-			     + "\n\tlvalue = " + lvalue.toString().replace("\n", "\n\t")
-			     + "\n\toperator = " + operator.toString().replace("\n", "\n\t")
-			     + "\n\trvalue = " + rvalue.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(BinaryExpression\n"
+				 + "	lvalue = " + lvalue.toString().replace("\n", "\n\t") + "\n"
+				 + "	operator = " + operator.toString().replace("\n", "\n\t") + "\n"
+				 + "	rvalue = " + rvalue.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
 		public boolean equals(Object other) {
 			if (!(other instanceof BinaryExpression)) return false;
 			BinaryExpression otherCasted = (BinaryExpression) other;
-			return lvalue.equals(otherCasted.lvalue) && operator.equals(otherCasted.operator) && rvalue.equals(otherCasted.rvalue);
+			return lvalue.equals(otherCasted.lvalue)
+				&& operator.equals(otherCasted.operator)
+				&& rvalue.equals(otherCasted.rvalue);
 		}
 		
 		@Override
 		public int hashCode() {
-			return lvalue.hashCode() + 31 * operator.hashCode() + 961 * rvalue.hashCode();
+			return hash(lvalue, operator, rvalue);
 		}
 	}
 	
-	static class Operator extends Capture.ObjectCapture {
-		private final Token symbol;
+	static class Operator extends astify.Capture.ObjectCapture {
+		private final astify.token.Token symbol;
 		
-		protected Operator(Position spanningPosition, Token symbol) {
+		Operator(astify.core.Position spanningPosition, astify.token.Token symbol) {
 			super(spanningPosition);
-			assert symbol != null;
+			
+			assert symbol != null : "'symbol' is null";
+			
 			this.symbol = symbol;
 		}
 		
-		public Token getSymbol() {
+		astify.token.Token getSymbol() {
 			return symbol;
 		}
 		
 		@Override
 		public String toString() {
-			return "(Operator"
-			     + "\n\tsymbol = " + symbol.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(Operator\n"
+				 + "	symbol = " + symbol.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -329,28 +348,30 @@ class ExampleGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return symbol.hashCode();
+			return hash(symbol);
 		}
 	}
 	
-	static class ExpressionStatement extends Capture.ObjectCapture implements Statement {
+	static class ExpressionStatement extends astify.Capture.ObjectCapture implements Statement {
 		private final Value value;
 		
-		protected ExpressionStatement(Position spanningPosition, Value value) {
+		ExpressionStatement(astify.core.Position spanningPosition, Value value) {
 			super(spanningPosition);
-			assert value != null;
+			
+			assert value != null : "'value' is null";
+			
 			this.value = value;
 		}
 		
-		public Value getValue() {
+		Value getValue() {
 			return value;
 		}
 		
 		@Override
 		public String toString() {
-			return "(ExpressionStatement"
-			     + "\n\tvalue = " + value.toString().replace("\n", "\n\t")
-			     + "\n)";
+			return "(ExpressionStatement\n"
+				 + "	value = " + value.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
 		}
 		
 		@Override
@@ -362,27 +383,22 @@ class ExampleGrammar extends Capture.ObjectCapture {
 		
 		@Override
 		public int hashCode() {
-			return value.hashCode();
+			return hash(value);
 		}
 	}
 	
 	interface Type extends astify.core.Positioned {
-		
-	}
+		}
 	
-	interface LiteralValue extends astify.core.Positioned, PrimaryExpression {
-		
-	}
+	interface LiteralValue extends PrimaryExpression, astify.core.Positioned {
+		}
 	
 	interface PrimaryExpression extends astify.core.Positioned, Value {
-		
-	}
+		}
 	
 	interface Value extends astify.core.Positioned {
-		
-	}
+		}
 	
 	interface Statement extends astify.core.Positioned {
-		
-	}
+		}
 }
