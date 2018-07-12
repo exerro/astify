@@ -97,6 +97,7 @@ public abstract class Builder {
         private final List<String> getters = new ArrayList<>();
         private final List<String> methods = new ArrayList<>();
 
+        private boolean methodsEnabled = true;
         private final List<String> toStringBodyTerms = new ArrayList<>();
         private final List<String> equalsBodyTerms = new ArrayList<>();
         private final List<String> hashCodeBodyTerms = new ArrayList<>();
@@ -163,8 +164,16 @@ public abstract class Builder {
             hashCodeBodyTerms.add(name);
         }
 
+        void addConstructorStatement(String statement) {
+            constructorBody.add(statement);
+        }
+
         void addMethod(String method) {
             methods.add(method);
+        }
+
+        void setMethodsEnabled(boolean methodsEnabled) {
+            this.methodsEnabled = methodsEnabled;
         }
 
         void addSubtype(Builder builder) {
@@ -209,50 +218,51 @@ public abstract class Builder {
                 helper.ensureLinesIf(2, !methods.isEmpty());
                 helper.write(concat(methods, "\n\n"));
 
-                helper.ensureLines(2);
-                helper.write("@Override\npublic String toString()");
-                helper.enterBlock();
+                if (methodsEnabled) {
+                    helper.ensureLines(2);
+                    helper.write("@Override\npublic String toString()");
+                    helper.enterBlock();
 
-                    helper.write("return \"(" + className);
+                        helper.write("return \"(" + className);
 
-                    if (fields.isEmpty()) {
-                        helper.write(")\";");
-                    }
-                    else {
-                        helper.write("\\n\"\n\t + " + concat(toStringBodyTerms, "\n\t + "));
-                        helper.write("\n\t + \")\";");
-                    }
+                        if (fields.isEmpty()) {
+                            helper.write(")\";");
+                        } else {
+                            helper.write("\\n\"\n\t + " + concat(toStringBodyTerms, "\n\t + "));
+                            helper.write("\n\t + \")\";");
+                        }
 
-                helper.exitBlock();
+                    helper.exitBlock();
 
-                helper.ensureLines(2);
-                helper.write("@Override\npublic boolean equals(Object other)");
-                helper.enterBlock();
+                    helper.ensureLines(2);
+                    helper.write("@Override\npublic boolean equals(Object other)");
+                    helper.enterBlock();
 
-                    if (fields.isEmpty()) {
-                        helper.write("return other instanceof " + className + ";");
-                    }
-                    else {
-                        helper.writeLine("if (!(other instanceof " + className + ")) return false;");
-                        helper.writeLine(className + " otherCasted = (" + className + ") other;");
-                        helper.write("return " + concat(equalsBodyTerms, "\n\t&& "));
-                        helper.write(";");
-                    }
+                        if (fields.isEmpty()) {
+                            helper.write("return other instanceof " + className + ";");
+                        }
+                        else {
+                            helper.writeLine("if (!(other instanceof " + className + ")) return false;");
+                            helper.writeLine(className + " otherCasted = (" + className + ") other;");
+                            helper.write("return " + concat(equalsBodyTerms, "\n\t&& "));
+                            helper.write(";");
+                        }
 
-                helper.exitBlock();
+                    helper.exitBlock();
 
-                helper.ensureLines(2);
-                helper.write("@Override\npublic int hashCode()");
-                helper.enterBlock();
+                    helper.ensureLines(2);
+                    helper.write("@Override\npublic int hashCode()");
+                    helper.enterBlock();
 
-                if (fields.isEmpty()) {
-                    helper.write("return 0;");
+                        if (fields.isEmpty()) {
+                            helper.write("return 0;");
+                        }
+                        else {
+                            helper.write("return hash(" + concat(hashCodeBodyTerms) + ");");
+                        }
+
+                    helper.exitBlock();
                 }
-                else {
-                    helper.write("return hash(" + concat(hashCodeBodyTerms) + ");");
-                }
-
-            helper.exitBlock();
 
                 if (!subtypes.isEmpty()) {
                     for (Builder subtype : subtypes) {

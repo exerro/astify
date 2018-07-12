@@ -21,12 +21,14 @@ abstract class Type {
 
     abstract boolean castsTo(Type type);
 
+    @Override public String toString() {
+        return getName();
+    }
 
 
-
-
-    static class ObjectType extends Type {
+    static class ObjectType extends Type implements IExtendable {
         private final List<List<Pattern>> patternLists = new ArrayList<>();
+        private final List<ExternApplication> applications = new ArrayList<>();
         private final PropertyList properties = new PropertyList();
         private final boolean isAbstract;
 
@@ -47,7 +49,7 @@ abstract class Type {
             properties.add(property);
         }
 
-        void addPattern(List<Pattern> patternList) {
+        void addPatternList(List<Pattern> patternList) {
             patternLists.add(patternList);
         }
 
@@ -55,19 +57,27 @@ abstract class Type {
             return isAbstract;
         }
 
-        @Override
-        boolean castsTo(Type other) {
+        @Override boolean castsTo(Type other) {
             if (other instanceof Union) {
                 return ((Union) other).getMembers().contains(this);
             }
 
             return other == this;
         }
+
+        @Override public List<ExternApplication> getApplications() {
+            return applications;
+        }
+
+        @Override public void addApplication(ExternApplication application) {
+            applications.add(application);
+        }
     }
 
 
-    static class Union extends Type {
+    static class Union extends Type implements IExtendable {
         private final List<Type> members = new ArrayList<>();
+        private List<ExternApplication> applications;
 
         Union(String name) {
             super(name);
@@ -167,6 +177,14 @@ abstract class Type {
 
             return false;
         }
+
+        @Override public List<ExternApplication> getApplications() {
+            return applications;
+        }
+
+        @Override public void addApplication(ExternApplication application) {
+            applications.add(application);
+        }
     }
 
     static class TokenType extends Type {
@@ -186,7 +204,13 @@ abstract class Type {
         }
 
         @Override boolean castsTo(Type type) {
-            return type instanceof TokenType && tokenType == ((TokenType) type).getTokenType();
+            return type instanceof TokenType && typeCasts(tokenType, ((TokenType) type).getTokenType());
+        }
+
+        private static boolean typeCasts(astify.token.TokenType source, astify.token.TokenType target) {
+            if (source == target) return true;
+            if (source == astify.token.TokenType.Keyword && target == astify.token.TokenType.Word) return true;
+            return source == astify.token.TokenType.Integer && target == astify.token.TokenType.Float;
         }
     }
 
@@ -227,6 +251,10 @@ abstract class Type {
         @Override boolean castsTo(Type type) {
             return type instanceof ListType && this.type.castsTo(((ListType) type).type);
         }
+
+        @Override public String toString() {
+            return type.toString() + "[]";
+        }
     }
 
     static class OptionalType extends Type {
@@ -248,5 +276,36 @@ abstract class Type {
         @Override boolean castsTo(Type type) {
             return type instanceof OptionalType && this.type.castsTo(((OptionalType) type).type);
         }
+
+        @Override public String toString() {
+            return type.toString() + "?";
+        }
+    }
+
+    static class AliasType extends Type {
+        private final Definition.AliasDefinition alias;
+
+        AliasType(Definition.AliasDefinition alias) {
+            super(alias.getName());
+            this.alias = alias;
+        }
+
+        Definition.AliasDefinition getAlias() {
+            return alias;
+        }
+
+        @Override boolean isAbstract() {
+            return false;
+        }
+
+        @Override boolean castsTo(Type type) {
+            return alias.hasResult() && alias.getResult().getType().castsTo(type);
+        }
+    }
+
+
+    interface IExtendable {
+        List<ExternApplication> getApplications();
+        void addApplication(ExternApplication application);
     }
 }

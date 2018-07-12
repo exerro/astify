@@ -5,8 +5,7 @@ grammar ASTify-grammar
 
 // utilities
 Type(Word name, bool optional, bool lst)
-: .name .optional('?')
-: .name .lst('[' ']')
+: .name .optional('?') .lst('[' ']')
 
 TypedName(Type type, Word name)
 : .type .name
@@ -15,7 +14,7 @@ MatcherTarget(Word property)
 : .property
 
 PatternList(RootPattern[] patterns)
-: .patterns
+: ':' (@RootPattern -> patterns) .patterns
 
 NamedPropertyList(Word name, TypedName[] properties)
 : .name '(' [.properties(',')] ')'
@@ -56,6 +55,9 @@ PropertyReference(Word property, UncapturingPattern[] qualifier)
 Optional(Pattern[] patterns)
 : '[' .patterns ']'
 
+Extend(NamedPropertyList properties, PatternList[] patterns, Call call)
+: 'extend' .properties ':' (@PatternList -> patterns) 'in' .call
+
 // pattern unions
 union UncapturingPattern
 : TypeReference
@@ -73,24 +75,24 @@ union RootPattern
 
 
 
-// definitions
+// statements
 AbstractTypeDefinition(NamedPropertyList properties)
 : 'abstract' .properties
 
-TypeDefinition(NamedPropertyList properties, PatternList[] patterns)
-: .properties ':' .patterns(':')
+TypeDefinition(NamedPropertyList properties, PatternList[] patternLists)
+: .properties .patternLists
 
 Union(Word typename, Word[] subtypes)
 : 'union' .typename ':' .subtypes(':')
 
-AliasDefinition(Word name, PatternList patternList)
-: 'alias' .name ':' .patternList
+AliasDefinition(Word name, TypedName? property, PatternList[] patternLists)
+: 'alias' .name ['(' .property ')'] (@PatternList -> patternLists) .patternLists
 
-ExternDefinition(Type returnType, Word name, TypedName[] parameters)
-: 'extern' .returnType .name '(' [.parameters(',')] ')'
+ExternDefinition(Type returnType, Word name, TypedName[] parameters, PatternList[] patternLists)
+: 'extern' .returnType .name '(' [.parameters(',')] ')' .patternLists
 
-Extend(NamedPropertyList properties, PatternList patternList, Call call)
-: 'extend' .properties ':' .patternList 'in' .call
+ApplyStatement(Call call, PatternList[] patternLists)
+: 'apply' (@Call -> call) (@PatternList -> patternLists) .patternLists
 
 // definition union
 union Definition
@@ -101,8 +103,8 @@ union Definition
 : ExternDefinition
 
 union Statement
+: ApplyStatement
 : Definition
-: Extend
 
 
 

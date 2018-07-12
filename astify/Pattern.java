@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class Pattern {
+
     private List<MatchPredicate> predicates = new ArrayList<>();
 
     public Pattern addPredicate(MatchPredicate predicate) {

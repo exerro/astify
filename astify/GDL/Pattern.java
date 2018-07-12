@@ -1,10 +1,17 @@
 package astify.GDL;
 
+import astify.core.Position;
+import astify.token.Token;
+import astify.token.TokenType;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 abstract class Pattern {
+    // used for UncapturingPatterns
+    abstract Type getType();
+
     static class Optional extends Pattern {
         private final List<Pattern> optionalParts;
 
@@ -14,6 +21,10 @@ abstract class Pattern {
 
         List<Pattern> getPatterns() {
             return optionalParts;
+        }
+
+        @Override Type getType() {
+            return null;
         }
 
         @Override public String toString() {
@@ -78,6 +89,10 @@ abstract class Pattern {
             return hasSeparator;
         }
 
+        @Override Type getType() {
+            return new Type.ListType(item.getType());
+        }
+
         @Override public String toString() {
             return (hasSeparator ? "delim" : "list") + "(" + item.toString() + (hasSeparator ? ", " + Util.listToString(separator) : "") + ")";
         }
@@ -100,6 +115,10 @@ abstract class Pattern {
             return isKeyword;
         }
 
+        @Override Type getType() {
+            return new Type.TokenType(isKeyword() ? TokenType.Keyword : TokenType.Symbol);
+        }
+
         @Override public String toString() {
             return value;
         }
@@ -113,6 +132,10 @@ abstract class Pattern {
         }
 
         Type getReference() {
+            return reference;
+        }
+
+        @Override Type getType() {
             return reference;
         }
 
@@ -138,183 +161,193 @@ abstract class Pattern {
             return targetProperty;
         }
 
+        @Override Type getType() {
+            return null;
+        }
+
         @Override public String toString() {
             return "(" + source.toString() + " -> " + targetProperty + ")";
         }
     }
 
-    /*static<T extends ASTifyGrammar.RootPattern> List<Pattern> createFromList(List<T> sourcePatterns, PropertyList properties, Scope scope) throws GDLException {
+    static<T extends ASTifyGrammar.RootPattern> List<Pattern> createFromList(List<T> sourcePatterns, PropertyList properties, Grammar grammar) {
         List<Pattern> result = new ArrayList<>();
 
         for (ASTifyGrammar.RootPattern pattern : sourcePatterns) {
-            result.add(createFrom(pattern, properties, scope));
+            result.add(createFrom(pattern, properties, grammar));
         }
 
         return result;
     }
 
-    private static Pattern createFrom(ASTifyGrammar.RootPattern sourcePattern, PropertyList properties, Scope scope) throws GDLException {
+    private static Pattern createFrom(ASTifyGrammar.RootPattern sourcePattern, PropertyList properties, Grammar grammar) {
         if (sourcePattern instanceof ASTifyGrammar.TypeReference) {
             Token sourceTypeName = ((ASTifyGrammar.TypeReference) sourcePattern).getType();
 
-            if (scope.exists(sourceTypeName.getValue())) {
-                Type type = scope.lookup(sourceTypeName.getValue());
+            if (grammar.getScope().isType(sourceTypeName.getValue())) {
+                Type type = grammar.getScope().lookupType(sourceTypeName.getValue());
 
-                if (type instanceof Type.DefinedType) {
-                    Definition definition = ((Type.DefinedType) type).getDefinition();
-
-                    if (definition.isAbstract()) {
-                        throw new GDLException("Cannot refer to abstract type '" + type.getName() + "'", sourcePattern.getPosition());
-                    }
+                if (type.isAbstract()) {
+                    grammar.error("Cannot refer to abstract type '" + sourceTypeName.getValue() + "'", sourceTypeName.getPosition());
                 }
 
                 return new TypeReference(type);
             }
-            else {
-                throw new GDLException("Cannot find type '" + sourceTypeName.getValue() + "'", sourceTypeName.getPosition());
-            }
-        }
-
-        else if (sourcePattern instanceof ASTifyGrammar.Terminal) {
-            boolean isKeyword = true;
-            String tokenValue = ((ASTifyGrammar.Terminal) sourcePattern).getTerminal().getValue();
-
-            for (int i = 1; i < tokenValue.length() - 1; ++i) {
-                char c = tokenValue.charAt(i);
-                if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && c != '_') {
-                    isKeyword = false;
-                    break;
+            else if (grammar.getScope().exists(sourceTypeName.getValue())) {
+                if (grammar.getScope().lookup(sourceTypeName.getValue()) instanceof Definition.AliasDefinition) {
+                    return new TypeReference(new Type.AliasType((Definition.AliasDefinition) grammar.getScope().lookup(sourceTypeName.getValue())));
+                }
+                else {
+                    grammar.error("'" + sourceTypeName.getValue() + "' is not a type", sourceTypeName.getPosition());
                 }
             }
-
-            return new Terminal(tokenValue, isKeyword);
+            else {
+                grammar.error("Cannot find type '" + sourceTypeName.getValue() + "'", sourceTypeName.getPosition());
+            }
         }
-
+        else if (sourcePattern instanceof ASTifyGrammar.Terminal) {
+            String tokenValue = ((ASTifyGrammar.Terminal) sourcePattern).getTerminal().getValue();
+            return new Terminal(tokenValue, !containsSymbol(tokenValue));
+        }
         else if (sourcePattern instanceof ASTifyGrammar.Function) {
             Token functionNameToken = (((ASTifyGrammar.Function) sourcePattern).getName());
             List<Pattern> parameters = new ArrayList<>();
+            Pattern parameter;
+            boolean isNull = false;
 
             for (ASTifyGrammar.UncapturingPattern pat : ((ASTifyGrammar.Function) sourcePattern).getPatterns()) {
-                parameters.add(createFrom(pat, properties, scope));
+                parameters.add(parameter = createFrom(pat, properties, grammar));
+                if (parameter == null) isNull = true;
             }
 
             switch (functionNameToken.getValue()) {
                 case "list":
                     if (parameters.size() != 1) {
-                        throw new GDLException("Incorrect number of parameters for `list(pat)` (" + parameters.size() + ")", sourcePattern.getPosition());
+                        grammar.error("Incorrect number of parameters for `list(pat)` (" + parameters.size() + ")", sourcePattern.getPosition());
                     }
 
-                    return new ListPattern(parameters.get(0));
+                    return isNull ? null : new ListPattern(parameters.get(0));
 
                 case "delim":
                     if (parameters.size() != 2) {
-                        throw new GDLException("Incorrect number of parameters for `delim(pat, sep)` (" + parameters.size() + ")", sourcePattern.getPosition());
+                        grammar.error("Incorrect number of parameters for `delim(pat, sep)` (" + parameters.size() + ")", sourcePattern.getPosition());
                     }
 
-                    return new ListPattern(parameters.get(0), parameters.get(1));
+                    return isNull ? null : new ListPattern(parameters.get(0), parameters.get(1));
 
                 default:
-                    throw new GDLException("Unknown function '" + functionNameToken.getValue() + "'", functionNameToken.getPosition());
+                    grammar.error("Unknown function '" + functionNameToken.getValue() + "'", functionNameToken.getPosition());
             }
         }
-
         else if (sourcePattern instanceof ASTifyGrammar.Matcher) {
-            Pattern resolvedSourcePattern = createFrom(((ASTifyGrammar.Matcher) sourcePattern).getSource(), properties, scope);
+            Pattern resolvedSourcePattern = createFrom(((ASTifyGrammar.Matcher) sourcePattern).getSource(), properties, grammar);
             Token targetPropertyToken = ((ASTifyGrammar.Matcher) sourcePattern).getTargetProperty().getProperty();
+
+            if (resolvedSourcePattern == null) return null;
 
             if (properties.exists(targetPropertyToken.getValue())) {
                 Property targetProperty = properties.lookup(targetPropertyToken.getValue());
 
-                if (resolvedSourcePattern instanceof ListPattern) {
-                    if (!targetProperty.isList()) {
-                        throw new GDLException("Incompatible types: attempt to assign list pattern to non-list property", sourcePattern.getPosition());
-                    }
-                }
-                else if (resolvedSourcePattern instanceof Terminal) {
-                    if (!(targetProperty.getType() instanceof Type.TokenType)) {
-                        throw new GDLException("Incompatible types: cannot assign token literal to non-token property", sourcePattern.getPosition());
-                    }
-                    else if (((Terminal) resolvedSourcePattern).isKeyword() && ((Type.TokenType) targetProperty.getType()).getTokenType() != TokenType.Keyword) {
-                        throw new GDLException("Incompatible types: cannot assign keyword literal to non-keyword property", sourcePattern.getPosition());
-                    }
-                    else if (!((Terminal) resolvedSourcePattern).isKeyword() && ((Type.TokenType) targetProperty.getType()).getTokenType() != TokenType.Symbol) {
-                        throw new GDLException("Incompatible types: cannot assign symbol literal to non-symbol property", sourcePattern.getPosition());
-                    }
-                }
-                else if (resolvedSourcePattern instanceof TypeReference) {
-                    Type sourceType = ((TypeReference) resolvedSourcePattern).getReference();
-
-                    if (sourceType instanceof Type.TokenType) {
-                        if (!sourceType.equals(targetProperty.getType())) {
-                            throw new GDLException("Incompatible types: cannot convert between token types " + sourceType.getName() + " and " + targetProperty.getType().getName(), sourcePattern.getPosition());
-                        }
-                    }
-                    else if (sourceType instanceof Type.DefinedType) {
-                        Definition sourceDefinition = ((Type.DefinedType) sourceType).getDefinition();
-
-                        if (targetProperty.getType() instanceof Type.DefinedType) {
-                            if (!sourceDefinition.castsTo(((Type.DefinedType) targetProperty.getType()).getDefinition())) {
-                                throw new GDLException("Incompatible types: cannot convert '" + sourceType.getName() + "' to '" + targetProperty.getType().getName() + "'", sourcePattern.getPosition());
-                            }
-                        }
-                        else {
-                            throw new GDLException("Incompatible types: cannot convert '" + sourceType.getName() + "' to '" + targetProperty.getType().getName() + "'", sourcePattern.getPosition());
-                        }
-                    }
-                    else if (sourceType instanceof Type.BooleanType) {
-                        throw new GDLException("Incompatible types: cannot use type `bool` in matcher", sourcePattern.getPosition());
-                    }
-                }
+                if (!validateTypes(resolvedSourcePattern.getType(), targetProperty.getType(), grammar, sourcePattern.getPosition())) return null;
 
                 return new Matcher(resolvedSourcePattern, targetPropertyToken.getValue());
             }
             else {
-                throw new GDLException("Undefined property '" + targetPropertyToken.getValue() + "'", targetPropertyToken.getPosition());
+                grammar.error("No such property '" + targetPropertyToken.getValue() + "'", targetPropertyToken.getPosition());
             }
         }
-
         else if (sourcePattern instanceof ASTifyGrammar.PropertyReference) {
             Token propertyToken = ((ASTifyGrammar.PropertyReference) sourcePattern).getProperty();
 
             if (!properties.exists(propertyToken.getValue())) {
-                throw new GDLException("Reference to undefined property '" + propertyToken.getValue() + "'", propertyToken.getPosition());
+                grammar.error("Reference to undefined property '" + propertyToken.getValue() + "'", propertyToken.getPosition());
+                return null;
             }
 
-            List<Pattern> qualifier = createFromList(((ASTifyGrammar.PropertyReference) sourcePattern).getQualifier(), properties, scope);
+            List<Pattern> qualifier = createFromList(((ASTifyGrammar.PropertyReference) sourcePattern).getQualifier(), properties, grammar);
             Property property = properties.lookup(propertyToken.getValue());
             Type expectedType = property.getType();
             Pattern resultingPattern;
 
-            if (expectedType instanceof Type.DefinedType) {
-                Definition definition = ((Type.DefinedType) expectedType).getDefinition();
+            if (expectedType instanceof Type.OptionalType) {
+                expectedType = ((Type.OptionalType) expectedType).getType();
+            }
 
-                if (definition.isAbstract()) {
-                    throw new GDLException("Cannot refer to abstract type '" + expectedType.getName() + "'", sourcePattern.getPosition());
-                }
+            if (expectedType.isAbstract()) {
+                grammar.error("Cannot refer to property with abstract type '" + expectedType.getName() + "'", sourcePattern.getPosition());
             }
 
             // if the targetProperty property is a list, we need a ListPattern(pat [, delim])
-            if (property.isList()) {
-                resultingPattern = new Matcher(new ListPattern(new TypeReference(expectedType), qualifier.size() > 0 ? qualifier : null), property.getName());
+            if (expectedType instanceof Type.ListType) {
+                Pattern listTypeRef = new TypeReference(((Type.ListType) expectedType).getType());
+                Pattern list = new ListPattern(listTypeRef, qualifier.size() > 0 ? qualifier : null);
+                resultingPattern = new Matcher(list, property.getName());
             }
             // if the targetProperty property is a boolean, its value is true if a match is found
             else if (expectedType instanceof Type.BooleanType) {
-                // property will not be optional
+                // property will not be
+                if (qualifier.size() == 0) {
+                    grammar.error("Qualifier required for property with boolean type", sourcePattern.getPosition());
+                }
+
                 resultingPattern = new OptionalCapture(qualifier, property.getName());
             }
-            // otherwise, simply refer a type ref
             else {
+                if (qualifier.size() != 0) {
+                    grammar.error("Qualifier invalid for property with type '" + expectedType.getName() + "'", sourcePattern.getPosition());
+                }
+
                 resultingPattern = new Matcher(new TypeReference(expectedType), property.getName());
             }
 
             return resultingPattern;
         }
-
         else if (sourcePattern instanceof ASTifyGrammar.Optional) {
-            List<Pattern> patterns = createFromList(((ASTifyGrammar.Optional) sourcePattern).getPatterns(), properties, scope);
+            List<Pattern> patterns = createFromList(((ASTifyGrammar.Optional) sourcePattern).getPatterns(), properties, grammar);
             return new Optional(patterns);
         }
-
         return null;
-    }*/
+    }
+
+    private static boolean containsSymbol(String tokenValue) {
+        for (int i = 1; i < tokenValue.length() - 1; ++i) {
+            char c = tokenValue.charAt(i);
+            if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && c != '_') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean validateTypes(Type sourceType, Type targetType, Grammar grammar, Position position) {
+        if (targetType instanceof Type.OptionalType) {
+            targetType = ((Type.OptionalType) targetType).getType();
+        }
+
+        if (targetType instanceof Type.ListType && sourceType.castsTo(((Type.ListType) targetType).getType())) {
+            return true;
+        }
+
+        if (!sourceType.castsTo(targetType)) {
+            String aliasText = "";
+
+            if (sourceType instanceof Type.AliasType) {
+                if (((Type.AliasType) sourceType).getAlias().hasResult()) {
+                    aliasText = " (aliased " + ((Type.AliasType) sourceType).getAlias().getResult().getType().getName() + ")";
+                }
+                else {
+                    aliasText = " (no aliased type)";
+                }
+            }
+
+            grammar.error(
+                    "Incompatible types: cannot assign type " + sourceType.getName() + aliasText + " to type " + targetType.getName(),
+                    position
+            );
+            return false;
+        }
+
+        return true;
+    }
 }

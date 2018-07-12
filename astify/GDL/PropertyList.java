@@ -39,4 +39,12 @@ public class PropertyList {
     Iterator<Property> iterator() {
         return properties.iterator();
     }
+
+    int size() {
+        return properties.size();
+    }
+
+    Property get(int i) {
+        return properties.get(i);
+    }
 }

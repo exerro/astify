@@ -6,28 +6,10 @@ import astify.token.Token;
 import java.util.*;
 
 class Grammar {
-    static class PatternExtension {
-        private final List<Pattern> patternList;
-        private final Definition.ExternDefinition definition;
-
-        PatternExtension(List<Pattern> patternList, Definition.ExternDefinition definition) {
-            this.patternList = patternList;
-            this.definition = definition;
-        }
-
-        List<Pattern> getPatternList() {
-            return patternList;
-        }
-
-        Definition.ExternDefinition getDefinition() {
-            return definition;
-        }
-    }
-
+    // TODO: tidy code and add validation to ObjectType patternLists (count)
     private final Scope scope = new Scope();
     private final String name, className;
 
-    private final List<PatternExtension> patternExtensions = new ArrayList<>();
     private final List<GDLException> exceptions = new ArrayList<>();
 
     Grammar(String name) {
@@ -57,7 +39,7 @@ class Grammar {
         return !exceptions.isEmpty();
     }
 
-    private void error(String message, Position position) {
+    void error(String message, Position position) {
         exceptions.add(new GDLException(message, position));
     }
 
@@ -74,11 +56,16 @@ class Grammar {
         }
 
         if (!hasException()) {
+            bindAllApplications(grammar.getStatements());
             bindAllPatternLists(grammar.getStatements());
-            registerPatternExtensions(grammar.getStatements());
         }
     }
 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    // registers all the definitions, who knew
     private void registerDefinitions(List<ASTifyGrammar.Statement> statements, ASTifyGrammar.Grammar grammar) {
         for (ASTifyGrammar.Statement statement : statements) {
             if (statement instanceof ASTifyGrammar.Definition) {
@@ -105,7 +92,7 @@ class Grammar {
             ASTifyGrammar.TypeDefinition def = (ASTifyGrammar.TypeDefinition) definition;
 
             name = def.getProperties().getName();
-            resolvedDefinition = new Definition.TypeDefinition(new Type.ObjectType(name.getValue(), true), name.getPosition());
+            resolvedDefinition = new Definition.TypeDefinition(new Type.ObjectType(name.getValue(), false), name.getPosition());
         }
         else if (definition instanceof ASTifyGrammar.Union) {
             ASTifyGrammar.Union def = (ASTifyGrammar.Union) definition;
@@ -139,6 +126,11 @@ class Grammar {
         }
     }
 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    // registers properties for types, aliases, and externs
     private void registerAllProperties(List<ASTifyGrammar.Statement> statements) {
         for (ASTifyGrammar.Statement statement : statements) {
             if (statement instanceof ASTifyGrammar.TypeDefinition) {
@@ -146,6 +138,11 @@ class Grammar {
             }
             else if (statement instanceof ASTifyGrammar.AbstractTypeDefinition) {
                 registerProperties(((ASTifyGrammar.AbstractTypeDefinition) statement).getProperties());
+            }
+            else if (statement instanceof ASTifyGrammar.AliasDefinition) {
+                if (((ASTifyGrammar.AliasDefinition) statement).getProperty() != null) {
+                    registerProperty((ASTifyGrammar.AliasDefinition) statement);
+                }
             }
             else if (statement instanceof ASTifyGrammar.ExternDefinition) {
                 registerParameters((ASTifyGrammar.ExternDefinition) statement);
@@ -155,48 +152,52 @@ class Grammar {
 
     private void registerProperties(ASTifyGrammar.NamedPropertyList properties) {
         Type.ObjectType object = (Type.ObjectType) scope.lookupType(properties.getName().getValue());
-        Set<Util.Pair<String, Position>> definedProperties = new HashSet<>();
+
+        for (Iterator<Property> it = resolvePropertyList(properties.getProperties(), "property").iterator(); it.hasNext(); ) {
+            object.addProperty(it.next());
+        }
+    }
+
+    private void registerProperty(ASTifyGrammar.AliasDefinition statement) {
+        ASTifyGrammar.TypedName typedName = statement.getProperty();
+        Definition.AliasDefinition definition = (Definition.AliasDefinition) scope.lookup(statement.getName().getValue());
         Type propertyType;
 
-        for (ASTifyGrammar.TypedName typedName : properties.getProperties()) {
-            String propertyName = typedName.getName().getValue();
-            boolean wasFound = false;
-
-            for (Util.Pair<String, Position> pair : definedProperties) {
-                if (pair.a.equals(propertyName)) {
-                    error(
-                            "Redefinition of property '" + propertyName + "'",
-                            typedName.getPosition(),
-                            "previously defined at",
-                            pair.b
-                    );
-                    wasFound = true;
-                    break;
-                }
+        if ((propertyType = resolveType(typedName.getType())) != null) {
+            if (propertyType instanceof Type.ObjectType || propertyType instanceof Type.Union || propertyType instanceof Type.TokenType) {
+                definition.setResult(propertyType, typedName.getName().getValue());
             }
-
-            if (!wasFound) {
-                definedProperties.add(new Util.Pair<>(typedName.getName().getValue(), typedName.getPosition()));
-            }
-
-            if ((propertyType = resolveType(typedName.getType())) != null) {
-                object.addProperty(new Property(propertyType, typedName.getName().getValue()));
+            else {
+                error("Invalid type for alias property", typedName.getType().getPosition());
             }
         }
     }
 
     private void registerParameters(ASTifyGrammar.ExternDefinition definition) {
         Definition.ExternDefinition def = (Definition.ExternDefinition) scope.lookup(definition.getName().getValue());
-        Set<Util.Pair<String, Position>> parameters = new HashSet<>();
         Type resolvedType;
 
-        for (ASTifyGrammar.TypedName parameter : definition.getParameters()) {
+        for (Iterator<Property> it = resolvePropertyList(definition.getParameters(), "parameter").iterator(); it.hasNext(); ) {
+            def.addParameter(it.next());
+        }
+
+        if ((resolvedType = resolveType(definition.getReturnType())) != null) {
+            def.setReturnType(resolvedType);
+        }
+    }
+
+    private PropertyList resolvePropertyList(List<ASTifyGrammar.TypedName> typedNames, String s) {
+        PropertyList result = new PropertyList();
+        Set<Util.Pair<String, Position>> cache = new HashSet<>();
+        Type resolvedType;
+
+        for (ASTifyGrammar.TypedName parameter : typedNames) {
             boolean wasFound = false;
 
-            for (Util.Pair<String, Position> param : parameters) {
+            for (Util.Pair<String, Position> param : cache) {
                 if (param.a.equals(parameter.getName().getValue())) {
                     error(
-                            "Redefinition of parameter '" + param.a + "'",
+                            "Redefinition of " + s + " '" + param.a + "'",
                             parameter.getPosition(),
                             "previously defined at",
                             param.b
@@ -207,17 +208,15 @@ class Grammar {
             }
 
             if (!wasFound) {
-                parameters.add(new Util.Pair<>(parameter.getName().getValue(), parameter.getPosition()));
+                cache.add(new Util.Pair<>(parameter.getName().getValue(), parameter.getPosition()));
             }
 
             if ((resolvedType = resolveType(parameter.getType())) != null) {
-                def.addParameter(resolvedType, parameter.getName().getValue());
+                result.add(new Property(resolvedType, parameter.getName().getValue()));
             }
         }
 
-        if ((resolvedType = resolveType(definition.getReturnType())) != null) {
-            def.setReturnType(resolvedType);
-        }
+        return result;
     }
 
     private Type resolveType(ASTifyGrammar.Type type) {
@@ -225,11 +224,21 @@ class Grammar {
             Type resolvedType = scope.lookupType(type.getName().getValue());
 
             if (type.isOptional()) {
-                resolvedType = new Type.OptionalType(resolvedType);
+                if (resolvedType instanceof Type.BooleanType) {
+                    error("Invalid type declaration '" + resolvedType.getName() + "?'", type.getPosition());
+                }
+                else {
+                    resolvedType = new Type.OptionalType(resolvedType);
+                }
             }
 
             if (type.isLst()) {
-                resolvedType = new Type.ListType(resolvedType);
+                if (resolvedType instanceof Type.BooleanType) {
+                    error("Invalid type declaration '" + resolvedType.getName() + "[]'", type.getPosition());
+                }
+                else {
+                    resolvedType = new Type.ListType(resolvedType);
+                }
             }
 
             return resolvedType;
@@ -248,6 +257,10 @@ class Grammar {
 
         return null;
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     private void registerAllUnionMembers(List<ASTifyGrammar.Statement> statements) {
         for (ASTifyGrammar.Statement statement : statements) {
@@ -278,46 +291,310 @@ class Grammar {
         }
     }
 
-    private void bindAllPatternLists(List<ASTifyGrammar.Statement> statements) {
 
-    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private void registerPatternExtensions(List<ASTifyGrammar.Statement> statements) {
+
+    private void bindAllApplications(List<ASTifyGrammar.Statement> statements) {
         for (ASTifyGrammar.Statement statement : statements) {
-            if (statement instanceof ASTifyGrammar.Extend) {
-                registerPatternExtension((ASTifyGrammar.Extend) statement);
+            if (statement instanceof ASTifyGrammar.ApplyStatement) {
+                bindApplications(((ASTifyGrammar.ApplyStatement) statement).getPatternLists(), ((ASTifyGrammar.ApplyStatement) statement).getCall());
+            }
+            else if (statement instanceof ASTifyGrammar.ExternDefinition) {
+                if (!((ASTifyGrammar.ExternDefinition) statement).getPatternLists().isEmpty()) {
+                    List<ASTifyGrammar.Parameter> parameters = new ArrayList<>();
+
+                    for (ASTifyGrammar.TypedName parameter : ((ASTifyGrammar.ExternDefinition) statement).getParameters()) {
+                        parameters.add(new ASTifyGrammar.Reference(parameter.getName().getPosition(), parameter.getName()));
+                    }
+
+                    ASTifyGrammar.Call call = new ASTifyGrammar.Call(
+                            ((ASTifyGrammar.ExternDefinition) statement).getName().getPosition(),
+                            ((ASTifyGrammar.ExternDefinition) statement).getName(),
+                            parameters
+                    );
+
+                    bindApplications(((ASTifyGrammar.ExternDefinition) statement).getPatternLists(), call);
+                }
             }
         }
     }
 
-    private void registerPatternExtension(ASTifyGrammar.Extend extension) {
-        // do stuff with patternExtensions
+    private void bindApplications(List<ASTifyGrammar.PatternList> patternLists, ASTifyGrammar.Call call) {
+        if (validateCall(call)) return;
+        ExternApplication.Call resultingCall = resolveCall(call);
+
+        if (resultingCall == null) return;
+
+        PropertyList propertyList = resolvePropertyList(resultingCall);
+
+        for (ASTifyGrammar.PatternList patternList : patternLists) {
+            bindApplication(patternList, resultingCall, propertyList);
+        }
     }
 
-    /*
-    private void bindAllPatternLists(List<ASTifyGrammar.Statement> statements) throws GDLException {
+    private void bindApplication(ASTifyGrammar.PatternList patternList, ExternApplication.Call call, PropertyList propertyList) {
+        if (validatePatternList(patternList, propertyList, "property")) return;
+        List<Pattern> resolvedPatternList = Pattern.createFromList(patternList.getPatterns(), propertyList, this);
+
+        Type type = call.getExtern().getReturnType();
+
+        if (type instanceof Type.IExtendable) {
+            ((Type.IExtendable) type).addApplication(new ExternApplication(resolvedPatternList, call));
+        }
+        else {
+            error("Cannot apply syntax to type '" + type.toString() + "'", patternList.getPosition());
+        }
+    }
+
+    private PropertyList resolvePropertyList(ExternApplication.Call call) {
+        return resolvePropertyListRecursive(call, new PropertyList());
+    }
+
+    private PropertyList resolvePropertyListRecursive(ExternApplication.Call call, PropertyList propertyList) {
+        int i = 0;
+
+        for (ExternApplication.Parameter parameter : call.getParameters()) {
+            Type expectedType = call.getExtern().getParameters().get(i++).getType();
+
+            if (parameter instanceof ExternApplication.Reference) {
+                propertyList.add(new Property(expectedType, ((ExternApplication.Reference) parameter).getName()));
+            }
+            else {
+                resolvePropertyListRecursive((ExternApplication.Call) parameter, propertyList);
+            }
+        }
+
+        return propertyList;
+    }
+
+    private ExternApplication.Call resolveCall(ASTifyGrammar.Call call) {
+        if (scope.exists(call.getFunctionName().getValue())) {
+            Definition definition = scope.lookup(call.getFunctionName().getValue());
+
+            if (definition instanceof Definition.ExternDefinition) {
+                Definition.ExternDefinition definitionCasted = (Definition.ExternDefinition) definition;
+                List<ExternApplication.Parameter> parameters = new ArrayList<>();
+                int i = 0;
+
+                for (ASTifyGrammar.Parameter parameter : call.getParameters()) {
+                    if (parameter instanceof ASTifyGrammar.Call) {
+                        ExternApplication.Call subCall = resolveCall((ASTifyGrammar.Call) parameter);
+                        Type expectedType = definitionCasted.getParameters().get(i++).getType();
+
+                        if (subCall != null) {
+                            parameters.add(subCall);
+                        }
+                        else {
+                            return null;
+                        }
+
+                        if (!subCall.getExtern().getReturnType().castsTo(expectedType)) {
+                            error(
+                                    "Incompatible types: cannot pass type " + subCall.getExtern().getReturnType().toString() + " to " + expectedType.toString() + " parameter",
+                                    parameter.getPosition()
+                            );
+                        }
+                    }
+                    else {
+                        parameters.add(new ExternApplication.Reference(((ASTifyGrammar.Reference) parameter).getReference().getValue()));
+                    }
+                }
+
+                if (parameters.size() != definitionCasted.getParameters().size()) {
+                    error(
+                            "Incorrect number of parameters to function '" + definitionCasted.getName() + "'",
+                            call.getPosition(),
+                            "Function defined at",
+                            definition.getPosition()
+                    );
+                }
+
+                return new ExternApplication.Call((Definition.ExternDefinition) definition, parameters);
+            }
+            else {
+                error("'" + call.getFunctionName().getValue() + "' is not a function", call.getFunctionName().getPosition());
+                return null;
+            }
+        }
+        else {
+            error("Cannot find function '" + call.getFunctionName().getValue() + "'", call.getFunctionName().getPosition());
+            return null;
+        }
+    }
+
+    // returns true on error
+    private boolean validateCall(ASTifyGrammar.Call call) {
+        return validateCallRecursive(call, new HashSet<>());
+    }
+
+    private boolean validateCallRecursive(ASTifyGrammar.Call call, Set<Util.Pair<String, Position>> cache) {
+        boolean errored = false;
+
+        for (ASTifyGrammar.Parameter parameter : call.getParameters()) {
+            if (parameter instanceof ASTifyGrammar.Reference) {
+
+                Token parameterName = ((ASTifyGrammar.Reference) parameter).getReference();
+                boolean found = false;
+
+                for (Util.Pair<String, Position> pair : cache) {
+                    if (pair.a.equals(parameterName.getValue())) {
+                        error(
+                                "Reuse of parameter '" + parameterName.getValue() + "'",
+                                parameterName.getPosition(),
+                                "previously used at",
+                                pair.b
+                        );
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found) {
+                    errored = true;
+                }
+                else {
+                    cache.add(new Util.Pair<>(parameterName.getValue(), parameterName.getPosition()));
+                }
+            }
+            else if (parameter instanceof ASTifyGrammar.Call) {
+                if (validateCallRecursive((ASTifyGrammar.Call) parameter, cache)) return true;
+            }
+        }
+
+        return errored;
+    }
+
+    private void bindAllPatternLists(List<ASTifyGrammar.Statement> statements) {
         for (ASTifyGrammar.Statement statement: statements) {
             if (statement instanceof ASTifyGrammar.TypeDefinition) {
                 ASTifyGrammar.TypeDefinition castedDefinition = (ASTifyGrammar.TypeDefinition) statement;
-                Definition.TypeDefinition resolvedDefinition = (Definition.TypeDefinition) scope.lookupDefinition(castedDefinition.getProperties().getName().getValue());
+                Type.ObjectType type = (Type.ObjectType) scope.lookupType(castedDefinition.getProperties().getName().getValue());
 
-                bindPatternLists(castedDefinition, resolvedDefinition);
+                bindPatternLists(castedDefinition.getPatternLists(), type);
+            }
+            else if (statement instanceof ASTifyGrammar.AliasDefinition) {
+                ASTifyGrammar.AliasDefinition castedDefinition = (ASTifyGrammar.AliasDefinition) statement;
+                Definition.AliasDefinition definition = (Definition.AliasDefinition) scope.lookup(castedDefinition.getName().getValue());
+
+                bindPatternLists(castedDefinition.getPatternLists(), definition);
             }
         }
     }
 
-    private void bindPatternLists(ASTifyGrammar.TypeDefinition source, Definition.TypeDefinition definition) throws GDLException {
-        for (ASTifyGrammar.PatternList pattern : source.getPatterns()) {
-            bindPatternList(pattern.getPatterns(), definition, pattern.getPosition());
+    private void bindPatternLists(List<ASTifyGrammar.PatternList> patterns, Type.ObjectType type) {
+        for (ASTifyGrammar.PatternList patternList : patterns) {
+            bindPatternList(patternList, type);
         }
     }
 
+    private void bindPatternLists(List<ASTifyGrammar.PatternList> patterns, Definition.AliasDefinition definition) {
+        for (ASTifyGrammar.PatternList patternList : patterns) {
+            bindPatternList(patternList, definition);
+        }
+    }
+
+    private void bindPatternList(ASTifyGrammar.PatternList patternList, Type.ObjectType type) {
+        if (validatePatternList(patternList, type.getProperties(), "property")) return;
+        List<Pattern> resolvedPatternList = Pattern.createFromList(patternList.getPatterns(), type.getProperties(), this);
+        type.addPatternList(resolvedPatternList);
+    }
+
+    private void bindPatternList(ASTifyGrammar.PatternList patternList, Definition.AliasDefinition definition) {
+        PropertyList properties = new PropertyList();
+
+        if (definition.hasResult()) {
+            properties.add(definition.getResult());
+        }
+
+        if (validatePatternList(patternList, properties, "property")) return;
+        List<Pattern> resolvedPatternList = Pattern.createFromList(patternList.getPatterns(), properties, this);
+        definition.addPatternList(resolvedPatternList);
+    }
+
+    // returns true if there was an error
+    private boolean validatePatternList(ASTifyGrammar.PatternList patternList, PropertyList properties, String s) {
+        Set<String> requiredProperties = new HashSet<>();
+        Set<Util.Pair<String, Position>> setProperties = new HashSet<>();
+        boolean errored = false;
+
+        for (Iterator<Property> it = properties.iterator(); it.hasNext(); ) {
+            Property property = it.next();
+
+            if (property.getType() instanceof Type.OptionalType) continue;
+            if (property.getType() instanceof Type.ListType) continue;
+            if (property.getType() instanceof Type.BooleanType) continue;
+
+            requiredProperties.add(property.getName());
+        }
+
+        for (ASTifyGrammar.RootPattern p : patternList.getPatterns()) {
+            if (p instanceof ASTifyGrammar.Matcher) {
+                requiredProperties.remove(((ASTifyGrammar.Matcher) p).getTargetProperty().getProperty().getValue());
+            }
+            else if (p instanceof ASTifyGrammar.PropertyReference) {
+                requiredProperties.remove(((ASTifyGrammar.PropertyReference) p).getProperty().getValue());
+            }
+        }
+
+        for (String propertyName : requiredProperties) {
+            error("Unassigned property '" + propertyName + "'", patternList.getPosition());
+            errored = true;
+        }
+
+        for (ASTifyGrammar.RootPattern p : patternList.getPatterns()) {
+            String propertyName = null;
+
+            if (p instanceof ASTifyGrammar.Matcher) {
+                propertyName = ((ASTifyGrammar.Matcher) p).getTargetProperty().getProperty().getValue();
+            }
+            else if (p instanceof ASTifyGrammar.PropertyReference) {
+                propertyName = ((ASTifyGrammar.PropertyReference) p).getProperty().getValue();
+            }
+
+            if (propertyName != null) {
+                if (!properties.exists(propertyName)) {
+                    error(
+                            "No such " + s + " '" + propertyName + "'",
+                            p.getPosition()
+                    );
+                    errored = true;
+                    continue;
+                }
+
+                if (!(properties.lookup(propertyName).getType() instanceof Type.ListType)) {
+                    boolean found = false;
+
+                    for (Util.Pair<String, Position> set : setProperties) {
+                        if (set.a.equals(propertyName)) {
+                            error(
+                                    "Multiple assignments of " + s + " '" + propertyName + "'",
+                                    p.getPosition(),
+                                    "previously assigned at",
+                                    set.b
+                            );
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        setProperties.add(new Util.Pair<>(propertyName, p.getPosition()));
+                    }
+                }
+            }
+        }
+
+        return errored;
+    }
+
+    /*
+//
     private void bindPatternList(List<ASTifyGrammar.RootPattern> patternList, Definition.TypeDefinition definition, astify.core.Position position) throws GDLException {
         List<Pattern> resolvedPatternList = Pattern.createFromList(patternList, definition.getProperties(), scope);
         validatePatternList(resolvedPatternList, definition.getProperties(), position);
-        definition.addPattern(resolvedPatternList);
+        definition.addPatternList(resolvedPatternList);
     }
-
     private void validatePatternList(List<Pattern> patternList, PropertyList properties, astify.core.Position position) throws GDLException {
         Set<String> requiredProperties = new HashSet<>();
         Set<String> setProperties = new HashSet<>();

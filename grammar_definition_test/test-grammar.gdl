@@ -1,15 +1,43 @@
 
 grammar G
 
-A(Word w)
-: .w
+NameStatement(Word name)
+: 'My' 'name' 'is' .name '.'
 
-B(Word w)
-: 'b' .w
+AgeStatement(Integer age)
+: 'I' 'am' .age 'years' 'old' '.'
 
-union U
-: A
-: B
+union Statement
+: NameStatement
+: AgeStatement
 
-G()
-: 'hello'
+G(Statement[] statements)
+: .statements
+
+/*
+Generated code will take some text like:
+
+	I am 3 years old. My name is Ben.
+
+And output:
+
+	[
+		(AgeStatement
+			age = 3
+		),
+		(NameStatement
+			name = "Ben"
+		)
+	]
+
+And if you give it this:
+	
+	I am 3 years old
+
+It'll complain like this:
+
+	myfile.txt: expected '.', got EOF
+	1 | I am 3 years old
+	                    ^
+
+*/

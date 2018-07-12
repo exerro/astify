@@ -26,10 +26,6 @@ class ASTDefinitionBuilder {
     void build() {
         ASTDefinition.writeLine("package " + buildConfig.getPackage() + ";");
         ASTDefinition.writeLine();
-        ASTDefinition.writeLine("import astify.Capture;");
-        ASTDefinition.writeLine("import astify.core.Position;");
-        ASTDefinition.writeLine("import astify.token.Token;");
-        ASTDefinition.writeLine();
         ASTDefinition.writeLine("import static java.util.Objects.hash;");
         ASTDefinition.writeLine("import java.util.List;");
 
@@ -82,8 +78,8 @@ class ASTDefinitionBuilder {
         builder.setAccess(buildConfig.getClassAccess());
         builder.setGetterAccess(buildConfig.getGetterAccess());
         builder.setConstructorAccess(buildConfig.getConstructorAccess());
-        builder.setExtends("Capture.ObjectCapture");
-        builder.addSuperField("Position", "spanningPosition");
+        builder.setExtends("astify.Capture.ObjectCapture");
+        builder.addSuperField("astify.core.Position", "spanningPosition");
 
         for (Iterator<Property> it = type.getProperties().iterator(); it.hasNext(); ) {
             Property property = it.next();
@@ -121,6 +117,9 @@ class ASTDefinitionBuilder {
         }
         if (type instanceof Type.OptionalType) {
             return toString(((Type.OptionalType) type).getType());
+        }
+        if (type instanceof Type.TokenType) {
+            return "astify.token.Token";
         }
 
         return type.getReferenceName();

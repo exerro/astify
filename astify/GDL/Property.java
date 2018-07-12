@@ -19,6 +19,10 @@ class Property {
         return propertyName;
     }
 
+    Property rename(String name) {
+        return new Property(type, name);
+    }
+
     @Override public boolean equals(Object other) {
         if (!(other instanceof Property)) return false;
         Property otherCasted = (Property) other;

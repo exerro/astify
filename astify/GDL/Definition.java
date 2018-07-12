@@ -2,13 +2,14 @@ package astify.GDL;
 
 import astify.core.Position;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class Definition {
     private final String name;
     private final Position definitionPosition;
 
-    public Definition(String name, Position definitionPosition) {
+    Definition(String name, Position definitionPosition) {
         this.name = name;
         this.definitionPosition = definitionPosition;
     }
@@ -17,14 +18,14 @@ public abstract class Definition {
         return name;
     }
 
-    public Position getPosition() {
+    Position getPosition() {
         return definitionPosition;
     }
 
     static class TypeDefinition extends Definition {
         private final Type type;
 
-        public TypeDefinition(Type type, Position definitionPosition) {
+        TypeDefinition(Type type, Position definitionPosition) {
             super(type.getName(), definitionPosition);
             this.type = type;
         }
@@ -35,29 +36,41 @@ public abstract class Definition {
     }
 
     static class AliasDefinition extends Definition {
-        private Pattern pattern = null;
+        private Property result;
+        private List<List<Pattern>> patterns = new ArrayList<>();
 
         AliasDefinition(String name, Position definitionPosition) {
             super(name, definitionPosition);
         }
 
-        public Pattern getPattern() {
-            return pattern;
+        List<List<Pattern>> getPatternLists() {
+            return patterns;
         }
 
-        public void setPattern(Pattern pattern) {
-            assert this.pattern == null;
-            this.pattern = pattern;
+        Property getResult() {
+            return result;
+        }
+
+        boolean hasResult() {
+            return result != null;
+        }
+
+        void addPatternList(List<Pattern> pattern) {
+            patterns.add(pattern);
+        }
+
+        void setResult(Type type, String name) {
+            result = new Property(type, name);
         }
     }
 
     static class ExternDefinition extends Definition {
         private Type returnType;
-        private final List<Type> parameterTypes = new ArrayList<>();
-        private final List<String> parameterNames = new ArrayList<>();
+        private final PropertyList parameters;
 
         ExternDefinition(String name, Position definitionPosition) {
             super(name, definitionPosition);
+            parameters = new PropertyList();
         }
 
         Type getReturnType() {
@@ -65,45 +78,16 @@ public abstract class Definition {
             return returnType;
         }
 
-        Type getParameterType(int i) {
-            return parameterTypes.get(i);
-        }
-
-        String getParameterName(int i) {
-            return parameterNames.get(i);
-        }
-
-        Iterator parameterIterator() {
-            return new Iterator();
+        PropertyList getParameters() {
+            return parameters;
         }
 
         void setReturnType(Type returnType) {
             this.returnType = returnType;
         }
 
-        void addParameter(Type type, String name) {
-            parameterTypes.add(type);
-            parameterNames.add(name);
-        }
-
-        class Iterator implements java.util.Iterator<Integer> {
-            private int i = 0;
-
-            Type getType() {
-                return getParameterType(i);
-            }
-
-            String getName() {
-                return getParameterName(i);
-            }
-
-            @Override public boolean hasNext() {
-                return i < parameterTypes.size();
-            }
-
-            @Override public Integer next() {
-                return i++;
-            }
+        void addParameter(Property property) {
+            parameters.add(property);
         }
     }
 }
