@@ -390,10 +390,10 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 	interface Type extends astify.core.Positioned {
 		}
 	
-	interface LiteralValue extends astify.core.Positioned, PrimaryExpression {
+	interface LiteralValue extends PrimaryExpression, astify.core.Positioned {
 		}
 	
-	interface PrimaryExpression extends Value, astify.core.Positioned {
+	interface PrimaryExpression extends astify.core.Positioned, Value {
 		}
 	
 	interface Value extends astify.core.Positioned {
