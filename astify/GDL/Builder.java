@@ -81,7 +81,7 @@ public abstract class Builder {
 
     static class ClassBuilder extends Builder {
         private AccessModifier classAccess = AccessModifier.Public;
-        private boolean isStatic = false;
+        private boolean isStatic = false, isAbstract = false;
         private final String className;
 
         private String superClass = null;
@@ -128,6 +128,10 @@ public abstract class Builder {
 
         void setStatic(boolean isStatic) {
             this.isStatic = isStatic;
+        }
+
+        void setAbstract(boolean isAbstract) {
+            this.isAbstract = isAbstract;
         }
 
         void setExtends(String name) {
@@ -185,6 +189,7 @@ public abstract class Builder {
 
             helper.write(toString(classAccess));
             helper.writeIf("static ", isStatic);
+            helper.writeIf("abstract ", isAbstract);
             helper.write("class ");
             helper.write(className);
 

@@ -17,8 +17,18 @@ class PatternBuilder {
         this.grammar = grammar;
         this.buildConfig = buildConfig;
 
+        boolean externFound = false;
+
+        for (Definition definition : grammar.getScope().values()) {
+            if (definition instanceof Definition.ExternDefinition) {
+                externFound = true;
+                break;
+            }
+        }
+
         patternBuilderClass = new Builder.ClassBuilder(grammar.getClassName() + "PatternBuilderBase");
         patternBuilderClass.setAccess(buildConfig.getClassAccess());
+        patternBuilderClass.setAbstract(externFound);
         patternBuilderClass.setConstructorAccess(buildConfig.getPatternBuilderConstructorAccess());
         patternBuilderClass.setExtends("astify.PatternBuilder");
         patternBuilderClass.setMethodsEnabled(false);
@@ -114,7 +124,7 @@ class PatternBuilder {
         boolean single = (type.getPatternLists().size() + type.getApplications().size()) == 1;
         int i = 0;
         String name = NameHelper.toLowerLispCase(type.getName());
-        String handlerName = "create" + NameHelper.toUpperCamelCase(type.getName());
+        String handlerName = "__create" + NameHelper.toUpperCamelCase(type.getName());
         List<String> names = new ArrayList<>();
 
         for (List<Pattern> patternList : type.getPatternLists()) {
@@ -159,7 +169,7 @@ class PatternBuilder {
         List<String> names = new ArrayList<>();
         int i = 0;
         String name = NameHelper.toLowerLispCase(definition.getName());
-        String handlerName = "create" + NameHelper.toUpperCamelCase(definition.getName());
+        String handlerName = "__create" + NameHelper.toUpperCamelCase(definition.getName());
 
         for (List<Pattern> patternList : definition.getPatternLists()) {
             String thisName = single ? name : name + "#" + (++i);
@@ -170,7 +180,7 @@ class PatternBuilder {
             builtPatterns.add("sequence(\"" + thisName + "\"" + (needsHandler ? ", this::" + callName : "") + ",\n\t" + s.replace("\n", "\n\t") + "\n);");
 
             if (needsHandler) {
-                handlerBuilders.add(new AliasHandlerBuilder(callName, definition.getResult().getName(), patternList));
+                handlerBuilders.add(new AliasHandlerBuilder(callName, definition.getResult(), patternList));
             }
         }
 
@@ -555,14 +565,16 @@ class PatternBuilder {
     private abstract class HandlerBuilder {
         protected final String handlerName;
         protected final OutputHelper body = new OutputHelper();
+        protected final PropertyList properties;
         private final Map<String, Type> variableTypes = new HashMap<>();
         private final Map<String, String> variableValues = new HashMap<>();
         private final List<String> activeCaptureList = new ArrayList<>(); { activeCaptureList.add("captures"); }
 
         private int blockLevel = 0;
 
-        private HandlerBuilder(String handlerName) {
+        private HandlerBuilder(String handlerName, PropertyList properties) {
             this.handlerName = handlerName;
+            this.properties = properties;
         }
 
         String getActiveCaptureList() {
@@ -598,6 +610,75 @@ class PatternBuilder {
             else {
                 body.ensureLines(1);
                 body.write(name + " = " + cast(value, variableTypes.get(name)) + ";");
+            }
+        }
+
+        void assign(String propertyName, Pattern sourcePattern, int index) {
+            Type propertyType = properties.lookup(propertyName).getType();
+
+            if (propertyType instanceof Type.ListType) {
+                Type objectType = ((Type.ListType) propertyType).getType();
+                if (sourcePattern instanceof Pattern.ListPattern) {
+                    body.ensureLines(2);
+
+                    body.write("for (Iterator<astify.Capture> it = ((astify.Capture.ListCapture) " + getActiveCaptureList() + ".get(" + index + ")).iterator(); it.hasNext(); )");
+                    body.enterBlock();
+                        body.write(propertyName + ".add(" + cast("it.next()", objectType) + ");");
+                    body.exitBlock();
+
+                    body.ensureLines(2);
+                }
+                else {
+                    body.ensureLines(1);
+                    body.write(propertyName + ".add(" + cast(getActiveCaptureList() + ".get(" + index + ")", objectType) + ");");
+                }
+            }
+            else if (propertyType instanceof Type.BooleanType) {
+                assign(propertyName, "!(" + getActiveCaptureList() + ".get(" + index + ") instanceof astify.Capture.EmptyCapture)");
+            }
+            else {
+                assign(propertyName, getActiveCaptureList() + ".get(" + index + ")");
+            }
+        }
+
+        void assignOptional(String propertyName, int index) {
+            assign(propertyName, "!(" + getActiveCaptureList() + ".get(" + index + ") instanceof astify.Capture.EmptyCapture)");
+        }
+
+        void assignProperties(List<Pattern> patternList) {
+            int index = 0;
+
+            body.ensureLines(2);
+
+            for (Pattern pattern : patternList) {
+                if (pattern instanceof Pattern.Matcher) {
+                    assign(((Pattern.Matcher) pattern).getTargetProperty(), ((Pattern.Matcher) pattern).getSource(), index);
+                }
+                else if (pattern instanceof Pattern.OptionalCapture) {
+                    assignOptional(((Pattern.OptionalCapture) pattern).getPropertyName(), index);
+                }
+                else if (pattern instanceof Pattern.Optional) {
+                    if (test((Pattern.Optional) pattern, (pat) -> pat instanceof Pattern.Matcher)) {
+                        int subIndex = 0;
+
+                        enterOptionalConditional(index);
+
+                        for (Pattern subPattern : ((Pattern.Optional) pattern).getPatterns()) {
+                            if (subPattern instanceof Pattern.Matcher) {
+                                assign(((Pattern.Matcher) subPattern).getTargetProperty(), ((Pattern.Matcher) subPattern).getSource(), subIndex);
+                            }
+                            else if (subPattern instanceof Pattern.OptionalCapture) {
+                                assignOptional(((Pattern.OptionalCapture) subPattern).getPropertyName(), subIndex);
+                            }
+
+                            ++subIndex;
+                        }
+
+                        exitOptionalConditional();
+                    }
+                }
+
+                ++index;
             }
         }
 
@@ -661,7 +742,7 @@ class PatternBuilder {
         private final List<Pattern> patternList;
 
         private ObjectTypeHandlerBuilder(String handlerName, Type.ObjectType type, List<Pattern> patternList) {
-            super(handlerName);
+            super(handlerName, type.getProperties());
             this.type = type;
             this.patternList = patternList;
 
@@ -680,79 +761,14 @@ class PatternBuilder {
             }
         }
 
-        void buildMatcher(Pattern.Matcher pattern, int index) {
-            String propertyName = pattern.getTargetProperty();
-            Property property = type.getProperties().lookup(propertyName);
-
-            if (property.getType() instanceof Type.ListType) {
-                Type objectType = ((Type.ListType) property.getType()).getType();
-
-                if (pattern.getSource() instanceof Pattern.ListPattern) {
-                    body.ensureLines(2);
-
-                    body.write("for (Iterator<astify.Capture> it = ((astify.Capture.ListCapture) " + getActiveCaptureList() + ".get(" + index + ")).iterator(); it.hasNext(); )");
-                    body.enterBlock();
-                        body.write(propertyName + ".add(" + cast("it.next()", objectType) + ");");
-                    body.exitBlock();
-
-                    body.ensureLines(2);
-                }
-                else {
-                    body.ensureLines(1);
-                    body.write(propertyName + ".add(" + cast(getActiveCaptureList() + ".get(" + index + ")", objectType) + ");");
-                }
-            }
-            else if (property.getType() instanceof Type.BooleanType) {
-                assign(propertyName, "!(" + getActiveCaptureList() + ".get(" + index + ") instanceof astify.Capture.EmptyCapture)");
-            }
-            else {
-                assign(propertyName, getActiveCaptureList() + ".get(" + index + ")");
-            }
-        }
-
-        void buildMatcher(Pattern.OptionalCapture pattern, int index) {
-            String propertyName = pattern.getPropertyName();
-            assign(propertyName, "!(" + getActiveCaptureList() + ".get(" + index + ") instanceof astify.Capture.EmptyCapture)");
-        }
-
         @Override void buildBody() {
-            int index = 0;
             String positionString = "captures.get(0).getPosition()";
 
             if (patternList.size() > 1) {
                 positionString += ".to(captures.get(" + (patternList.size() - 1) + ").getPosition())";
             }
 
-            for (Pattern pattern : patternList) {
-                if (pattern instanceof Pattern.Matcher) {
-                    buildMatcher((Pattern.Matcher) pattern, index);
-                }
-                else if (pattern instanceof Pattern.OptionalCapture) {
-                    buildMatcher((Pattern.OptionalCapture) pattern, index);
-                }
-                else if (pattern instanceof Pattern.Optional) {
-                    if (test((Pattern.Optional) pattern, (pat) -> pat instanceof Pattern.Matcher)) {
-                        int subIndex = 0;
-
-                        enterOptionalConditional(index);
-
-                            for (Pattern subPattern : ((Pattern.Optional) pattern).getPatterns()) {
-                                if (subPattern instanceof Pattern.Matcher) {
-                                    buildMatcher((Pattern.Matcher) subPattern, subIndex);
-                                }
-                                else if (subPattern instanceof Pattern.OptionalCapture) {
-                                    buildMatcher((Pattern.OptionalCapture) subPattern, subIndex);
-                                }
-
-                                ++subIndex;
-                            }
-
-                        exitOptionalConditional();
-                    }
-                }
-
-                ++index;
-            }
+            assignProperties(patternList);
 
             body.ensureLines(2);
             body.write("return new " + buildType(type) + "(" + positionString);
@@ -770,27 +786,72 @@ class PatternBuilder {
         private final ExternApplication application;
 
         private ExternApplicationHandlerBuilder(String handlerName, ExternApplication application) {
-            super(handlerName);
+            super(handlerName, new PropertyList());
             this.application = application;
+
+            List<ExternApplication.Call> queue = new ArrayList<>();
+
+            queue.add(application.getCall());
+
+            while (!queue.isEmpty()) {
+                ExternApplication.Call call = queue.remove(0);
+                int i = 0;
+
+                for (ExternApplication.Parameter parameter : call.getParameters()) {
+                    if (parameter instanceof ExternApplication.Call) {
+                        queue.add((ExternApplication.Call) parameter);
+                    }
+                    else if (parameter instanceof ExternApplication.Reference) {
+                        String name = ((ExternApplication.Reference) parameter).getName();
+                        Type type = call.getExtern().getParameters().get(i).getType();
+                        addProperty(name, type);
+                        properties.add(new Property(type, name));
+                    }
+
+                    ++i;
+                }
+            }
+        }
+
+        private String buildCall(ExternApplication.Call call) {
+            List<String> parameters = new ArrayList<>();
+
+            for (ExternApplication.Parameter parameter : call.getParameters()) {
+                if (parameter instanceof ExternApplication.Call) {
+                    parameters.add(buildCall((ExternApplication.Call) parameter));
+                }
+                else if (parameter instanceof ExternApplication.Reference) {
+                    parameters.add(((ExternApplication.Reference) parameter).getName());
+                }
+            }
+
+            return call.getExtern().getName() + "(" + String.join(", ", parameters) + ")";
         }
 
         @Override void buildBody() {
-            body.write("return null;");
+            assignProperties(application.getPatternList());
+
+            body.write("return " + buildCall(application.getCall()) + ";");
         }
     }
 
     private class AliasHandlerBuilder extends HandlerBuilder {
-        private final String desiredProperty;
+        private final Property desiredProperty;
         private final List<Pattern> patternList;
 
-        private AliasHandlerBuilder(String handlerName, String desiredProperty, List<Pattern> patternList) {
-            super(handlerName);
+        private AliasHandlerBuilder(String handlerName, Property desiredProperty, List<Pattern> patternList) {
+            super(handlerName, new PropertyList());
             this.desiredProperty = desiredProperty;
             this.patternList = patternList;
+
+            addProperty(desiredProperty.getName(), desiredProperty.getType());
+            properties.add(desiredProperty);
         }
 
         @Override void buildBody() {
-            body.write("return null;");
+            assignProperties(patternList);
+
+            body.write("return " + desiredProperty.getName() + ";");
         }
     }
 }

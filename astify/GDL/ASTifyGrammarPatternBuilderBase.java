@@ -13,7 +13,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 	}
 	
 	private void initASTifyGrammar() {
-		sequence("type", this::createType,
+		sequence("type", this::__createType,
 			token(Word),
 			optional(sequence(
 				symbol("?")
@@ -24,22 +24,22 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			))
 		);
 		
-		sequence("typed-name", this::createTypedName,
+		sequence("typed-name", this::__createTypedName,
 			ref("type"),
 			token(Word)
 		);
 		
-		sequence("matcher-target", this::createMatcherTarget,
+		sequence("matcher-target", this::__createMatcherTarget,
 			token(Word)
 		);
 		
-		sequence("pattern-list", this::createPatternList,
+		sequence("pattern-list", this::__createPatternList,
 			symbol(":"),
 			ref("root-pattern"),
 			list(ref("root-pattern"))
 		);
 		
-		sequence("named-property-list", this::createNamedPropertyList,
+		sequence("named-property-list", this::__createNamedPropertyList,
 			token(Word),
 			symbol("("),
 			optional(sequence(
@@ -48,7 +48,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			symbol(")")
 		);
 		
-		sequence("call", this::createCall,
+		sequence("call", this::__createCall,
 			token(Word),
 			symbol("("),
 			optional(sequence(
@@ -57,7 +57,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			symbol(")")
 		);
 		
-		sequence("reference", this::createReference,
+		sequence("reference", this::__createReference,
 			token(Word)
 		);
 		
@@ -66,23 +66,23 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			ref("call")
 		));
 		
-		sequence("type-reference", this::createTypeReference,
+		sequence("type-reference", this::__createTypeReference,
 			symbol("@"),
 			token(Word)
 		);
 		
-		sequence("terminal", this::createTerminal,
+		sequence("terminal", this::__createTerminal,
 			token(String)
 		);
 		
-		sequence("function#1", this::createFunction1,
+		sequence("function#1", this::__createFunction1,
 			keyword("list"),
 			symbol("("),
 			ref("uncapturing-pattern"),
 			symbol(")")
 		);
 		
-		sequence("function#2", this::createFunction2,
+		sequence("function#2", this::__createFunction2,
 			keyword("delim"),
 			symbol("("),
 			ref("uncapturing-pattern"),
@@ -96,7 +96,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			ref("function#2")
 		));
 		
-		sequence("matcher", this::createMatcher,
+		sequence("matcher", this::__createMatcher,
 			symbol("("),
 			ref("uncapturing-pattern"),
 			symbol("->"),
@@ -104,7 +104,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			symbol(")")
 		);
 		
-		sequence("property-reference", this::createPropertyReference,
+		sequence("property-reference", this::__createPropertyReference,
 			symbol("."),
 			token(Word),
 			optional(sequence(
@@ -114,13 +114,13 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			))
 		);
 		
-		sequence("optional", this::createOptional,
+		sequence("optional", this::__createOptional,
 			symbol("["),
 			list(ref("pattern")),
 			symbol("]")
 		);
 		
-		sequence("extend", this::createExtend,
+		sequence("extend", this::__createExtend,
 			keyword("extend"),
 			ref("named-property-list"),
 			symbol(":"),
@@ -152,24 +152,24 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			ref("optional")
 		));
 		
-		sequence("abstract-type-definition", this::createAbstractTypeDefinition,
+		sequence("abstract-type-definition", this::__createAbstractTypeDefinition,
 			keyword("abstract"),
 			ref("named-property-list")
 		);
 		
-		sequence("type-definition", this::createTypeDefinition,
+		sequence("type-definition", this::__createTypeDefinition,
 			ref("named-property-list"),
 			list(ref("pattern-list"))
 		);
 		
-		sequence("union", this::createUnion,
+		sequence("union", this::__createUnion,
 			keyword("union"),
 			token(Word),
 			symbol(":"),
 			delim(token(Word), sequence(symbol(":")))
 		);
 		
-		sequence("alias-definition", this::createAliasDefinition,
+		sequence("alias-definition", this::__createAliasDefinition,
 			keyword("alias"),
 			token(Word),
 			optional(sequence(
@@ -181,7 +181,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			list(ref("pattern-list"))
 		);
 		
-		sequence("extern-definition", this::createExternDefinition,
+		sequence("extern-definition", this::__createExternDefinition,
 			keyword("extern"),
 			ref("type"),
 			token(Word),
@@ -193,7 +193,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			list(ref("pattern-list"))
 		);
 		
-		sequence("apply-statement", this::createApplyStatement,
+		sequence("apply-statement", this::__createApplyStatement,
 			keyword("apply"),
 			ref("call"),
 			ref("pattern-list"),
@@ -217,12 +217,12 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			ref("extern-definition")
 		));
 		
-		sequence("grammar", this::createGrammar,
+		sequence("grammar", this::__createGrammar,
 			keyword("grammar"),
 			token(Word)
 		);
 		
-		sequence("a-s-tify-grammar", this::createASTifyGrammar,
+		sequence("a-s-tify-grammar", this::__createASTifyGrammar,
 			ref("grammar"),
 			list(ref("statement")),
 			token(EOF)
@@ -234,7 +234,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return lookup("a-s-tify-grammar");
 	}
 	
-	private astify.Capture createType(List<astify.Capture> captures) {
+	private astify.Capture __createType(List<astify.Capture> captures) {
 		astify.token.Token name = ((astify.Capture.TokenCapture) captures.get(0)).getToken();
 		Boolean optional = (Boolean) !(captures.get(1) instanceof astify.Capture.EmptyCapture);
 		Boolean lst = (Boolean) !(captures.get(2) instanceof astify.Capture.EmptyCapture);
@@ -242,20 +242,20 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.Type(captures.get(0).getPosition().to(captures.get(2).getPosition()), name, optional, lst);
 	}
 	
-	private astify.Capture createTypedName(List<astify.Capture> captures) {
+	private astify.Capture __createTypedName(List<astify.Capture> captures) {
 		astify.token.Token name = ((astify.Capture.TokenCapture) captures.get(1)).getToken();
 		ASTifyGrammar.Type type = (ASTifyGrammar.Type) captures.get(0);
 		
 		return new ASTifyGrammar.TypedName(captures.get(0).getPosition().to(captures.get(1).getPosition()), type, name);
 	}
 	
-	private astify.Capture createMatcherTarget(List<astify.Capture> captures) {
+	private astify.Capture __createMatcherTarget(List<astify.Capture> captures) {
 		astify.token.Token property = ((astify.Capture.TokenCapture) captures.get(0)).getToken();
 		
 		return new ASTifyGrammar.MatcherTarget(captures.get(0).getPosition(), property);
 	}
 	
-	private astify.Capture createPatternList(List<astify.Capture> captures) {
+	private astify.Capture __createPatternList(List<astify.Capture> captures) {
 		List<ASTifyGrammar.RootPattern> patterns = new ArrayList<>();
 		
 		patterns.add((ASTifyGrammar.RootPattern) captures.get(1));
@@ -267,7 +267,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.PatternList(captures.get(0).getPosition().to(captures.get(2).getPosition()), patterns);
 	}
 	
-	private astify.Capture createNamedPropertyList(List<astify.Capture> captures) {
+	private astify.Capture __createNamedPropertyList(List<astify.Capture> captures) {
 		astify.token.Token name = ((astify.Capture.TokenCapture) captures.get(0)).getToken();
 		List<ASTifyGrammar.TypedName> properties = new ArrayList<>();
 		
@@ -283,7 +283,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.NamedPropertyList(captures.get(0).getPosition().to(captures.get(3).getPosition()), name, properties);
 	}
 	
-	private astify.Capture createCall(List<astify.Capture> captures) {
+	private astify.Capture __createCall(List<astify.Capture> captures) {
 		astify.token.Token functionName = ((astify.Capture.TokenCapture) captures.get(0)).getToken();
 		List<ASTifyGrammar.Parameter> parameters = new ArrayList<>();
 		
@@ -299,25 +299,25 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.Call(captures.get(0).getPosition().to(captures.get(3).getPosition()), functionName, parameters);
 	}
 	
-	private astify.Capture createReference(List<astify.Capture> captures) {
+	private astify.Capture __createReference(List<astify.Capture> captures) {
 		astify.token.Token reference = ((astify.Capture.TokenCapture) captures.get(0)).getToken();
 		
 		return new ASTifyGrammar.Reference(captures.get(0).getPosition(), reference);
 	}
 	
-	private astify.Capture createTypeReference(List<astify.Capture> captures) {
+	private astify.Capture __createTypeReference(List<astify.Capture> captures) {
 		astify.token.Token type = ((astify.Capture.TokenCapture) captures.get(1)).getToken();
 		
 		return new ASTifyGrammar.TypeReference(captures.get(0).getPosition().to(captures.get(1).getPosition()), type);
 	}
 	
-	private astify.Capture createTerminal(List<astify.Capture> captures) {
+	private astify.Capture __createTerminal(List<astify.Capture> captures) {
 		astify.token.Token terminal = ((astify.Capture.TokenCapture) captures.get(0)).getToken();
 		
 		return new ASTifyGrammar.Terminal(captures.get(0).getPosition(), terminal);
 	}
 	
-	private astify.Capture createFunction1(List<astify.Capture> captures) {
+	private astify.Capture __createFunction1(List<astify.Capture> captures) {
 		List<ASTifyGrammar.UncapturingPattern> patterns = new ArrayList<>();
 		astify.token.Token name = ((astify.Capture.TokenCapture) captures.get(0)).getToken();
 		
@@ -326,7 +326,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.Function(captures.get(0).getPosition().to(captures.get(3).getPosition()), name, patterns);
 	}
 	
-	private astify.Capture createFunction2(List<astify.Capture> captures) {
+	private astify.Capture __createFunction2(List<astify.Capture> captures) {
 		List<ASTifyGrammar.UncapturingPattern> patterns = new ArrayList<>();
 		astify.token.Token name = ((astify.Capture.TokenCapture) captures.get(0)).getToken();
 		
@@ -336,14 +336,14 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.Function(captures.get(0).getPosition().to(captures.get(5).getPosition()), name, patterns);
 	}
 	
-	private astify.Capture createMatcher(List<astify.Capture> captures) {
+	private astify.Capture __createMatcher(List<astify.Capture> captures) {
 		ASTifyGrammar.UncapturingPattern source = (ASTifyGrammar.UncapturingPattern) captures.get(1);
 		ASTifyGrammar.MatcherTarget targetProperty = (ASTifyGrammar.MatcherTarget) captures.get(3);
 		
 		return new ASTifyGrammar.Matcher(captures.get(0).getPosition().to(captures.get(4).getPosition()), source, targetProperty);
 	}
 	
-	private astify.Capture createPropertyReference(List<astify.Capture> captures) {
+	private astify.Capture __createPropertyReference(List<astify.Capture> captures) {
 		List<ASTifyGrammar.UncapturingPattern> qualifier = new ArrayList<>();
 		astify.token.Token property = ((astify.Capture.TokenCapture) captures.get(1)).getToken();
 		
@@ -359,7 +359,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.PropertyReference(captures.get(0).getPosition().to(captures.get(2).getPosition()), property, qualifier);
 	}
 	
-	private astify.Capture createOptional(List<astify.Capture> captures) {
+	private astify.Capture __createOptional(List<astify.Capture> captures) {
 		List<ASTifyGrammar.Pattern> patterns = new ArrayList<>();
 		
 		for (Iterator<astify.Capture> it = ((astify.Capture.ListCapture) captures.get(1)).iterator(); it.hasNext(); ) {
@@ -369,7 +369,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.Optional(captures.get(0).getPosition().to(captures.get(2).getPosition()), patterns);
 	}
 	
-	private astify.Capture createExtend(List<astify.Capture> captures) {
+	private astify.Capture __createExtend(List<astify.Capture> captures) {
 		ASTifyGrammar.Call call = (ASTifyGrammar.Call) captures.get(5);
 		List<ASTifyGrammar.PatternList> patterns = new ArrayList<>();
 		ASTifyGrammar.NamedPropertyList properties = (ASTifyGrammar.NamedPropertyList) captures.get(1);
@@ -379,13 +379,13 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.Extend(captures.get(0).getPosition().to(captures.get(5).getPosition()), properties, patterns, call);
 	}
 	
-	private astify.Capture createAbstractTypeDefinition(List<astify.Capture> captures) {
+	private astify.Capture __createAbstractTypeDefinition(List<astify.Capture> captures) {
 		ASTifyGrammar.NamedPropertyList properties = (ASTifyGrammar.NamedPropertyList) captures.get(1);
 		
 		return new ASTifyGrammar.AbstractTypeDefinition(captures.get(0).getPosition().to(captures.get(1).getPosition()), properties);
 	}
 	
-	private astify.Capture createTypeDefinition(List<astify.Capture> captures) {
+	private astify.Capture __createTypeDefinition(List<astify.Capture> captures) {
 		List<ASTifyGrammar.PatternList> patternLists = new ArrayList<>();
 		ASTifyGrammar.NamedPropertyList properties = (ASTifyGrammar.NamedPropertyList) captures.get(0);
 		
@@ -396,7 +396,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.TypeDefinition(captures.get(0).getPosition().to(captures.get(1).getPosition()), properties, patternLists);
 	}
 	
-	private astify.Capture createUnion(List<astify.Capture> captures) {
+	private astify.Capture __createUnion(List<astify.Capture> captures) {
 		astify.token.Token typename = ((astify.Capture.TokenCapture) captures.get(1)).getToken();
 		List<astify.token.Token> subtypes = new ArrayList<>();
 		
@@ -407,7 +407,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.Union(captures.get(0).getPosition().to(captures.get(3).getPosition()), typename, subtypes);
 	}
 	
-	private astify.Capture createAliasDefinition(List<astify.Capture> captures) {
+	private astify.Capture __createAliasDefinition(List<astify.Capture> captures) {
 		astify.token.Token name = ((astify.Capture.TokenCapture) captures.get(1)).getToken();
 		ASTifyGrammar.TypedName property = null;
 		List<ASTifyGrammar.PatternList> patternLists = new ArrayList<>();
@@ -426,7 +426,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.AliasDefinition(captures.get(0).getPosition().to(captures.get(4).getPosition()), name, property, patternLists);
 	}
 	
-	private astify.Capture createExternDefinition(List<astify.Capture> captures) {
+	private astify.Capture __createExternDefinition(List<astify.Capture> captures) {
 		astify.token.Token name = ((astify.Capture.TokenCapture) captures.get(2)).getToken();
 		List<ASTifyGrammar.PatternList> patternLists = new ArrayList<>();
 		List<ASTifyGrammar.TypedName> parameters = new ArrayList<>();
@@ -448,7 +448,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.ExternDefinition(captures.get(0).getPosition().to(captures.get(6).getPosition()), returnType, name, parameters, patternLists);
 	}
 	
-	private astify.Capture createApplyStatement(List<astify.Capture> captures) {
+	private astify.Capture __createApplyStatement(List<astify.Capture> captures) {
 		ASTifyGrammar.Call call = (ASTifyGrammar.Call) captures.get(1);
 		List<ASTifyGrammar.PatternList> patternLists = new ArrayList<>();
 		
@@ -461,13 +461,13 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.ApplyStatement(captures.get(0).getPosition().to(captures.get(3).getPosition()), call, patternLists);
 	}
 	
-	private astify.Capture createGrammar(List<astify.Capture> captures) {
+	private astify.Capture __createGrammar(List<astify.Capture> captures) {
 		astify.token.Token name = ((astify.Capture.TokenCapture) captures.get(1)).getToken();
 		
 		return new ASTifyGrammar.Grammar(captures.get(0).getPosition().to(captures.get(1).getPosition()), name);
 	}
 	
-	private astify.Capture createASTifyGrammar(List<astify.Capture> captures) {
+	private astify.Capture __createASTifyGrammar(List<astify.Capture> captures) {
 		List<ASTifyGrammar.Statement> statements = new ArrayList<>();
 		ASTifyGrammar.Grammar _grammar = (ASTifyGrammar.Grammar) captures.get(0);
 		

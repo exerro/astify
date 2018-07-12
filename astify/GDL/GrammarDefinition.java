@@ -43,10 +43,11 @@ public class GrammarDefinition {
 
     public static List<GDLException> buildOutput(ASTifyGrammar grammarSource, BuildConfig config) throws IOException {
         Grammar grammar = new Grammar(grammarSource.getGrammar().getName().getValue());
-        ASTDefinitionBuilder ASTDefinitionBuilder = new ASTDefinitionBuilder(grammar, config);
-        PatternBuilder patternBuilder = new PatternBuilder(grammar, config);
 
         grammar.load(grammarSource);
+
+        ASTDefinitionBuilder ASTDefinitionBuilder = new ASTDefinitionBuilder(grammar, config);
+        PatternBuilder patternBuilder = new PatternBuilder(grammar, config);
 
         if (grammar.hasException()) {
             return grammar.getExceptions();
