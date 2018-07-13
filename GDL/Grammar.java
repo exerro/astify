@@ -6,7 +6,6 @@ import astify.token.Token;
 import java.util.*;
 
 class Grammar {
-    // TODO: tidy code and add validation to ObjectType patternLists (count)
     private final Scope scope = new Scope();
     private final String name, className;
 
@@ -59,6 +58,8 @@ class Grammar {
             bindAllApplications(grammar.getStatements());
             bindAllPatternLists(grammar.getStatements());
         }
+
+        validateObjectPatternLists();
     }
 
 
@@ -334,7 +335,7 @@ class Grammar {
     }
 
     private void bindApplication(ASTifyGrammar.PatternList patternList, ExternApplication.Call call, PropertyList propertyList) {
-        if (validatePatternList(patternList, propertyList, "property")) return;
+        if (validatePatternList(patternList, propertyList)) return;
         List<Pattern> resolvedPatternList = Pattern.createFromList(patternList.getPatterns(), propertyList, this);
 
         Type type = call.getExtern().getReturnType();
@@ -495,7 +496,7 @@ class Grammar {
     }
 
     private void bindPatternList(ASTifyGrammar.PatternList patternList, Type.ObjectType type) {
-        if (validatePatternList(patternList, type.getProperties(), "property")) return;
+        if (validatePatternList(patternList, type.getProperties())) return;
         List<Pattern> resolvedPatternList = Pattern.createFromList(patternList.getPatterns(), type.getProperties(), this);
         type.addPatternList(resolvedPatternList);
     }
@@ -507,13 +508,13 @@ class Grammar {
             properties.add(definition.getResult());
         }
 
-        if (validatePatternList(patternList, properties, "property")) return;
+        if (validatePatternList(patternList, properties)) return;
         List<Pattern> resolvedPatternList = Pattern.createFromList(patternList.getPatterns(), properties, this);
         definition.addPatternList(resolvedPatternList);
     }
 
     // returns true if there was an error
-    private boolean validatePatternList(ASTifyGrammar.PatternList patternList, PropertyList properties, String s) {
+    private boolean validatePatternList(ASTifyGrammar.PatternList patternList, PropertyList properties) {
         Set<String> requiredProperties = new HashSet<>();
         Set<Util.Pair<String, Position>> setProperties = new HashSet<>();
         boolean errored = false;
@@ -555,7 +556,7 @@ class Grammar {
             if (propertyName != null) {
                 if (!properties.exists(propertyName)) {
                     error(
-                            "No such " + s + " '" + propertyName + "'",
+                            "No such property '" + propertyName + "'",
                             p.getPosition()
                     );
                     errored = true;
@@ -568,7 +569,7 @@ class Grammar {
                     for (Util.Pair<String, Position> set : setProperties) {
                         if (set.a.equals(propertyName)) {
                             error(
-                                    "Multiple assignments of " + s + " '" + propertyName + "'",
+                                    "Multiple assignments of property '" + propertyName + "'",
                                     p.getPosition(),
                                     "previously assigned at",
                                     set.b
@@ -588,53 +589,19 @@ class Grammar {
         return errored;
     }
 
-    /*
-//
-    private void bindPatternList(List<GDL.ASTifyGrammar.RootPattern> patternList, GDL.Definition.TypeDefinition definition, astify.core.Position position) throws GDL.GDLException {
-        List<GDL.Pattern> resolvedPatternList = GDL.Pattern.createFromList(patternList, definition.getProperties(), scope);
-        validatePatternList(resolvedPatternList, definition.getProperties(), position);
-        definition.addPatternList(resolvedPatternList);
-    }
-    private void validatePatternList(List<GDL.Pattern> patternList, GDL.PropertyList properties, astify.core.Position position) throws GDL.GDLException {
-        Set<String> requiredProperties = new HashSet<>();
-        Set<String> setProperties = new HashSet<>();
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        for (Iterator<GDL.Property> it = properties.iterator(); it.hasNext(); ) {
-            GDL.Property property = it.next();
+    private void validateObjectPatternLists() {
+        for (Definition definition : scope.values()) {
+            if (definition instanceof Definition.TypeDefinition) {
+                Type type = ((Definition.TypeDefinition) definition).getType();
 
-            if (!property.isOptional() && !property.isList()) {
-                requiredProperties.add(property.getName());
-            }
-        }
-
-        for (GDL.Pattern p : patternList) {
-            String propertyName = null;
-
-            if (p instanceof GDL.Pattern.Matcher) {
-                propertyName = ((GDL.Pattern.Matcher) p).getTargetProperty();
-            }
-            else if (p instanceof GDL.Pattern.OptionalCapture) {
-                propertyName = ((GDL.Pattern.OptionalCapture) p).getName();
-            }
-
-            if (propertyName != null) {
-                GDL.Property property = properties.lookup(propertyName);
-
-                if (setProperties.contains(propertyName)) {
-                    throw new GDL.GDLException("Multiple assignments of property '" + propertyName + "'", position);
+                if (type instanceof Type.ObjectType) {
+                    if (((Type.ObjectType) type).getPatternLists().size() + ((Type.ObjectType) type).getApplications().size() == 0) {
+                        error("'" + definition.getName() + "' has no syntax associated with it", definition.getPosition());
+                    }
                 }
-                else if (!property.isList()) {
-                    setProperties.add(propertyName);
-                }
-
-                requiredProperties.remove(propertyName);
             }
-        }
-
-        if (requiredProperties.size() > 0) {
-            throw new GDL.GDLException("Unassigned " + (requiredProperties.size() == 1 ? "property" : "properties") + ": " + GDL.Util.setToStringQuoted(requiredProperties), position);
         }
     }
-
-  */
 }
