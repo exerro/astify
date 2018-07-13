@@ -42,8 +42,11 @@ class PatternBuilder {
     }
 
     void build() {
-        patternBuilder.writeLine("package " + buildConfig.getPackage() + ";");
-        patternBuilder.writeLine();
+        if (buildConfig.hasPackage()) {
+            patternBuilder.writeLine("package " + buildConfig.getPackage() + ";");
+            patternBuilder.writeLine();
+        }
+
         patternBuilder.writeLine("import java.util.ArrayList;");
         patternBuilder.writeLine("import java.util.Iterator;");
         patternBuilder.writeLine("import java.util.List;");

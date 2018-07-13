@@ -19,7 +19,6 @@ public class ASTifyGDL {
             printUsage();
             return;
         }
-
         Map<String, String> options = getOptions(args);
 
         if (options == null) return;
@@ -50,6 +49,11 @@ public class ASTifyGDL {
             config.setPatternBuilderConstructorAccess(options.get("access-pattern-builder"));
         }
 
+        build(file, config);
+    }
+
+    // returns true on error
+    private static void build(String file, BuildConfig config) {
         try {
             List<GDLException> exceptions = GrammarDefinition.parseAndBuild(file, config);
 
@@ -57,6 +61,7 @@ public class ASTifyGDL {
                 if (i > 0) System.err.println();
                 System.err.println(exceptions.get(i).toString());
             }
+
         }
         catch (TokenException | ParserException e) {
             System.err.println("Syntax error:");
@@ -68,7 +73,7 @@ public class ASTifyGDL {
     }
 
     private static Map<String, String> getOptions(String[] params) {
-        Map<String, String> options = new HashMap<>();
+        Map<String, String> inputOptions = new HashMap<>();
         String currentOption = null;
 
         for (int i = 1; i < params.length; ++i) {
@@ -77,14 +82,14 @@ public class ASTifyGDL {
 
                 if (option.contains("=")) {
                     int index = option.indexOf("=");
-                    if (!setOption(options, option.substring(0, index), option.substring(index + 1))) return null;
+                    if (setOption(inputOptions, option.substring(0, index), option.substring(index + 1))) return null;
                 }
                 else {
                     currentOption = option;
                 }
             }
             else {
-                if (!setOption(options, currentOption, params[i])) return null;
+                if (setOption(inputOptions, currentOption, params[i])) return null;
                 currentOption = null;
             }
         }
@@ -94,20 +99,21 @@ public class ASTifyGDL {
             return null;
         }
 
-        return options;
+        return inputOptions;
     }
 
-    private static boolean setOption(Map<String, String> options, String option, String value) {
+    // returns true if there was an error
+    private static boolean setOption(Map<String, String> inputOptions, String option, String value) {
         String optionResolved = getOption(option);
 
         if (optionResolved == null) {
             System.err.println("Unknown option '" + option + "'");
-            return false;
+            return true;
         }
 
-        options.put(optionResolved, value);
+        inputOptions.put(optionResolved, value);
 
-        return true;
+        return false;
     }
 
     private static String getOption(String opt) {
@@ -125,6 +131,7 @@ public class ASTifyGDL {
     private static void printUsage() {
         System.out.println("ASTify GDL Usage");
         System.out.println(" astify-gdl <grammar-file> [--package(-p) <output-package>] {options}");
+        System.out.println(" astify-gdl test <grammar-file> [--file(-f) <input-file> | <text>] {test options}");
         System.out.println();
         System.out.println("Options:");
         System.out.println(" --access-classes(-ac) (default|protected|public)");
@@ -132,6 +139,10 @@ public class ASTifyGDL {
         System.out.println(" --access-constructors(-an) (default|protected|public)");
         System.out.println(" --access-pattern-builder(-ap) (default|protected|public)");
         System.out.println(" --output(-o) <output-directory>");
+        System.out.println();
+        System.out.println("Test options:");
+        System.out.println(" --externs(-e) <externs-file>");
+        System.out.println(" --main(-m) <main-grammar-node>");
     }
 
     static {

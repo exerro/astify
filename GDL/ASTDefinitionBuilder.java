@@ -24,8 +24,11 @@ class ASTDefinitionBuilder {
     }
 
     void build() {
-        ASTDefinition.writeLine("package " + buildConfig.getPackage() + ";");
-        ASTDefinition.writeLine();
+        if (buildConfig.hasPackage()) {
+            ASTDefinition.writeLine("package " + buildConfig.getPackage() + ";");
+            ASTDefinition.writeLine();
+        }
+
         ASTDefinition.writeLine("import static java.util.Objects.hash;");
         ASTDefinition.writeLine("import java.util.List;");
 

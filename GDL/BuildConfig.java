@@ -66,6 +66,10 @@ public class BuildConfig {
         this.path = path;
     }
 
+    public boolean hasPackage() {
+        return !_package.equals("");
+    }
+
     public String getPackage() {
         return _package;
     }
