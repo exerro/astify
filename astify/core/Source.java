@@ -49,6 +49,10 @@ public abstract class Source {
             this(path, Paths.get(path).getFileName().toString());
         }
 
+        public String getPath() {
+            return filePath;
+        }
+
         @Override public String getName() {
             return fileName;
         }

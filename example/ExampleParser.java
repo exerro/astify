@@ -3,10 +3,8 @@ package example;
 
 import astify.*;
 import astify.core.Source;
-import astify.token.DefaultTokenGenerator;
-import astify.token.Token;
 import astify.token.TokenException;
-import astify.token.TokenGenerator;
+import astify.util.Util;
 
 import java.io.FileNotFoundException;
 import java.util.List;
@@ -16,7 +14,7 @@ public class ExampleParser {
         Source source = new Source.FileSource(filePath);
         PatternBuilder builder = new ExampleGrammarPatternBuilderBase();
 
-        List<Capture> results = Util.parse(source, builder);
+        List<Capture> results = astify.util.ParseUtil.parse(source, builder);
         int i = 0;
 
         for (Capture result : results) {

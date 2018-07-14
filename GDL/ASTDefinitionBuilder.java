@@ -79,7 +79,6 @@ class ASTDefinitionBuilder {
 
     private void loadClassBuilder(Builder.ClassBuilder builder, Type.ObjectType type) {
         builder.setAccess(buildConfig.getClassAccess());
-        builder.setGetterAccess(buildConfig.getGetterAccess());
         builder.setConstructorAccess(buildConfig.getConstructorAccess());
         builder.setExtends("astify.Capture.ObjectCapture");
         builder.addSuperField("astify.core.Position", "spanningPosition");
@@ -93,7 +92,6 @@ class ASTDefinitionBuilder {
 
     private void loadInterfaceBuilder(Builder.InterfaceBuilder builder, Type.Union type, Map<Type, Builder> builders) {
         builder.setAccess(buildConfig.getClassAccess());
-        builder.setGetterAccess(buildConfig.getGetterAccess());
         builder.addExtends("astify.core.Positioned");
 
         for (Type subtype : type.getRawMembers()) {

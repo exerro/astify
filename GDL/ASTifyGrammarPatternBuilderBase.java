@@ -230,13 +230,31 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			ref("extern-definition")
 		));
 		
+		sequence("relative-import-statement", this::__createRelativeImportStatement,
+			keyword("import"),
+			delim(token(Word), sequence(symbol(",")))
+		);
+		
+		sequence("absolute-import-statement", this::__createAbsoluteImportStatement,
+			keyword("import"),
+			token(String)
+		);
+		
+		define("import-statement", one_of(
+			ref("relative-import-statement"),
+			ref("absolute-import-statement")
+		));
+		
 		sequence("grammar", this::__createGrammar,
 			keyword("grammar"),
 			token(Word)
 		);
 		
 		sequence("a-s-tify-grammar", this::__createASTifyGrammar,
-			ref("grammar"),
+			list(ref("import-statement")),
+			optional(sequence(
+				ref("grammar")
+			)),
 			list(ref("statement")),
 			token(EOF)
 		); 
@@ -480,6 +498,22 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ASTifyGrammar.ApplyStatement(captures.get(0).getPosition().to(captures.get(3).getPosition()), call, patternLists);
 	}
 	
+	private astify.Capture __createRelativeImportStatement(List<astify.Capture> captures) {
+		List<astify.token.Token> parts = new ArrayList<>();
+		
+		for (Iterator<astify.Capture> it = ((astify.Capture.ListCapture) captures.get(1)).iterator(); it.hasNext(); ) {
+			parts.add(((astify.Capture.TokenCapture) it.next()).getToken());
+		}
+		
+		return new ASTifyGrammar.RelativeImportStatement(captures.get(0).getPosition().to(captures.get(1).getPosition()), parts);
+	}
+	
+	private astify.Capture __createAbsoluteImportStatement(List<astify.Capture> captures) {
+		astify.token.Token importPath = ((astify.Capture.TokenCapture) captures.get(1)).getToken();
+		
+		return new ASTifyGrammar.AbsoluteImportStatement(captures.get(0).getPosition().to(captures.get(1).getPosition()), importPath);
+	}
+	
 	private astify.Capture __createGrammar(List<astify.Capture> captures) {
 		astify.token.Token name = ((astify.Capture.TokenCapture) captures.get(1)).getToken();
 		
@@ -487,13 +521,23 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 	}
 	
 	private astify.Capture __createASTifyGrammar(List<astify.Capture> captures) {
+		List<ASTifyGrammar.ImportStatement> imports = new ArrayList<>();
 		List<ASTifyGrammar.Statement> statements = new ArrayList<>();
-		ASTifyGrammar.Grammar _grammar = (ASTifyGrammar.Grammar) captures.get(0);
+		ASTifyGrammar.Grammar _grammar = null;
 		
-		for (Iterator<astify.Capture> it = ((astify.Capture.ListCapture) captures.get(1)).iterator(); it.hasNext(); ) {
+		for (Iterator<astify.Capture> it = ((astify.Capture.ListCapture) captures.get(0)).iterator(); it.hasNext(); ) {
+			imports.add((ASTifyGrammar.ImportStatement) it.next());
+		}
+		
+		if (!(captures.get(1) instanceof astify.Capture.EmptyCapture)) {
+			List<astify.Capture> subCaptures = ((astify.Capture.ListCapture) captures.get(1)).all();
+			_grammar = (ASTifyGrammar.Grammar) subCaptures.get(0);
+		}
+		
+		for (Iterator<astify.Capture> it = ((astify.Capture.ListCapture) captures.get(2)).iterator(); it.hasNext(); ) {
 			statements.add((ASTifyGrammar.Statement) it.next());
 		}
 		
-		return new ASTifyGrammar(captures.get(0).getPosition().to(captures.get(2).getPosition()), _grammar, statements);
+		return new ASTifyGrammar(captures.get(0).getPosition().to(captures.get(3).getPosition()), imports, _grammar, statements);
 	}
 }

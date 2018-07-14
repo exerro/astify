@@ -43,7 +43,6 @@ public abstract class Builder {
         private final String interfaceName;
         private final List<String> extendsList = new ArrayList<>();
         private final List<String> abstractGetters = new ArrayList<>();
-        private AccessModifier getterAccess = AccessModifier.Public;
 
         InterfaceBuilder(String interfaceName) {
             this.interfaceName = interfaceName;
@@ -58,11 +57,7 @@ public abstract class Builder {
         }
 
         void addAbstractGetter(String type, String name) {
-            abstractGetters.add(toString(getterAccess) + type + " get" + NameHelper.toUpperCamelCase(name) + "();");
-        }
-
-        void setGetterAccess(AccessModifier access) {
-            getterAccess = access;
+            abstractGetters.add(type + " get" + NameHelper.toUpperCamelCase(name) + "();");
         }
 
         @Override void buildTo(OutputHelper helper) {
@@ -151,7 +146,7 @@ public abstract class Builder {
             String toStringValue = name + ".toString().replace(\"\\n\", \"\\n\\t\")";
 
             if (type.startsWith("List<")) {
-                toStringValue = "\"[\\n\\t\\t\" + astify.Util.concatList(" + name + ", \",\\n\").replace(\"\\n\", \"\\n\\t\\t\") + \"\\n\\t]\"";
+                toStringValue = "\"[\\n\\t\\t\" + astify.util.Util.concatList(" + name + ", \",\\n\").replace(\"\\n\", \"\\n\\t\\t\") + \"\\n\\t]\"";
             }
 
             constructorParameters.add(type + " " + name);

@@ -4,32 +4,39 @@ import static java.util.Objects.hash;
 import java.util.List;
 
 class ASTifyGrammar extends astify.Capture.ObjectCapture {
+	private final List<ImportStatement> imports;
 	private final Grammar _grammar;
 	private final List<Statement> statements;
 	
-	ASTifyGrammar(astify.core.Position spanningPosition, Grammar _grammar, List<Statement> statements) {
+	ASTifyGrammar(astify.core.Position spanningPosition, List<ImportStatement> imports, Grammar _grammar, List<Statement> statements) {
 		super(spanningPosition);
 		
-		assert _grammar != null : "'_grammar' is null";
+		assert imports != null : "'imports' is null";
 		assert statements != null : "'statements' is null";
 		
+		this.imports = imports;
 		this._grammar = _grammar;
 		this.statements = statements;
 	}
 	
-	Grammar getGrammar() {
+	public List<ImportStatement> getImports() {
+		return imports;
+	}
+	
+	public Grammar getGrammar() {
 		return _grammar;
 	}
 	
-	List<Statement> getStatements() {
+	public List<Statement> getStatements() {
 		return statements;
 	}
 	
 	@Override
 	public String toString() {
 		return "(ASTifyGrammar\n"
-			 + "	_grammar = " + _grammar.toString().replace("\n", "\n\t") + "\n"
-			 + "	statements = " + statements.toString().replace("\n", "\n\t") + "\n"
+			 + "	imports = " + "[\n\t\t" + astify.util.Util.concatList(imports, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
+			 + "	_grammar = " + (_grammar == null ? "null" : _grammar.toString().replace("\n", "\n\t")) + "\n"
+			 + "	statements = " + "[\n\t\t" + astify.util.Util.concatList(statements, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 			 + ")";
 	}
 	
@@ -37,13 +44,14 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 	public boolean equals(Object other) {
 		if (!(other instanceof ASTifyGrammar)) return false;
 		ASTifyGrammar otherCasted = (ASTifyGrammar) other;
-		return _grammar.equals(otherCasted._grammar)
+		return imports.equals(otherCasted.imports)
+			&& (_grammar == null ? otherCasted._grammar == null : _grammar.equals(otherCasted._grammar))
 			&& statements.equals(otherCasted.statements);
 	}
 	
 	@Override
 	public int hashCode() {
-		return hash(_grammar, statements);
+		return hash(imports, _grammar, statements);
 	}
 	
 	static class Type extends astify.Capture.ObjectCapture {
@@ -63,15 +71,15 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.lst = lst;
 		}
 		
-		astify.token.Token getName() {
+		public astify.token.Token getName() {
 			return name;
 		}
 		
-		Boolean isOptional() {
+		public Boolean isOptional() {
 			return optional;
 		}
 		
-		Boolean isLst() {
+		public Boolean isLst() {
 			return lst;
 		}
 		
@@ -113,11 +121,11 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.name = name;
 		}
 		
-		Type getType() {
+		public Type getType() {
 			return type;
 		}
 		
-		astify.token.Token getName() {
+		public astify.token.Token getName() {
 			return name;
 		}
 		
@@ -154,7 +162,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.property = property;
 		}
 		
-		astify.token.Token getProperty() {
+		public astify.token.Token getProperty() {
 			return property;
 		}
 		
@@ -189,14 +197,14 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.patterns = patterns;
 		}
 		
-		List<RootPattern> getPatterns() {
+		public List<RootPattern> getPatterns() {
 			return patterns;
 		}
 		
 		@Override
 		public String toString() {
 			return "(PatternList\n"
-				 + "	patterns = " + patterns.toString().replace("\n", "\n\t") + "\n"
+				 + "	patterns = " + "[\n\t\t" + astify.util.Util.concatList(patterns, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + ")";
 		}
 		
@@ -227,11 +235,11 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.properties = properties;
 		}
 		
-		astify.token.Token getName() {
+		public astify.token.Token getName() {
 			return name;
 		}
 		
-		List<TypedName> getProperties() {
+		public List<TypedName> getProperties() {
 			return properties;
 		}
 		
@@ -239,7 +247,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		public String toString() {
 			return "(NamedPropertyList\n"
 				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
-				 + "	properties = " + properties.toString().replace("\n", "\n\t") + "\n"
+				 + "	properties = " + "[\n\t\t" + astify.util.Util.concatList(properties, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + ")";
 		}
 		
@@ -271,11 +279,11 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.parameters = parameters;
 		}
 		
-		astify.token.Token getFunctionName() {
+		public astify.token.Token getFunctionName() {
 			return functionName;
 		}
 		
-		List<Parameter> getParameters() {
+		public List<Parameter> getParameters() {
 			return parameters;
 		}
 		
@@ -283,7 +291,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		public String toString() {
 			return "(Call\n"
 				 + "	functionName = " + functionName.toString().replace("\n", "\n\t") + "\n"
-				 + "	parameters = " + parameters.toString().replace("\n", "\n\t") + "\n"
+				 + "	parameters = " + "[\n\t\t" + astify.util.Util.concatList(parameters, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + ")";
 		}
 		
@@ -312,7 +320,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.reference = reference;
 		}
 		
-		astify.token.Token getReference() {
+		public astify.token.Token getReference() {
 			return reference;
 		}
 		
@@ -350,7 +358,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.type = type;
 		}
 		
-		astify.token.Token getType() {
+		public astify.token.Token getType() {
 			return type;
 		}
 		
@@ -385,7 +393,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.terminal = terminal;
 		}
 		
-		astify.token.Token getTerminal() {
+		public astify.token.Token getTerminal() {
 			return terminal;
 		}
 		
@@ -423,11 +431,11 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.patterns = patterns;
 		}
 		
-		astify.token.Token getName() {
+		public astify.token.Token getName() {
 			return name;
 		}
 		
-		List<UncapturingPattern> getPatterns() {
+		public List<UncapturingPattern> getPatterns() {
 			return patterns;
 		}
 		
@@ -435,7 +443,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		public String toString() {
 			return "(Function\n"
 				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
-				 + "	patterns = " + patterns.toString().replace("\n", "\n\t") + "\n"
+				 + "	patterns = " + "[\n\t\t" + astify.util.Util.concatList(patterns, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + ")";
 		}
 		
@@ -502,11 +510,11 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.targetProperty = targetProperty;
 		}
 		
-		UncapturingPattern getSource() {
+		public UncapturingPattern getSource() {
 			return source;
 		}
 		
-		MatcherTarget getTargetProperty() {
+		public MatcherTarget getTargetProperty() {
 			return targetProperty;
 		}
 		
@@ -546,11 +554,11 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.qualifier = qualifier;
 		}
 		
-		astify.token.Token getProperty() {
+		public astify.token.Token getProperty() {
 			return property;
 		}
 		
-		List<UncapturingPattern> getQualifier() {
+		public List<UncapturingPattern> getQualifier() {
 			return qualifier;
 		}
 		
@@ -558,7 +566,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		public String toString() {
 			return "(PropertyReference\n"
 				 + "	property = " + property.toString().replace("\n", "\n\t") + "\n"
-				 + "	qualifier = " + qualifier.toString().replace("\n", "\n\t") + "\n"
+				 + "	qualifier = " + "[\n\t\t" + astify.util.Util.concatList(qualifier, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + ")";
 		}
 		
@@ -587,14 +595,14 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.patterns = patterns;
 		}
 		
-		List<Pattern> getPatterns() {
+		public List<Pattern> getPatterns() {
 			return patterns;
 		}
 		
 		@Override
 		public String toString() {
 			return "(Optional\n"
-				 + "	patterns = " + patterns.toString().replace("\n", "\n\t") + "\n"
+				 + "	patterns = " + "[\n\t\t" + astify.util.Util.concatList(patterns, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + ")";
 		}
 		
@@ -628,15 +636,15 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.call = call;
 		}
 		
-		NamedPropertyList getProperties() {
+		public NamedPropertyList getProperties() {
 			return properties;
 		}
 		
-		List<PatternList> getPatterns() {
+		public List<PatternList> getPatterns() {
 			return patterns;
 		}
 		
-		Call getCall() {
+		public Call getCall() {
 			return call;
 		}
 		
@@ -644,7 +652,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		public String toString() {
 			return "(Extend\n"
 				 + "	properties = " + properties.toString().replace("\n", "\n\t") + "\n"
-				 + "	patterns = " + patterns.toString().replace("\n", "\n\t") + "\n"
+				 + "	patterns = " + "[\n\t\t" + astify.util.Util.concatList(patterns, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + "	call = " + call.toString().replace("\n", "\n\t") + "\n"
 				 + ")";
 		}
@@ -664,11 +672,11 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		}
 	}
 	
-	interface Predicate extends UncapturingPattern, astify.core.Positioned {
+	interface Predicate extends astify.core.Positioned, UncapturingPattern {
 		astify.token.Token getPredicateName();
 	}
 	
-	interface UncapturingPattern extends astify.core.Positioned, Pattern {
+	interface UncapturingPattern extends Pattern, astify.core.Positioned {
 		}
 	
 	interface Pattern extends astify.core.Positioned, RootPattern {
@@ -688,7 +696,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.properties = properties;
 		}
 		
-		NamedPropertyList getProperties() {
+		public NamedPropertyList getProperties() {
 			return properties;
 		}
 		
@@ -726,11 +734,11 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.patternLists = patternLists;
 		}
 		
-		NamedPropertyList getProperties() {
+		public NamedPropertyList getProperties() {
 			return properties;
 		}
 		
-		List<PatternList> getPatternLists() {
+		public List<PatternList> getPatternLists() {
 			return patternLists;
 		}
 		
@@ -738,7 +746,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		public String toString() {
 			return "(TypeDefinition\n"
 				 + "	properties = " + properties.toString().replace("\n", "\n\t") + "\n"
-				 + "	patternLists = " + patternLists.toString().replace("\n", "\n\t") + "\n"
+				 + "	patternLists = " + "[\n\t\t" + astify.util.Util.concatList(patternLists, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + ")";
 		}
 		
@@ -770,11 +778,11 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.subtypes = subtypes;
 		}
 		
-		astify.token.Token getTypename() {
+		public astify.token.Token getTypename() {
 			return typename;
 		}
 		
-		List<astify.token.Token> getSubtypes() {
+		public List<astify.token.Token> getSubtypes() {
 			return subtypes;
 		}
 		
@@ -782,7 +790,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		public String toString() {
 			return "(Union\n"
 				 + "	typename = " + typename.toString().replace("\n", "\n\t") + "\n"
-				 + "	subtypes = " + subtypes.toString().replace("\n", "\n\t") + "\n"
+				 + "	subtypes = " + "[\n\t\t" + astify.util.Util.concatList(subtypes, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + ")";
 		}
 		
@@ -816,15 +824,15 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.patternLists = patternLists;
 		}
 		
-		astify.token.Token getName() {
+		public astify.token.Token getName() {
 			return name;
 		}
 		
-		TypedName getProperty() {
+		public TypedName getProperty() {
 			return property;
 		}
 		
-		List<PatternList> getPatternLists() {
+		public List<PatternList> getPatternLists() {
 			return patternLists;
 		}
 		
@@ -833,7 +841,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			return "(AliasDefinition\n"
 				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
 				 + "	property = " + (property == null ? "null" : property.toString().replace("\n", "\n\t")) + "\n"
-				 + "	patternLists = " + patternLists.toString().replace("\n", "\n\t") + "\n"
+				 + "	patternLists = " + "[\n\t\t" + astify.util.Util.concatList(patternLists, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + ")";
 		}
 		
@@ -872,19 +880,19 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.patternLists = patternLists;
 		}
 		
-		Type getReturnType() {
+		public Type getReturnType() {
 			return returnType;
 		}
 		
-		astify.token.Token getName() {
+		public astify.token.Token getName() {
 			return name;
 		}
 		
-		List<TypedName> getParameters() {
+		public List<TypedName> getParameters() {
 			return parameters;
 		}
 		
-		List<PatternList> getPatternLists() {
+		public List<PatternList> getPatternLists() {
 			return patternLists;
 		}
 		
@@ -893,8 +901,8 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			return "(ExternDefinition\n"
 				 + "	returnType = " + returnType.toString().replace("\n", "\n\t") + "\n"
 				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
-				 + "	parameters = " + parameters.toString().replace("\n", "\n\t") + "\n"
-				 + "	patternLists = " + patternLists.toString().replace("\n", "\n\t") + "\n"
+				 + "	parameters = " + "[\n\t\t" + astify.util.Util.concatList(parameters, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
+				 + "	patternLists = " + "[\n\t\t" + astify.util.Util.concatList(patternLists, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + ")";
 		}
 		
@@ -928,11 +936,11 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.patternLists = patternLists;
 		}
 		
-		Call getCall() {
+		public Call getCall() {
 			return call;
 		}
 		
-		List<PatternList> getPatternLists() {
+		public List<PatternList> getPatternLists() {
 			return patternLists;
 		}
 		
@@ -940,7 +948,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		public String toString() {
 			return "(ApplyStatement\n"
 				 + "	call = " + call.toString().replace("\n", "\n\t") + "\n"
-				 + "	patternLists = " + patternLists.toString().replace("\n", "\n\t") + "\n"
+				 + "	patternLists = " + "[\n\t\t" + astify.util.Util.concatList(patternLists, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 				 + ")";
 		}
 		
@@ -964,6 +972,79 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 	interface Statement extends astify.core.Positioned {
 		}
 	
+	static class RelativeImportStatement extends astify.Capture.ObjectCapture implements ImportStatement {
+		private final List<astify.token.Token> parts;
+		
+		RelativeImportStatement(astify.core.Position spanningPosition, List<astify.token.Token> parts) {
+			super(spanningPosition);
+			
+			assert parts != null : "'parts' is null";
+			
+			this.parts = parts;
+		}
+		
+		public List<astify.token.Token> getParts() {
+			return parts;
+		}
+		
+		@Override
+		public String toString() {
+			return "(RelativeImportStatement\n"
+				 + "	parts = " + "[\n\t\t" + astify.util.Util.concatList(parts, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
+				 + ")";
+		}
+		
+		@Override
+		public boolean equals(Object other) {
+			if (!(other instanceof RelativeImportStatement)) return false;
+			RelativeImportStatement otherCasted = (RelativeImportStatement) other;
+			return parts.equals(otherCasted.parts);
+		}
+		
+		@Override
+		public int hashCode() {
+			return hash(parts);
+		}
+	}
+	
+	static class AbsoluteImportStatement extends astify.Capture.ObjectCapture implements ImportStatement {
+		private final astify.token.Token importPath;
+		
+		AbsoluteImportStatement(astify.core.Position spanningPosition, astify.token.Token importPath) {
+			super(spanningPosition);
+			
+			assert importPath != null : "'importPath' is null";
+			
+			this.importPath = importPath;
+		}
+		
+		public astify.token.Token getImportPath() {
+			return importPath;
+		}
+		
+		@Override
+		public String toString() {
+			return "(AbsoluteImportStatement\n"
+				 + "	importPath = " + importPath.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
+		}
+		
+		@Override
+		public boolean equals(Object other) {
+			if (!(other instanceof AbsoluteImportStatement)) return false;
+			AbsoluteImportStatement otherCasted = (AbsoluteImportStatement) other;
+			return importPath.equals(otherCasted.importPath);
+		}
+		
+		@Override
+		public int hashCode() {
+			return hash(importPath);
+		}
+	}
+	
+	interface ImportStatement extends astify.core.Positioned {
+		}
+	
 	static class Grammar extends astify.Capture.ObjectCapture {
 		private final astify.token.Token name;
 		
@@ -975,7 +1056,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 			this.name = name;
 		}
 		
-		astify.token.Token getName() {
+		public astify.token.Token getName() {
 			return name;
 		}
 		

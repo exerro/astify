@@ -1,10 +1,7 @@
 package GDL.CLI;
 
 import GDL.BuildConfig;
-import GDL.GDLException;
 import GDL.GrammarDefinition;
-import astify.ParserException;
-import astify.token.TokenException;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,15 +29,11 @@ public class ASTifyGDL {
 
         if (options.containsKey("access-all")) {
             config.setClassAccess(options.get("access-all"));
-            config.setGetterAccess(options.get("access-all"));
             config.setConstructorAccess(options.get("access-all"));
             config.setPatternBuilderConstructorAccess(options.get("access-all"));
         }
         if (options.containsKey("access-classes")) {
             config.setClassAccess(options.get("access-classes"));
-        }
-        if (options.containsKey("access-getters")) {
-            config.setGetterAccess(options.get("access-getters"));
         }
         if (options.containsKey("access-constructors")) {
             config.setConstructorAccess(options.get("access-constructors"));
@@ -55,17 +48,13 @@ public class ASTifyGDL {
     // returns true on error
     private static void build(String file, BuildConfig config) {
         try {
-            List<GDLException> exceptions = GrammarDefinition.parseAndBuild(file, config);
+            List<Exception> exceptions = GrammarDefinition.parseAndBuild(file, config);
 
             for (int i = 0; i < exceptions.size(); ++i) {
                 if (i > 0) System.err.println();
                 System.err.println(exceptions.get(i).toString());
             }
 
-        }
-        catch (TokenException | ParserException e) {
-            System.err.println("Syntax error:");
-            System.err.println(e.toString());
         }
         catch (IOException e) {
             System.err.println(e.getMessage());
@@ -135,7 +124,6 @@ public class ASTifyGDL {
         System.out.println();
         System.out.println("Options:");
         System.out.println(" --access-classes(-ac) (default|protected|public)");
-        System.out.println(" --access-getters(-ag) (default|protected|public)");
         System.out.println(" --access-constructors(-an) (default|protected|public)");
         System.out.println(" --access-pattern-builder(-ap) (default|protected|public)");
         System.out.println(" --output(-o) <output-directory>");
@@ -147,7 +135,6 @@ public class ASTifyGDL {
 
     static {
         aliases.put("ac", "access-classes");
-        aliases.put("ag", "access-getters");
         aliases.put("an", "access-constructors");
         aliases.put("ap", "access-pattern-builder");
         aliases.put("a", "access-all");

@@ -6,7 +6,7 @@ import java.util.List;
 
 class ExampleGrammarPatternBuilderBase extends astify.PatternBuilder {
 	
-	public ExampleGrammarPatternBuilderBase() {
+	ExampleGrammarPatternBuilderBase() {
 		super();
 		
 		initExampleGrammar();
@@ -23,6 +23,35 @@ class ExampleGrammarPatternBuilderBase extends astify.PatternBuilder {
 			symbol("]")
 		);
 		
+		sequence("declaration", this::__createDeclaration,
+			ref("type"),
+			token(Word),
+			optional(sequence(
+				symbol("="),
+				ref("value")
+			))
+		);
+		
+		sequence("expression-statement", this::__createExpressionStatement,
+			keyword("eval"),
+			ref("value")
+		);
+		
+		define("type", one_of(
+			ref("named-type"),
+			ref("list-type")
+		));
+		
+		define("statement", one_of(
+			ref("expression-statement"),
+			ref("declaration")
+		));
+		
+		sequence("example-grammar", this::__createExampleGrammar,
+			list(ref("statement")),
+			token(EOF)
+		);
+		
 		sequence("integer-value", this::__createIntegerValue,
 			token(Integer)
 		);
@@ -33,21 +62,6 @@ class ExampleGrammarPatternBuilderBase extends astify.PatternBuilder {
 		
 		sequence("identifier-value", this::__createIdentifierValue,
 			token(Word)
-		);
-		
-		sequence("declaration", this::__createDeclaration,
-			ref("type"),
-			token(Word),
-			optional(sequence(
-				symbol("="),
-				ref("value")
-			))
-		);
-		
-		sequence("binary-expression", this::__createBinaryExpression,
-			ref("primary-expression"),
-			ref("operator"),
-			ref("value")
 		);
 		
 		sequence("operator#1", this::__createOperator1,
@@ -83,20 +97,11 @@ class ExampleGrammarPatternBuilderBase extends astify.PatternBuilder {
 			ref("operator#6")
 		));
 		
-		sequence("expression-statement", this::__createExpressionStatement,
-			keyword("eval"),
+		sequence("binary-expression", this::__createBinaryExpression,
+			ref("primary-expression"),
+			ref("operator"),
 			ref("value")
 		);
-		
-		sequence("example-grammar", this::__createExampleGrammar,
-			list(ref("statement")),
-			token(EOF)
-		);
-		
-		define("type", one_of(
-			ref("named-type"),
-			ref("list-type")
-		));
 		
 		define("literal-value", one_of(
 			ref("integer-value"),
@@ -114,11 +119,6 @@ class ExampleGrammarPatternBuilderBase extends astify.PatternBuilder {
 			ref("string-value"),
 			ref("identifier-value"),
 			ref("binary-expression")
-		));
-		
-		define("statement", one_of(
-			ref("expression-statement"),
-			ref("declaration")
 		)); 
 	}
 	
@@ -139,6 +139,35 @@ class ExampleGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ExampleGrammar.ListType(captures.get(0).getPosition().to(captures.get(2).getPosition()), subtype);
 	}
 	
+	private astify.Capture __createDeclaration(List<astify.Capture> captures) {
+		astify.token.Token variable = ((astify.Capture.TokenCapture) captures.get(1)).getToken();
+		ExampleGrammar.Type type = (ExampleGrammar.Type) captures.get(0);
+		ExampleGrammar.Value value = null;
+		
+		if (!(captures.get(2) instanceof astify.Capture.EmptyCapture)) {
+			List<astify.Capture> subCaptures = ((astify.Capture.ListCapture) captures.get(2)).all();
+			value = (ExampleGrammar.Value) subCaptures.get(1);
+		}
+		
+		return new ExampleGrammar.Declaration(captures.get(0).getPosition().to(captures.get(2).getPosition()), type, variable, value);
+	}
+	
+	private astify.Capture __createExpressionStatement(List<astify.Capture> captures) {
+		ExampleGrammar.Value value = (ExampleGrammar.Value) captures.get(1);
+		
+		return new ExampleGrammar.ExpressionStatement(captures.get(0).getPosition().to(captures.get(1).getPosition()), value);
+	}
+	
+	private astify.Capture __createExampleGrammar(List<astify.Capture> captures) {
+		List<ExampleGrammar.Statement> statements = new ArrayList<>();
+		
+		for (Iterator<astify.Capture> it = ((astify.Capture.ListCapture) captures.get(0)).iterator(); it.hasNext(); ) {
+			statements.add((ExampleGrammar.Statement) it.next());
+		}
+		
+		return new ExampleGrammar(captures.get(0).getPosition().to(captures.get(1).getPosition()), statements);
+	}
+	
 	private astify.Capture __createIntegerValue(List<astify.Capture> captures) {
 		astify.token.Token value = ((astify.Capture.TokenCapture) captures.get(0)).getToken();
 		
@@ -155,27 +184,6 @@ class ExampleGrammarPatternBuilderBase extends astify.PatternBuilder {
 		astify.token.Token identifier = ((astify.Capture.TokenCapture) captures.get(0)).getToken();
 		
 		return new ExampleGrammar.IdentifierValue(captures.get(0).getPosition(), identifier);
-	}
-	
-	private astify.Capture __createDeclaration(List<astify.Capture> captures) {
-		astify.token.Token variable = ((astify.Capture.TokenCapture) captures.get(1)).getToken();
-		ExampleGrammar.Type type = (ExampleGrammar.Type) captures.get(0);
-		ExampleGrammar.Value value = null;
-		
-		if (!(captures.get(2) instanceof astify.Capture.EmptyCapture)) {
-			List<astify.Capture> subCaptures = ((astify.Capture.ListCapture) captures.get(2)).all();
-			value = (ExampleGrammar.Value) subCaptures.get(1);
-		}
-		
-		return new ExampleGrammar.Declaration(captures.get(0).getPosition().to(captures.get(2).getPosition()), type, variable, value);
-	}
-	
-	private astify.Capture __createBinaryExpression(List<astify.Capture> captures) {
-		ExampleGrammar.PrimaryExpression lvalue = (ExampleGrammar.PrimaryExpression) captures.get(0);
-		ExampleGrammar.Value rvalue = (ExampleGrammar.Value) captures.get(2);
-		ExampleGrammar.Operator operator = (ExampleGrammar.Operator) captures.get(1);
-		
-		return new ExampleGrammar.BinaryExpression(captures.get(0).getPosition().to(captures.get(2).getPosition()), lvalue, operator, rvalue);
 	}
 	
 	private astify.Capture __createOperator1(List<astify.Capture> captures) {
@@ -214,19 +222,11 @@ class ExampleGrammarPatternBuilderBase extends astify.PatternBuilder {
 		return new ExampleGrammar.Operator(captures.get(0).getPosition(), symbol);
 	}
 	
-	private astify.Capture __createExpressionStatement(List<astify.Capture> captures) {
-		ExampleGrammar.Value value = (ExampleGrammar.Value) captures.get(1);
+	private astify.Capture __createBinaryExpression(List<astify.Capture> captures) {
+		ExampleGrammar.PrimaryExpression lvalue = (ExampleGrammar.PrimaryExpression) captures.get(0);
+		ExampleGrammar.Value rvalue = (ExampleGrammar.Value) captures.get(2);
+		ExampleGrammar.Operator operator = (ExampleGrammar.Operator) captures.get(1);
 		
-		return new ExampleGrammar.ExpressionStatement(captures.get(0).getPosition().to(captures.get(1).getPosition()), value);
-	}
-	
-	private astify.Capture __createExampleGrammar(List<astify.Capture> captures) {
-		List<ExampleGrammar.Statement> statements = new ArrayList<>();
-		
-		for (Iterator<astify.Capture> it = ((astify.Capture.ListCapture) captures.get(0)).iterator(); it.hasNext(); ) {
-			statements.add((ExampleGrammar.Statement) it.next());
-		}
-		
-		return new ExampleGrammar(captures.get(0).getPosition().to(captures.get(1).getPosition()), statements);
+		return new ExampleGrammar.BinaryExpression(captures.get(0).getPosition().to(captures.get(2).getPosition()), lvalue, operator, rvalue);
 	}
 }

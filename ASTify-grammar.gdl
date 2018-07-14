@@ -113,13 +113,24 @@ union Statement
 : ApplyStatement
 : Definition
 
+// import statements
+RelativeImportStatement(Word[] parts)
+: 'import' .parts(',')
+
+AbsoluteImportStatement(String importPath)
+: 'import' .importPath
+
+union ImportStatement
+: RelativeImportStatement
+: AbsoluteImportStatement
+
 
 
 // grammar
 Grammar(Word name)
 : 'grammar' .name
 
-ASTify-grammar(Grammar _grammar, Statement[] statements)
-: ._grammar .statements @EOF
+ASTify-grammar(ImportStatement[] imports, Grammar? _grammar, Statement[] statements)
+: .imports [._grammar] .statements @EOF
 
 

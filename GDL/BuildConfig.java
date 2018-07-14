@@ -1,14 +1,12 @@
 package GDL;
 
 import java.nio.file.Paths;
-import java.security.InvalidParameterException;
 
 public class BuildConfig {
     private String path;
     private String _package;
     private Builder.AccessModifier classAccess = Builder.AccessModifier.Default;
     private Builder.AccessModifier constructorAccess = Builder.AccessModifier.Protected;
-    private Builder.AccessModifier getterAccess = Builder.AccessModifier.Public;
     private Builder.AccessModifier patternBuilderConstructorAccess = Builder.AccessModifier.Public;
 
     public BuildConfig(String _package, String path) {
@@ -19,7 +17,6 @@ public class BuildConfig {
     public BuildConfig(String _package, String path, Builder.AccessModifier access) {
         this(_package, path);
         constructorAccess = access;
-        getterAccess = access;
     }
 
     BuildConfig(String _package) {
@@ -32,10 +29,6 @@ public class BuildConfig {
 
     Builder.AccessModifier getConstructorAccess() {
         return constructorAccess;
-    }
-
-    Builder.AccessModifier getGetterAccess() {
-        return getterAccess;
     }
 
     Builder.AccessModifier getPatternBuilderConstructorAccess() {
@@ -52,10 +45,6 @@ public class BuildConfig {
 
     public void setConstructorAccess(String constructorAccess) {
         this.constructorAccess = getAccessModifier(constructorAccess);
-    }
-
-    public void setGetterAccess(String getterAccess) {
-        this.getterAccess = getAccessModifier(getterAccess);
     }
 
     public String getPath() {
@@ -90,6 +79,6 @@ public class BuildConfig {
             case "public": return Builder.AccessModifier.Public;
         }
 
-        throw new InvalidParameterException("Invalid access-modifier '" + s + "'");
+        throw new IllegalArgumentException("Invalid access-modifier '" + s + "'");
     }
 }

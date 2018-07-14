@@ -1,4 +1,6 @@
 
+import expressions
+
 grammar example-grammar
 
 NamedType(Word typename)
@@ -8,51 +10,19 @@ ListType(Type subtype)
 : '[' .subtype ']'
 // note that doing `.subtype '[' ']'` would break the engine as left recursive grammars are not supported yet
 
-IntegerValue(Integer value)
-: .value
-
-StringValue(String value)
-: .value
-
-IdentifierValue(Word identifier)
-: .identifier
-
 Declaration(Type type, Word variable, Value? value)
 : .type .variable ['=' .value]
 
-BinaryExpression(PrimaryExpression lvalue, Operator operator, Value rvalue)
-: .lvalue .operator .rvalue
-
-Operator(Symbol symbol)
-: ('+' -> symbol)
-: ('-' -> symbol)
-: ('*' -> symbol)
-: ('/' -> symbol)
-: ('==' -> symbol)
-: ('!=' -> symbol)
-
 ExpressionStatement(Value value)
 : 'eval' .value
-
-example-grammar(Statement[] statements)
-: .statements @EOF
 
 union Type
 : NamedType
 : ListType
 
-union LiteralValue
-: IntegerValue
-: StringValue
-
-union PrimaryExpression
-: LiteralValue
-: IdentifierValue
-
-union Value
-: PrimaryExpression
-: BinaryExpression
-
 union Statement
 : ExpressionStatement
 : Declaration
+
+example-grammar(Statement[] statements)
+: .statements @EOF
