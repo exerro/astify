@@ -1,10 +1,7 @@
 
 package example;
 
-import astify.Capture;
-import astify.Parser;
-import astify.ParserException;
-import astify.PatternBuilder;
+import astify.*;
 import astify.core.Source;
 import astify.token.DefaultTokenGenerator;
 import astify.token.Token;
@@ -12,27 +9,19 @@ import astify.token.TokenException;
 import astify.token.TokenGenerator;
 
 import java.io.FileNotFoundException;
+import java.util.List;
 
 public class ExampleParser {
     public static void parse(String filePath) throws TokenException, ParserException, FileNotFoundException {
         Source source = new Source.FileSource(filePath);
         PatternBuilder builder = new ExampleGrammarPatternBuilderBase();
-        TokenGenerator generator = new DefaultTokenGenerator(source, builder.getKeywords());
-        Parser parser = new Parser();
 
-        parser.setup(builder.getMain(), generator.getStartingPosition());
-        parser.parse(generator);
+        List<Capture> results = Util.parse(source, builder);
+        int i = 0;
 
-        if (parser.hasError()) {
-            throw ParserException.combine(parser.getExceptions());
-        }
-        else {
-            int i = 0;
-
-            for (Capture result : parser.getResults()) {
-                System.out.println("Match " + (++i) + ":");
-                System.out.println(result.toString());
-            }
+        for (Capture result : results) {
+            System.out.println("Match " + (++i) + ":");
+            System.out.println(result.toString());
         }
     }
 

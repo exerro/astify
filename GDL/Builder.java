@@ -148,6 +148,12 @@ public abstract class Builder {
         }
 
         void addField(String type, String name, boolean isOptional) {
+            String toStringValue = name + ".toString().replace(\"\\n\", \"\\n\\t\")";
+
+            if (type.startsWith("List<")) {
+                toStringValue = "\"[\\n\\t\\t\" + astify.Util.concatList(" + name + ", \",\\n\").replace(\"\\n\", \"\\n\\t\\t\") + \"\\n\\t]\"";
+            }
+
             constructorParameters.add(type + " " + name);
             constructorBody.add("this." + name + " = " + name + ";");
             fields.add("private final " + type + " " + name + ";");
@@ -156,12 +162,12 @@ public abstract class Builder {
                     "}");
 
             if (isOptional) {
-                toStringBodyTerms.add("\"\t" + name + " = \" + (" + name + " == null ? \"null\" : " + name + ".toString().replace(\"\\n\", \"\\n\\t\")) + \"\\n\"");
+                toStringBodyTerms.add("\"\t" + name + " = \" + (" + name + " == null ? \"null\" : " + toStringValue + ") + \"\\n\"");
                 equalsBodyTerms.add("(" + name + " == null ? otherCasted." + name + " == null : " + name + ".equals(otherCasted." + name + "))");
             }
             else {
                 constructorBodyAssertions.add("assert " + name + " != null : \"'" + name + "' is null\";");
-                toStringBodyTerms.add("\"\t" + name + " = \" + " + name + ".toString().replace(\"\\n\", \"\\n\\t\") + \"\\n\"");
+                toStringBodyTerms.add("\"\t" + name + " = \" + " + toStringValue + " + \"\\n\"");
                 equalsBodyTerms.add(name + ".equals(otherCasted." + name + ")");
             }
 

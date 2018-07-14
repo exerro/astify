@@ -6,7 +6,7 @@ import java.util.List;
 
 class ExampleGrammarPatternBuilderBase extends astify.PatternBuilder {
 	
-	ExampleGrammarPatternBuilderBase() {
+	public ExampleGrammarPatternBuilderBase() {
 		super();
 		
 		initExampleGrammar();

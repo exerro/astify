@@ -6,7 +6,7 @@ import java.util.List;
 class ExampleGrammar extends astify.Capture.ObjectCapture {
 	private final List<Statement> statements;
 	
-	ExampleGrammar(astify.core.Position spanningPosition, List<Statement> statements) {
+	protected ExampleGrammar(astify.core.Position spanningPosition, List<Statement> statements) {
 		super(spanningPosition);
 		
 		assert statements != null : "'statements' is null";
@@ -14,14 +14,14 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 		this.statements = statements;
 	}
 	
-	List<Statement> getStatements() {
+	public List<Statement> getStatements() {
 		return statements;
 	}
 	
 	@Override
 	public String toString() {
 		return "(ExampleGrammar\n"
-			 + "	statements = " + statements.toString().replace("\n", "\n\t") + "\n"
+			 + "	statements = " + "[\n\t\t" + astify.Util.concatList(statements, ",\n").replace("\n", "\n\t\t") + "\n\t]" + "\n"
 			 + ")";
 	}
 	
@@ -40,7 +40,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 	static class NamedType extends astify.Capture.ObjectCapture implements Type {
 		private final astify.token.Token typename;
 		
-		NamedType(astify.core.Position spanningPosition, astify.token.Token typename) {
+		protected NamedType(astify.core.Position spanningPosition, astify.token.Token typename) {
 			super(spanningPosition);
 			
 			assert typename != null : "'typename' is null";
@@ -48,7 +48,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 			this.typename = typename;
 		}
 		
-		astify.token.Token getTypename() {
+		public astify.token.Token getTypename() {
 			return typename;
 		}
 		
@@ -75,7 +75,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 	static class ListType extends astify.Capture.ObjectCapture implements Type {
 		private final Type subtype;
 		
-		ListType(astify.core.Position spanningPosition, Type subtype) {
+		protected ListType(astify.core.Position spanningPosition, Type subtype) {
 			super(spanningPosition);
 			
 			assert subtype != null : "'subtype' is null";
@@ -83,7 +83,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 			this.subtype = subtype;
 		}
 		
-		Type getSubtype() {
+		public Type getSubtype() {
 			return subtype;
 		}
 		
@@ -110,7 +110,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 	static class IntegerValue extends astify.Capture.ObjectCapture implements LiteralValue {
 		private final astify.token.Token value;
 		
-		IntegerValue(astify.core.Position spanningPosition, astify.token.Token value) {
+		protected IntegerValue(astify.core.Position spanningPosition, astify.token.Token value) {
 			super(spanningPosition);
 			
 			assert value != null : "'value' is null";
@@ -118,7 +118,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 			this.value = value;
 		}
 		
-		astify.token.Token getValue() {
+		public astify.token.Token getValue() {
 			return value;
 		}
 		
@@ -145,7 +145,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 	static class StringValue extends astify.Capture.ObjectCapture implements LiteralValue {
 		private final astify.token.Token value;
 		
-		StringValue(astify.core.Position spanningPosition, astify.token.Token value) {
+		protected StringValue(astify.core.Position spanningPosition, astify.token.Token value) {
 			super(spanningPosition);
 			
 			assert value != null : "'value' is null";
@@ -153,7 +153,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 			this.value = value;
 		}
 		
-		astify.token.Token getValue() {
+		public astify.token.Token getValue() {
 			return value;
 		}
 		
@@ -180,7 +180,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 	static class IdentifierValue extends astify.Capture.ObjectCapture implements PrimaryExpression {
 		private final astify.token.Token identifier;
 		
-		IdentifierValue(astify.core.Position spanningPosition, astify.token.Token identifier) {
+		protected IdentifierValue(astify.core.Position spanningPosition, astify.token.Token identifier) {
 			super(spanningPosition);
 			
 			assert identifier != null : "'identifier' is null";
@@ -188,7 +188,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 			this.identifier = identifier;
 		}
 		
-		astify.token.Token getIdentifier() {
+		public astify.token.Token getIdentifier() {
 			return identifier;
 		}
 		
@@ -217,7 +217,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 		private final astify.token.Token variable;
 		private final Value value;
 		
-		Declaration(astify.core.Position spanningPosition, Type type, astify.token.Token variable, Value value) {
+		protected Declaration(astify.core.Position spanningPosition, Type type, astify.token.Token variable, Value value) {
 			super(spanningPosition);
 			
 			assert type != null : "'type' is null";
@@ -228,15 +228,15 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 			this.value = value;
 		}
 		
-		Type getType() {
+		public Type getType() {
 			return type;
 		}
 		
-		astify.token.Token getVariable() {
+		public astify.token.Token getVariable() {
 			return variable;
 		}
 		
-		Value getValue() {
+		public Value getValue() {
 			return value;
 		}
 		
@@ -269,7 +269,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 		private final Operator operator;
 		private final Value rvalue;
 		
-		BinaryExpression(astify.core.Position spanningPosition, PrimaryExpression lvalue, Operator operator, Value rvalue) {
+		protected BinaryExpression(astify.core.Position spanningPosition, PrimaryExpression lvalue, Operator operator, Value rvalue) {
 			super(spanningPosition);
 			
 			assert lvalue != null : "'lvalue' is null";
@@ -281,15 +281,15 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 			this.rvalue = rvalue;
 		}
 		
-		PrimaryExpression getLvalue() {
+		public PrimaryExpression getLvalue() {
 			return lvalue;
 		}
 		
-		Operator getOperator() {
+		public Operator getOperator() {
 			return operator;
 		}
 		
-		Value getRvalue() {
+		public Value getRvalue() {
 			return rvalue;
 		}
 		
@@ -320,7 +320,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 	static class Operator extends astify.Capture.ObjectCapture {
 		private final astify.token.Token symbol;
 		
-		Operator(astify.core.Position spanningPosition, astify.token.Token symbol) {
+		protected Operator(astify.core.Position spanningPosition, astify.token.Token symbol) {
 			super(spanningPosition);
 			
 			assert symbol != null : "'symbol' is null";
@@ -328,7 +328,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 			this.symbol = symbol;
 		}
 		
-		astify.token.Token getSymbol() {
+		public astify.token.Token getSymbol() {
 			return symbol;
 		}
 		
@@ -355,7 +355,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 	static class ExpressionStatement extends astify.Capture.ObjectCapture implements Statement {
 		private final Value value;
 		
-		ExpressionStatement(astify.core.Position spanningPosition, Value value) {
+		protected ExpressionStatement(astify.core.Position spanningPosition, Value value) {
 			super(spanningPosition);
 			
 			assert value != null : "'value' is null";
@@ -363,7 +363,7 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 			this.value = value;
 		}
 		
-		Value getValue() {
+		public Value getValue() {
 			return value;
 		}
 		
@@ -390,10 +390,10 @@ class ExampleGrammar extends astify.Capture.ObjectCapture {
 	interface Type extends astify.core.Positioned {
 		}
 	
-	interface LiteralValue extends PrimaryExpression, astify.core.Positioned {
+	interface LiteralValue extends astify.core.Positioned, PrimaryExpression {
 		}
 	
-	interface PrimaryExpression extends astify.core.Positioned, Value {
+	interface PrimaryExpression extends Value, astify.core.Positioned {
 		}
 	
 	interface Value extends astify.core.Positioned {
