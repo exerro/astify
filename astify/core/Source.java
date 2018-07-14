@@ -1,5 +1,6 @@
 package astify.core;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -32,15 +33,24 @@ public abstract class Source {
         private final String fileName;
         private final String filePath;
 
-        public FileSource(String path, String name) {
+        public FileSource(String path, String name) throws FileNotFoundException {
             assert path != null;
             assert name != null;
+
             filePath = path;
             fileName = name;
+
+            if (!Files.exists(Paths.get(filePath))) {
+                throw new FileNotFoundException("File not found '" + filePath + "'");
+            }
         }
 
-        public FileSource(String path) {
+        public FileSource(String path) throws FileNotFoundException {
             this(path, Paths.get(path).getFileName().toString());
+        }
+
+        public String getPath() {
+            return filePath;
         }
 
         @Override public String getName() {
@@ -52,7 +62,7 @@ public abstract class Source {
                 return new String(Files.readAllBytes(Paths.get(filePath)));
             }
             catch (IOException e) {
-                return null;
+                return "";
             }
         }
     }

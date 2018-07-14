@@ -20,6 +20,14 @@ public final class Position {
         return b.toString();
     }
 
+    private static String rep(String s, int n, String src) {
+        return rep(s, src.substring(0, n).replace("\t", "    ").length());
+    }
+
+    private static String spaces(int characters, String line) {
+        return rep(" ", characters, line);
+    }
+
     public final Source source;
     public final int line1, line2;
     public final int char1, char2;
@@ -64,15 +72,16 @@ public final class Position {
         int lineNumberLength = Math.max(1, getLength(line1, line2));
 
         if (line1 == line2) {
-            return formatNumber(line1, lineNumberLength) + " | " + source.getLine(line1) + "\n"
-                    + rep(" ", lineNumberLength + char1 + 2) + rep("^", char2 - char1 + 1);
+            String l1 = source.getLine(line1);
+            return formatNumber(line1, lineNumberLength) + " | " + l1 + "\n"
+                    + rep(" ", lineNumberLength + 2) + spaces(char1, l1) + rep("^", char2 - char1 + 1);
         }
         else {
             String l1 = source.getLine(line1), l2 = source.getLine(line2);
-            return formatNumber(line1, lineNumberLength) + " | " + l1 + "\n"
-                    + rep(" ", lineNumberLength + char1 + 2) + rep("^", l1.length() - char1 + 1) + " ...\n"
-                    + formatNumber(line2, lineNumberLength) + " | " + l2 + "\n"
-                    + rep(" ", lineNumberLength - 1) + "... " + rep("^", char2);
+            return formatNumber(line1, lineNumberLength) + " | " + l1.replace("\t", "    ") + "\n"
+                    + rep(" ", lineNumberLength + 2) + spaces(char1, l1) + rep("^", l1.length() - char1 + 1) + " ...\n"
+                    + formatNumber(line2, lineNumberLength) + " | " + l2.replace("\t", "    ") + "\n"
+                    + rep(" ", lineNumberLength - 1) + "... " + rep("^", char2, l2);
         }
     }
 
