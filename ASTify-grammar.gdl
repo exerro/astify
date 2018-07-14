@@ -42,6 +42,9 @@ Function(Keyword name, UncapturingPattern[] patterns)
 : ('list' -> name) '(' (@UncapturingPattern -> patterns) ')'
 : ('delim' -> name) '(' (@UncapturingPattern -> patterns) ',' (@UncapturingPattern -> patterns) ')'
 
+BuiltinPredicate(Word predicateName)
+: '{' .predicateName '}'
+
 Matcher(UncapturingPattern source, MatcherTarget targetProperty)
 : '(' .source '->' .targetProperty ')'
 
@@ -59,10 +62,14 @@ Extend(NamedPropertyList properties, PatternList[] patterns, Call call)
 : 'extend' .properties ':' (@PatternList -> patterns) 'in' .call
 
 // pattern unions
+union Predicate
+: BuiltinPredicate
+
 union UncapturingPattern
 : TypeReference
 : Terminal
 : Function
+: Predicate
 
 union Pattern
 : UncapturingPattern

@@ -1,12 +1,11 @@
 package GDL;
 
+import astify.MatchPredicate;
 import astify.core.Position;
 import astify.token.Token;
 import astify.token.TokenType;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 abstract class Pattern {
     // used for UncapturingPatterns
@@ -124,6 +123,26 @@ abstract class Pattern {
         }
     }
 
+    static class BuiltinPredicate extends Pattern {
+        private final String predicateName;
+
+        BuiltinPredicate(String predicateName) {
+            this.predicateName = predicateName;
+        }
+
+        String getPredicateName() {
+            return predicateName;
+        }
+
+        @Override Type getType() {
+            return new Type.BooleanType(); // TODO: this should really have an EmptyType or something
+        }
+
+        @Override public String toString() {
+            return "{" + predicateName + "}";
+        }
+    }
+
     static class TypeReference extends Pattern {
         private final Type reference;
 
@@ -237,6 +256,22 @@ abstract class Pattern {
 
                 default:
                     grammar.error("Unknown function '" + functionNameToken.getValue() + "'", functionNameToken.getPosition());
+            }
+        }
+        else if (sourcePattern instanceof ASTifyGrammar.BuiltinPredicate) {
+            Token predicateName = ((ASTifyGrammar.BuiltinPredicate) sourcePattern).getPredicateName();
+
+            Set<String> validNames = new HashSet<>();
+
+            validNames.add("noSpace");
+            validNames.add("sameLine");
+            validNames.add("nextLine");
+
+            if (validNames.contains(predicateName.getValue())) {
+                return new BuiltinPredicate(predicateName.getValue());
+            }
+            else {
+                grammar.error("No such predicate '" + predicateName.getValue() + "'", predicateName.getPosition());
             }
         }
         else if (sourcePattern instanceof ASTifyGrammar.Matcher) {

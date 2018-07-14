@@ -216,6 +216,9 @@ class PatternBuilder {
                 return "ref(\"" + NameHelper.toLowerLispCase(type.getName()) + "\")";
             }
         }
+        else if (pattern instanceof Pattern.BuiltinPredicate) {
+            return "predicate(astify.MatchPredicate." + ((Pattern.BuiltinPredicate) pattern).getPredicateName() + "())";
+        }
         else if (pattern instanceof Pattern.ListPattern) {
             if (((Pattern.ListPattern) pattern).hasSeparator()) {
                 List<String> patterns = new ArrayList<>();

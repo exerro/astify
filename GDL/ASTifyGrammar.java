@@ -27,7 +27,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 	
 	@Override
 	public String toString() {
-		return "(GDL.ASTifyGrammar\n"
+		return "(ASTifyGrammar\n"
 			 + "	_grammar = " + _grammar.toString().replace("\n", "\n\t") + "\n"
 			 + "	statements = " + statements.toString().replace("\n", "\n\t") + "\n"
 			 + ")";
@@ -77,7 +77,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		
 		@Override
 		public String toString() {
-			return "(GDL.Type\n"
+			return "(Type\n"
 				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
 				 + "	optional = " + optional.toString().replace("\n", "\n\t") + "\n"
 				 + "	lst = " + lst.toString().replace("\n", "\n\t") + "\n"
@@ -453,6 +453,41 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		}
 	}
 	
+	static class BuiltinPredicate extends astify.Capture.ObjectCapture implements Predicate {
+		private final astify.token.Token predicateName;
+		
+		BuiltinPredicate(astify.core.Position spanningPosition, astify.token.Token predicateName) {
+			super(spanningPosition);
+			
+			assert predicateName != null : "'predicateName' is null";
+			
+			this.predicateName = predicateName;
+		}
+		
+		public astify.token.Token getPredicateName() {
+			return predicateName;
+		}
+		
+		@Override
+		public String toString() {
+			return "(BuiltinPredicate\n"
+				 + "	predicateName = " + predicateName.toString().replace("\n", "\n\t") + "\n"
+				 + ")";
+		}
+		
+		@Override
+		public boolean equals(Object other) {
+			if (!(other instanceof BuiltinPredicate)) return false;
+			BuiltinPredicate otherCasted = (BuiltinPredicate) other;
+			return predicateName.equals(otherCasted.predicateName);
+		}
+		
+		@Override
+		public int hashCode() {
+			return hash(predicateName);
+		}
+	}
+	
 	static class Matcher extends astify.Capture.ObjectCapture implements Pattern {
 		private final UncapturingPattern source;
 		private final MatcherTarget targetProperty;
@@ -629,10 +664,14 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		}
 	}
 	
-	interface UncapturingPattern extends Pattern, astify.core.Positioned {
+	interface Predicate extends UncapturingPattern, astify.core.Positioned {
+		astify.token.Token getPredicateName();
+	}
+	
+	interface UncapturingPattern extends astify.core.Positioned, Pattern {
 		}
 	
-	interface Pattern extends RootPattern, astify.core.Positioned {
+	interface Pattern extends astify.core.Positioned, RootPattern {
 		}
 	
 	interface RootPattern extends astify.core.Positioned {
@@ -942,7 +981,7 @@ class ASTifyGrammar extends astify.Capture.ObjectCapture {
 		
 		@Override
 		public String toString() {
-			return "(GDL.Grammar\n"
+			return "(Grammar\n"
 				 + "	name = " + name.toString().replace("\n", "\n\t") + "\n"
 				 + ")";
 		}

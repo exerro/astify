@@ -96,6 +96,12 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			ref("function#2")
 		));
 		
+		sequence("builtin-predicate", this::__createBuiltinPredicate,
+			symbol("{"),
+			token(Word),
+			symbol("}")
+		);
+		
 		sequence("matcher", this::__createMatcher,
 			symbol("("),
 			ref("uncapturing-pattern"),
@@ -129,16 +135,22 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			ref("call")
 		);
 		
+		define("predicate", one_of(
+			ref("builtin-predicate")
+		));
+		
 		define("uncapturing-pattern", one_of(
 			ref("type-reference"),
 			ref("terminal"),
-			ref("function")
+			ref("function"),
+			ref("builtin-predicate")
 		));
 		
 		define("pattern", one_of(
 			ref("type-reference"),
 			ref("terminal"),
 			ref("function"),
+			ref("builtin-predicate"),
 			ref("matcher"),
 			ref("property-reference")
 		));
@@ -147,6 +159,7 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 			ref("type-reference"),
 			ref("terminal"),
 			ref("function"),
+			ref("builtin-predicate"),
 			ref("matcher"),
 			ref("property-reference"),
 			ref("optional")
@@ -334,6 +347,12 @@ class ASTifyGrammarPatternBuilderBase extends astify.PatternBuilder {
 		patterns.add((ASTifyGrammar.UncapturingPattern) captures.get(4));
 		
 		return new ASTifyGrammar.Function(captures.get(0).getPosition().to(captures.get(5).getPosition()), name, patterns);
+	}
+	
+	private astify.Capture __createBuiltinPredicate(List<astify.Capture> captures) {
+		astify.token.Token predicateName = ((astify.Capture.TokenCapture) captures.get(1)).getToken();
+		
+		return new ASTifyGrammar.BuiltinPredicate(captures.get(0).getPosition().to(captures.get(2).getPosition()), predicateName);
 	}
 	
 	private astify.Capture __createMatcher(List<astify.Capture> captures) {
