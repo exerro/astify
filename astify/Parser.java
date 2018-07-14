@@ -9,7 +9,7 @@ import astify.token.TokenType;
 import java.util.*;
 
 public class Parser {
-    private static final boolean debugPrint = true;
+    private static final boolean debugPrint = false;
 
     private static class PartialResult {
         private final Capture result;
@@ -66,7 +66,7 @@ public class Parser {
     public void parse(TokenGenerator generator) throws TokenException {
         Token token;
 
-        while ((token = generator.getNext()).type != TokenType.EOF) {
+        while ((token = generator.getNext()).getType() != TokenType.EOF) {
             feedToken(token);
 
             if (hasError()) {
@@ -132,7 +132,7 @@ public class Parser {
             }
         }
 
-        lastPosition = token.position;
+        lastPosition = token.getPosition();
 
         if (sequences.size() == 0) {
             exceptions = ParserException.generateFrom(failures, token);

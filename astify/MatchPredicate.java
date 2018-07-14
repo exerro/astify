@@ -29,7 +29,7 @@ public interface MatchPredicate {
     static MatchPredicate noSpace() {
         return new MatchPredicate() {
             @Override public boolean test(State state) {
-                return state.nextToken.position.isAfter(state.lastTokenPosition);
+                return state.nextToken.getPosition().isAfter(state.lastTokenPosition);
             }
 
             @Override public ParserFailure getError(State state) {
@@ -41,7 +41,7 @@ public interface MatchPredicate {
     static MatchPredicate sameLine() {
         return new MatchPredicate() {
             @Override public boolean test(State state) {
-                return state.nextToken.position.line1 == state.lastTokenPosition.line2;
+                return state.nextToken.getPosition().line1 == state.lastTokenPosition.line2;
             }
 
             @Override public ParserFailure getError(State state) {
@@ -53,7 +53,7 @@ public interface MatchPredicate {
     static MatchPredicate nextLine() {
         return new MatchPredicate() {
             @Override public boolean test(State state) {
-                return state.nextToken.type == TokenType.EOF || state.nextToken.position.line1 > state.lastTokenPosition.line2;
+                return state.nextToken.getType() == TokenType.EOF || state.nextToken.getPosition().line1 > state.lastTokenPosition.line2;
             }
 
             @Override public ParserFailure getError(State state) {

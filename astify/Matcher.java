@@ -44,7 +44,7 @@ abstract class Matcher {
         }
 
         ParserFailure getError(Token token, List<String> sources) {
-            if (type == token.type) {
+            if (type == token.getType()) {
                 return new ParserFailure.TokenValueMatchFailure(sources, value);
             }
             return new ParserFailure.TokenTypeMatchFailure(sources, type, value);

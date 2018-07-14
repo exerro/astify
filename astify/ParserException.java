@@ -23,7 +23,7 @@ public class ParserException extends Exception {
     }
 
     public String toString() {
-        return this.getClass().getName() + ":\n" + message + " in " + position.source.toString() + "\n" + position.getLineAndCaret();
+        return position.source.getName() + ": " + this.getClass().getName() + "\n\t" + message + "\n" + position.getLineAndCaret();
     }
 
     public static ParserException combine(List<ParserException> exceptions) {
@@ -39,10 +39,10 @@ public class ParserException extends Exception {
             messages.add(exception.getMessage());
         }
 
-        return new ParserException(position, String.join("\n", messages));
+        return new ParserException(position, String.join("\n\t", messages));
     }
 
-    public static List<ParserException> generateFrom(Set<ParserFailure> failures, Token token) {
+    static List<ParserException> generateFrom(Set<ParserFailure> failures, Token token) {
         Map<List<String>, Set<ParserFailure>> groups = new HashMap<>();
         Map<List<String>, String> sourceNames = new HashMap<>();
         List<ParserException> results = new ArrayList<>();
@@ -56,7 +56,6 @@ public class ParserException extends Exception {
         }
 
         includeSource = groups.size() > 1;
-        includeSource = true;
 
         for (List<String> group : groups.keySet()) {
             Set<ParserFailure> sourceFailures = groups.get(group);
@@ -82,11 +81,11 @@ public class ParserException extends Exception {
             }
 
             if (expected.size() > 0) {
-                results.add(new ParserException(token.position, message + ", got " + token.toString() + (includeSource ? " (in parse as " + sourceNames.get(group) + ")" : "")));
+                results.add(new ParserException(token.getPosition(), message + ", got " + token.toString() + (includeSource ? " (in parse as " + sourceNames.get(group) + ")" : "")));
             }
 
             for (ParserFailure failure : otherFailures) {
-                results.add(new ParserException(token.position, failure.getError() + (includeSource ? " (in parse as " + sourceNames.get(group) + ")" : "")));
+                results.add(new ParserException(token.getPosition(), failure.getError() + (includeSource ? " (in parse as " + sourceNames.get(group) + ")" : "")));
             }
         }
 

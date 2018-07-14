@@ -3,4 +3,4 @@ eval 1 + 2
 eval 3 * 4 + 2
 eval 1 == 1
 
-int x;
+int x = 1

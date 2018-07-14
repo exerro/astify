@@ -1,0 +1,28 @@
+
+import expressions
+
+grammar example-grammar
+
+NamedType(Word typename)
+: .typename
+
+ListType(Type subtype)
+: '[' .subtype ']'
+// note that doing `.subtype '[' ']'` would break the engine as left recursive grammars are not supported yet
+
+Declaration(Type type, Word variable, Value? value)
+: .type .variable ['=' .value]
+
+ExpressionStatement(Value value)
+: 'eval' .value
+
+union Type
+: NamedType
+: ListType
+
+union Statement
+: ExpressionStatement
+: Declaration
+
+example-grammar(Statement[] statements)
+: .statements @EOF

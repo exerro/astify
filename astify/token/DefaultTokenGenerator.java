@@ -32,7 +32,7 @@ public class DefaultTokenGenerator implements TokenGenerator {
             return new Token(TokenType.EOF, "", currentPosition);
         }
         if (matchString("//")) {
-            int pos = contentBuffer.indexOf('\n') + 1;
+            int pos = contentBuffer.indexOf('\n', currentBufferPosition) + 1;
             if (pos == 0) pos = contentBuffer.length();
             advance(pos - currentBufferPosition);
             return getNext();
@@ -83,10 +83,10 @@ public class DefaultTokenGenerator implements TokenGenerator {
 
                     Token exponent = consumeInteger();
 
-                    return new Token(TokenType.Float, integer.value + "." + decimal.value + "e" + expSign + exponent.value, integer.position.to(exponent.position));
+                    return new Token(TokenType.Float, integer.getValue() + "." + decimal.getValue() + "e" + expSign + exponent.getValue(), integer.getPosition().to(exponent.getPosition()));
                 }
 
-                return new Token(TokenType.Float, integer.value + "." + decimal.value, integer.position.to(decimal.position));
+                return new Token(TokenType.Float, integer.getValue() + "." + decimal.getValue(), integer.getPosition().to(decimal.getPosition()));
             }
 
             return integer;
@@ -153,7 +153,7 @@ public class DefaultTokenGenerator implements TokenGenerator {
         return new Token(TokenType.Integer, number.toString(), position);
     }
 
-    private Token consumeWord() {
+    protected Token consumeWord() {
         StringBuilder word = new StringBuilder();
         Position position = currentPosition;
 

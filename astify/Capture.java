@@ -38,19 +38,23 @@ public abstract class Capture implements Positioned {
     }
 
     public static final class TokenCapture extends Capture {
-        public final Token token;
+        private final Token token;
 
         public TokenCapture(Token token) {
-            super(token.position);
+            super(token.getPosition());
             this.token = token;
         }
 
+        public Token getToken() {
+            return token;
+        }
+
         public TokenType getType() {
-            return token.type;
+            return token.getType();
         }
 
         public String getValue() {
-            return token.value;
+            return token.getValue();
         }
 
         @Override public String toString() {
@@ -68,15 +72,15 @@ public abstract class Capture implements Positioned {
         }
     }
 
-    public static class ListCapture<T> extends Capture {
-        private final List<T> elements;
+    public static class ListCapture extends Capture {
+        private final List<Capture> elements;
 
-        public ListCapture(Position spanningPosition, List<T> elements) {
+        public ListCapture(Position spanningPosition, List<Capture> elements) {
             super(spanningPosition);
             this.elements = elements;
         }
 
-        public T get(int i) {
+        public Capture get(int i) {
             return elements.get(i);
         }
 
@@ -88,49 +92,50 @@ public abstract class Capture implements Positioned {
             return size() == 0;
         }
 
-        public List<T> all() {
+        public List<Capture> all() {
             return new ArrayList<>(elements);
         }
 
-        public Iterator<T> iterator() {
-            return new Iterator<T>() {
+        public Iterator<Capture> iterator() {
+            return new Iterator<Capture>() {
                 int i = 0;
 
                 @Override public boolean hasNext() {
                     return i < size();
                 }
 
-                @Override public T next() {
+                @Override public Capture next() {
                     return get(i++);
                 }
             };
         }
 
         // creates an empty list capture spanning the given position
-        public static<T> ListCapture<T> createEmpty(Position spanningPosition) {
-            return new ListCapture<>(spanningPosition, new ArrayList<>());
+        public static ListCapture createEmpty(Position spanningPosition) {
+            return new ListCapture(spanningPosition, new ArrayList<>());
         }
 
         // returns a list capture containing all given elements, spanning the position defined by the first and last element given
-        public static<T extends Positioned> ListCapture<T> createFrom(List<T> elements) {
+        public static ListCapture createFrom(List<Capture> elements) {
             assert elements != null;
             assert !elements.isEmpty();
 
-            return new ListCapture<>(elements.get(0).getPosition().to(elements.get(elements.size() - 1).getPosition()), elements);
+            return new ListCapture(elements.get(0).getPosition().to(elements.get(elements.size() - 1).getPosition()), elements);
         }
 
         // returns an empty list capture spanning the given position if elements is empty, otherwise returns createFrom(elements)
-        public static<T extends Positioned> ListCapture createFrom(List<T> elements, Position spanningPosition) {
+        public static ListCapture createFrom(List<Capture> elements, Position spanningPosition) {
             return elements.isEmpty() ? createEmpty(spanningPosition) : createFrom(elements);
         }
 
         @Override public String toString() {
             if (elements.isEmpty()) return "<list-capture>";
-            StringBuilder builder = new StringBuilder("<list-capture " + elements.get(0).toString());
+            StringBuilder builder = new StringBuilder("<list-capture\n");
 
-            for (int i = 1; i < elements.size(); ++i) {
-                builder.append(", ")
-                       .append(elements.get(i).toString());
+            for (int i = 0; i < elements.size(); ++i) {
+                builder.append("\t")
+                        .append(elements.get(i).toString().replace("\n", "\n\t"))
+                        .append("\n");
             }
 
             return builder.append(">").toString();
