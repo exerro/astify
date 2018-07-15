@@ -587,13 +587,18 @@ class PatternBuilder {
             return activeCaptureList.get(activeCaptureList.size() - 1);
         }
 
-        void addProperty(String name, Type type, String initialValue) {
-            variableTypes.put(name, type);
-            variableValues.put(name, initialValue);
-        }
-
         void addProperty(String name, Type type) {
-            addProperty(name, type, "null");
+            String defaultValue = "null";
+
+            if (type instanceof Type.ListType) {
+                defaultValue = "new ArrayList<>()";
+            }
+            if (type instanceof Type.BooleanType) {
+                defaultValue = "false";
+            }
+
+            variableTypes.put(name, type);
+            variableValues.put(name, defaultValue);
         }
 
         void enterConditional(String condition) {
@@ -754,16 +759,7 @@ class PatternBuilder {
 
             for (Iterator<Property> it = type.getProperties().iterator(); it.hasNext(); ) {
                 Property property = it.next();
-                String defaultValue = "null";
-
-                if (property.getType() instanceof Type.ListType) {
-                    defaultValue = "new ArrayList<>()";
-                }
-                if (property.getType() instanceof Type.BooleanType) {
-                    defaultValue = "false";
-                }
-
-                addProperty(property.getName(), property.getType(), defaultValue);
+                addProperty(property.getName(), property.getType());
             }
         }
 
