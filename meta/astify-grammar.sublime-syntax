@@ -1,0 +1,266 @@
+%YAML 1.2
+
+# http://www.sublimetext.com/docs/3/syntax.html
+
+name: ASTifyGrammar
+file_extensions:
+  - gdl
+scope: source.astify-runtime-grammar
+
+variables:
+  variables: \b(list|delim|EOF)\b
+  keyword: \b(abstract|union|grammar)\b|{{variables}}
+  word: \b[\w_\-]+\b
+  name: (?!{{keyword}}){{word}}
+
+contexts:
+  main:
+    - match: (?=.)
+      push: [definitions, grammar-def]
+
+    - include: comments
+
+  grammar-def:
+    - match: \b(grammar)\s+([\w_\-]+)\b
+      captures:
+        1: keyword.declaration.astify-runtime-grammar
+        2: entity.name.namespace.astify-runtime-grammar
+      pop: true
+
+    - include: comments
+    - include: invalid
+
+  definitions:
+    - match: \babstract\b
+      scope: storage.modifier.astify-runtime-grammar
+      push: named-property-list
+
+    - match: \bunion\b
+      scope: keyword.control.astify-runtime-grammar
+      push: union-definition
+
+    - match: (?={{name}})
+      push: [definition-body, named-property-list]
+
+    - include: comments
+    - include: invalid
+
+  named-property-list:
+    - match: '{{name}}'
+      scope: entity.name.function.astify-runtime-grammar
+      set:
+        - match: \(
+          set:
+            - match: '\)'
+              pop: true
+
+            - match: ','
+              scope: punctuation.separator.sequence.astify-runtime-grammar
+
+            - match: '(?={{name}})'
+              push: [name-match, type]
+
+            - include: comments
+            - include: invalid
+
+        - include: comments
+        - include: invalid
+
+    - include: comments
+    - include: invalid
+
+  union-definition:
+    - match: '{{name}}'
+      scope: entity.name.type.astify-runtime-grammar
+      set:
+
+        - match: ':'
+          scope: punctuation.separator.astify-runtime-grammar
+          push:
+            - match: '{{name}}'
+              scope: entity.name.astify-runtime-grammar
+              pop: true
+
+            - match: \s+
+
+            - match: .
+              scope: invalid.illegal.astify-runtime-grammar
+
+        - match: \s+
+
+        - match: (?=.)
+          pop: true
+
+    - include: comments
+    - include: invalid
+
+  definition-body:
+    - match: ':'
+      scope: punctuation.separator.astify-runtime-grammar
+      push: [pattern-list]
+
+    - match: \s+
+
+    - match: (?=.)
+      pop: true
+
+    - include: comments
+
+  pattern-list:
+    - match: "'"
+      scope: string.quoted.single.astify-runtime-grammar
+      push:
+        - match: "'"
+          scope: string.quoted.single.astify-runtime-grammar
+          pop: true
+
+        - match: '\\.|.'
+          scope: string.quoted.single.astify-runtime-grammar
+
+        - include: comments
+
+    - match: '\['
+      scope: punctuation.section.braces.begin.astify-runtime-grammar
+      push: [closing-brace, pattern-list]
+
+    - match: '\.'
+      scope: punctuation.accessor.astify-runtime-grammar
+      push:
+        - match: '{{name}}'
+          scope: meta.tag.astify-runtime-grammar
+          set:
+            - match: '\('
+              set: [closing-paren, pattern-list]
+
+            - match: \s+
+
+            - match: (?=.)
+              pop: true
+
+        - include: comments
+        - include: invalid
+
+    - match: '\@'
+      scope: punctuation.accessor.astify-runtime-grammar
+      push:
+        - match: '{{word}}'
+          scope: storage.type.astify-runtime-grammar
+          pop: true
+
+        - include: comments
+        - include: invalid
+
+    - match: '{{variables}}(?=\s*\()'
+      scope: support.function.astify-runtime-grammar
+      push:
+        - match: '\('
+          set: [comma-paren, pattern-list]
+
+        - match: \s+
+
+        - match: .
+          scope: invalid.illegal.astify-runtime-grammar
+
+    - match: '{{variables}}'
+      scope: support.constant.astify-runtime-grammar
+
+    - match: '\('
+      scope: entity.other.astify-runtime-grammar
+      push: [closing-paren, matcher-target, rarrow, pattern-list]
+
+    - match: \s+
+
+    - match: '(?=.)'
+      pop: true
+
+    - include: comments
+
+  rarrow:
+    - match: '\-\>'
+      scope: keyword.operator.logical.astify-runtime-grammar
+      pop: true
+
+    - include: comments
+    - include: invalid
+
+  matcher-target:
+    - match: '{{name}}'
+      scope: meta.tag.astify-runtime-grammar
+      pop: true
+
+    - include: comments
+    - include: invalid
+
+  closing-brace:
+    - match: '\]'
+      scope: punctuation.section.braces.end.astify-runtime-grammar
+      pop: true
+
+    - include: comments
+    - include: invalid
+
+  closing-paren:
+    - match: '\)'
+      scope: punctuation.section.parens.end.astify-runtime-grammar
+      pop: true
+
+    - include: comments
+    - include: invalid
+
+  name-match:
+    - match: '{{name}}'
+      scope: entity.name.astify-runtime-grammar
+      pop: true
+
+    - include: comments
+    - include: invalid
+
+  type:
+    - match: '{{name}}'
+      scope: storage.type.astify-runtime-grammar
+      set:
+        - match: '\[\]'
+          scope: meta.type.astify-runtime-grammar
+
+        - match: '\?'
+          scope: meta.type.astify-runtime-grammar
+
+        - match: \s+
+
+        - match: (?=.)
+          pop: true
+
+    - include: comments
+    - include: invalid
+
+  newline:
+    - match: '$'
+      pop: true
+
+    - include: comments
+    - include: invalid
+
+  comma-paren:
+    - match: '\,'
+      scope: punctuation.separator.sequence.astify-runtime-grammar
+      set: [comma-paren, pattern-list]
+
+    - match: '\)'
+      scope: punctuation.section.parens.end.astify-runtime-grammar
+      pop: true
+
+    - include: comments
+    - include: invalid
+
+  comments:
+    - match: //.*$
+      scope: comment.line.double-slash.astify-runtime-grammar
+
+    - match: /\*.*\*/
+      scope: comment.block.astify-runtime-grammar
+
+  invalid:
+    - match: \s+
+
+    - match: .
+      scope: invalid.illegal.astify-runtime-grammar

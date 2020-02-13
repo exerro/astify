@@ -1,28 +1,41 @@
 
-import expressions
+grammar ExampleGrammar
 
-grammar example-grammar
+////////////////////////////////////////////////////////////////////////////////
 
-NamedType(Word typename)
-: .typename
+inline token Digit         :: '[0-9]'
+inline token Letter        :: '[a-zA-Z]'
+inline token LetterOrDigit :: '[a-zA-Z0-9]'
 
-ListType(Type subtype)
-: '[' .subtype ']'
-// note that doing `.subtype '[' ']'` would break the engine as left recursive grammars are not supported yet
+skip token Whitespace :: '[ \t]+'
+skip token Newline    :: '\n'
+skip token Comment    :: '/\\*.*\\*/|//.*\n'
 
-Declaration(Type type, Word variable, Value? value)
-: .type .variable ['=' .value]
+token IdentifierToken :: '{Letter}({LetterOrDigit}|_)*'
+token IntegerToken    :: '{Digit}+'
 
-ExpressionStatement(Value value)
-: 'eval' .value
+keyword IdentifierToken -> KeywordToken
+symbol SymbolToken
 
-union Type
-: NamedType
-: ListType
+////////////////////////////////////////////////////////////////////////////////
 
-union Statement
-: ExpressionStatement
-: Declaration
+Type
+    | Named :: name: IdentifierToken
+    | List  :: '[' Type ']'
 
-example-grammar(Statement[] statements)
-: .statements @EOF
+Statement
+    | Declaration         :: Type name: IdentifierToken ['=' Value]
+    | ExpressionStatement :: 'eval' Value
+    
+Value
+    | LiteralInteger :: token: IntegerToken
+    | LiteralString  :: token: StringToken
+    | Identifier     :: token: IdentifierToken
+    | infixl 1 Add   :: '+'
+    | infixl 1 Sub   :: '-'
+    | infixl 2 Mul   :: '*'
+    | infixl 2 Div   :: '/'
+    | infixl 3 Eq    :: '=='
+    | infixl 3 Neq   :: '!='
+
+ExampleGrammar :: {Statement *} EOF
