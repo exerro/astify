@@ -1,136 +1,55 @@
 
-grammar ASTify-grammar
+grammar GDL
 
+////////////////////////////////////////////////////////////////////////////////
 
+inline token Digit         :: '[0-9]'
+inline token Letter        :: '[a-zA-Z]'
+inline token LetterOrDigit :: '[a-zA-Z0-9]'
 
-// utilities
-Type(Word name, bool optional, bool lst)
-: .name .optional('?') .lst('[' ']')
+skip token Whitespace :: '[ \t]+'
+skip token Newline    :: '\n'
+skip token Comment    :: '/\\*.*\\*/|//.*\n'
 
-TypedName(Type type, Word name)
-: .type .name
+token StringToken     :: '\'(\\\\.|[^\'])*\'|"(\\\\.|[^"])*"'
+token IdentifierToken :: '{Letter}({LetterOrDigit}|_)*'
+token IntegerToken    :: '{Digit}+'
 
-MatcherTarget(Word property)
-: .property
+keyword IdentifierToken -> KeywordToken
+symbol SymbolToken
 
-PatternList(RootPattern[] patterns)
-: ':' (@RootPattern -> patterns) .patterns
+////////////////////////////////////////////////////////////////////////////////
 
-NamedPropertyList(Word name, TypedName[] properties)
-: .name '(' [.properties(',')] ')'
+GDL :: 'grammar' (IdentifierToken as grammarName) ({GDLStatement *} as statements)
 
-Call(Word functionName, Parameter[] parameters)
-: .functionName '(' [.parameters(',')] ')'
+GDLStatement {
+    GDLTokenStatement {
+        GDLSymbolSpecifier       :: 'symbol' (IdentifierToken as symbolToken)
+        GDLKeywordTransformer    :: 'keyword' (IdentifierToken as sourceToken) '->' (IdentifierToken as keywordToken)
+        GDLTokenDefinition       :: ('skip' as? skip) 'token' (IdentifierToken as name) '::' (StringToken as regex)
+        GDLInlineTokenDefinition :: 'inline' 'token' (IdentifierToken as name) '::' (StringToken as regex)
+    }
+    GDLRuleStatement {
+        GDLRule            :: (IdentifierToken as name) ['<' {IdentifierToken as parameter ~ ','} '>'] '::' {GDLPattern as pattern *} Newline
+        GDLAlternationRule :: (IdentifierToken as name) ['<' {IdentifierToken as parameter ~ ','} '>'] '{' {GDLAlternationRuleStatement as statement *} '}'
+    }
+}
 
-Reference(Word reference)
-: .reference
+GDLAlternationRuleStatement {
+        GDLInfixLRule      :: 'infixl' (IntegerToken as precedence) (IdentifierToken as name) '::' {GDLPattern as pattern *} Newline
+        GDLInfixRRule      :: 'infixr' (IntegerToken as precedence) (IdentifierToken as name) '::' {GDLPattern as pattern *} Newline
+        GDLUnaryLRule      :: 'unaryl' (IntegerToken as precedence) (IdentifierToken as name) '::' {GDLPattern as pattern *} Newline
+        GDLUnaryRRule      :: 'unaryr' (IntegerToken as precedence) (IdentifierToken as name) '::' {GDLPattern as pattern *} Newline
+        GDLRule            :: (IdentifierToken as name) '::' {GDLPattern as pattern *} Newline
+        GDLAlternationRule :: (IdentifierToken as name) '{' statements: {GDLAlternationRuleStatement *} '}'
+}
 
-union Parameter
-: Reference
-: Call
-
-
-
-// patterns
-TypeReference(Word type)
-: '@' .type
-
-Terminal(String terminal)
-: .terminal
-
-Function(Keyword name, UncapturingPattern[] patterns)
-: ('list' -> name) '(' (@UncapturingPattern -> patterns) ')'
-: ('delim' -> name) '(' (@UncapturingPattern -> patterns) ',' (@UncapturingPattern -> patterns) ')'
-
-BuiltinPredicate(Word predicateName)
-: '{' .predicateName '}'
-
-Matcher(UncapturingPattern source, MatcherTarget targetProperty)
-: '(' .source '->' .targetProperty ')'
-
-// wrapper around Matcher
-// without a qualifier: (@typeof(property) -> .property)
-// with a qualifier (if property is a list): (delim(@typeof(property), qualifier) -> .property)
-//                  (if property is an optional): [(qualifier -> .property)]
-PropertyReference(Word property, UncapturingPattern[] qualifier)
-: '.' .property ['(' .qualifier ')']
-
-Optional(Pattern[] patterns)
-: '[' .patterns ']'
-
-Extend(NamedPropertyList properties, PatternList[] patterns, Call call)
-: 'extend' .properties ':' (@PatternList -> patterns) 'in' .call
-
-// pattern unions
-union Predicate
-: BuiltinPredicate
-
-union UncapturingPattern
-: TypeReference
-: Terminal
-: Function
-: Predicate
-
-union Pattern
-: UncapturingPattern
-: Matcher
-: PropertyReference
-
-union RootPattern
-: Pattern
-: Optional
-
-
-
-// statements
-AbstractTypeDefinition(NamedPropertyList properties)
-: 'abstract' .properties
-
-TypeDefinition(NamedPropertyList properties, PatternList[] patternLists)
-: .properties .patternLists
-
-Union(Word typename, Word[] subtypes)
-: 'union' .typename ':' .subtypes(':')
-
-AliasDefinition(Word name, TypedName? property, PatternList[] patternLists)
-: 'alias' .name ['(' .property ')'] (@PatternList -> patternLists) .patternLists
-
-ExternDefinition(Type returnType, Word name, TypedName[] parameters, PatternList[] patternLists)
-: 'extern' .returnType .name '(' [.parameters(',')] ')' .patternLists
-
-ApplyStatement(Call call, PatternList[] patternLists)
-: 'apply' (@Call -> call) (@PatternList -> patternLists) .patternLists
-
-// definition union
-union Definition
-: AbstractTypeDefinition
-: TypeDefinition
-: Union
-: AliasDefinition
-: ExternDefinition
-
-union Statement
-: ApplyStatement
-: Definition
-
-// import statements
-RelativeImportStatement(Word[] parts)
-: 'import' .parts(',')
-
-AbsoluteImportStatement(String importPath)
-: 'import' .importPath
-
-union ImportStatement
-: RelativeImportStatement
-: AbsoluteImportStatement
-
-
-
-// grammar
-Grammar(Word name)
-: 'grammar' .name
-
-ASTify-grammar(ImportStatement[] imports, Grammar? _grammar, Statement[] statements)
-: .imports [._grammar] .statements @EOF
-
-
+GDLPattern {
+    GDLLiteral       :: StringToken as value
+    GDLRuleReference :: ('inline' as? inline) (IdentifierToken as reference) ['<' {GDLPattern as parameter ~ ','} '>'] ['as' ('?' as? q) (IdentifierToken as label)]
+    GDLParen         :: '(' {GDLPattern as pattern *} ')'
+    GDLSepBy         :: '{' {GDLPattern as pattern *} '~' ({GDLPattern *} as delimiter) ('?' as? zeroAccepted) '}'
+    GDLMany0         :: '{' {GDLPattern as pattern *} '*' '}'
+    GDLMany1         :: '{' {GDLPattern as pattern *} '+' '}'
+    GDLOptional      :: '[' {GDLPattern as pattern *} ']'
+}

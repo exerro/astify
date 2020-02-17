@@ -19,23 +19,26 @@ symbol SymbolToken
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Type
-    | Named :: name: IdentifierToken
-    | List  :: '[' Type ']'
+Type {
+    Named :: IdentifierToken as name
+    List  :: '[' Type ']'
+}
 
-Statement
-    | Declaration         :: Type name: IdentifierToken ['=' Value]
-    | ExpressionStatement :: 'eval' Value
-    
-Value
-    | LiteralInteger :: token: IntegerToken
-    | LiteralString  :: token: StringToken
-    | Identifier     :: token: IdentifierToken
-    | infixl 1 Add   :: '+'
-    | infixl 1 Sub   :: '-'
-    | infixl 2 Mul   :: '*'
-    | infixl 2 Div   :: '/'
-    | infixl 3 Eq    :: '=='
-    | infixl 3 Neq   :: '!='
+Statement {
+    Declaration         :: Type (IdentifierToken as name) ['=' Value]
+    ExpressionStatement :: 'eval' Value
+}
+
+Value {
+    LiteralInteger :: IntegerToken as token
+    LiteralString  :: StringToken as token
+    Identifier     :: IdentifierToken as token
+    infixl 1 Add   :: '+'
+    infixl 1 Sub   :: '-'
+    infixl 2 Mul   :: '*'
+    infixl 2 Div   :: '/'
+    infixl 3 Eq    :: '=='
+    infixl 3 Neq   :: '!='
+}
 
 ExampleGrammar :: {Statement *} EOF
