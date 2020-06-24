@@ -1,5 +1,8 @@
+package regex
+
 import astify.LexerTools
 import astify.SparseDFA
+import uniqueRanges
 
 internal fun regexToDFA(regex: RegexAST): SparseDFA {
     val nfa = regex.toNFA(NFA.State(SparseDFA.State.Type.Final))
@@ -93,7 +96,7 @@ private fun NFA.State.followEpsilonTransitions(
 }
 
 private fun Iterable<NFA.State>.followEpsilonTransitions()
-        = PFETStates(flatMap { it.followEpsilonTransitions().states } .toSet())
+        = PFETStates(flatMap { it.followEpsilonTransitions().states }.toSet())
 
 ////////////////////////////////////////////////////////////////////////////////
 

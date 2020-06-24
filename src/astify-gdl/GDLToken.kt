@@ -1,4 +1,10 @@
 import astify.*
+import regex.RegexAlt
+import regex.RegexAny
+import regex.RegexCharRange
+import regex.RegexRep0
+import regex.RegexSeq
+import regex.regexToDFA
 
 internal fun gdlTokenStream(input: String): TokenStream<GDLToken> = Lexer(gdlLexerDescriptor, input)
         .map { tk -> when (tk) { // map relevant identifiers to keywords

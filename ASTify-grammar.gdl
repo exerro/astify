@@ -20,36 +20,40 @@ symbol SymbolToken
 
 ////////////////////////////////////////////////////////////////////////////////
 
-GDL :: 'grammar' (IdentifierToken as grammarName) ({GDLStatement *} as statements)
+GDL :: 'grammar' (IdentifierToken as grammarName) (many GDLStatement as statements)
 
 GDLStatement {
     GDLTokenStatement {
         GDLSymbolSpecifier       :: 'symbol' (IdentifierToken as symbolToken)
         GDLKeywordTransformer    :: 'keyword' (IdentifierToken as sourceToken) '->' (IdentifierToken as keywordToken)
-        GDLTokenDefinition       :: ('skip' as? skip) 'token' (IdentifierToken as name) '::' (StringToken as regex)
-        GDLInlineTokenDefinition :: 'inline' 'token' (IdentifierToken as name) '::' (StringToken as regex)
+        GDLTokenDefinition       :: ('skip' as skip) ('inline' as inline) 'token' (IdentifierToken as name) '::' (StringToken as regex)
     }
     GDLRuleStatement {
-        GDLRule            :: (IdentifierToken as name) ['<' {IdentifierToken as parameter ~ ','} '>'] '::' {GDLPattern as pattern *} Newline
-        GDLAlternationRule :: (IdentifierToken as name) ['<' {IdentifierToken as parameter ~ ','} '>'] '{' {GDLAlternationRuleStatement as statement *} '}'
+        // GDLRule            :: (IdentifierToken as name) ['<' (IdentifierToken sepBy ',' as parameters} '>'] '::' (many GDLPattern as patterns) Newline
+        // GDLAlternationRule :: (IdentifierToken as name) ['<' (IdentifierToken sepBy ',' as parameters} '>'] '{' (many GDLAlternationRuleStatement as statements) '}'
+        GDLRule            :: (IdentifierToken as name) '::' (many GDLPattern as patterns) Newline
+        GDLAlternationRule :: (IdentifierToken as name) '{' (many GDLAlternationRuleStatement as statements) '}'
     }
+}
+
+GDLOperatorPrefix {
+    InfixL :: 'infixl' (IntegerToken as precedence)
+    InfixR :: 'infixr' (IntegerToken as precedence)
+    UnaryL :: 'unaryl' (IntegerToken as precedence)
+    UnaryR :: 'unaryr' (IntegerToken as precedence)
 }
 
 GDLAlternationRuleStatement {
-        GDLInfixLRule      :: 'infixl' (IntegerToken as precedence) (IdentifierToken as name) '::' {GDLPattern as pattern *} Newline
-        GDLInfixRRule      :: 'infixr' (IntegerToken as precedence) (IdentifierToken as name) '::' {GDLPattern as pattern *} Newline
-        GDLUnaryLRule      :: 'unaryl' (IntegerToken as precedence) (IdentifierToken as name) '::' {GDLPattern as pattern *} Newline
-        GDLUnaryRRule      :: 'unaryr' (IntegerToken as precedence) (IdentifierToken as name) '::' {GDLPattern as pattern *} Newline
-        GDLRule            :: (IdentifierToken as name) '::' {GDLPattern as pattern *} Newline
-        GDLAlternationRule :: (IdentifierToken as name) '{' statements: {GDLAlternationRuleStatement *} '}'
+    GDLRule            :: [GDLOperatorPrefix as operator] (IdentifierToken as name) '::' (many GDLPattern as patterns) Newline
+    GDLAlternationRule :: (IdentifierToken as name) '{' (many GDLAlternationRuleStatement as statements) '}'
 }
 
 GDLPattern {
-    GDLLiteral       :: StringToken as value
-    GDLRuleReference :: ('inline' as? inline) (IdentifierToken as reference) ['<' {GDLPattern as parameter ~ ','} '>'] ['as' ('?' as? q) (IdentifierToken as label)]
-    GDLParen         :: '(' {GDLPattern as pattern *} ')'
-    GDLSepBy         :: '{' {GDLPattern as pattern *} '~' ({GDLPattern *} as delimiter) ('?' as? zeroAccepted) '}'
-    GDLMany0         :: '{' {GDLPattern as pattern *} '*' '}'
-    GDLMany1         :: '{' {GDLPattern as pattern *} '+' '}'
-    GDLOptional      :: '[' {GDLPattern as pattern *} ']'
+    GDLLiteral       :: (StringToken as value)
+    // GDLRuleReference :: ['inline' as inline] (IdentifierToken as reference) ['<' {GDLPattern as parameter ~ ','} '>'] ['as' ('?' as? q) (IdentifierToken as label)]
+    GDLRuleReference :: (IdentifierToken as reference)
+    GDLLabel         :: '(' (many GDLPattern as patterns) 'as' (IdentifierToken as name) ')'
+    GDLSepBy         :: '(' (many GDLPattern as patterns) 'sepBy' ['+' as atLeast1] (many GDLPattern as delimiters) ['as' (IdentifierToken as label)] ')'
+    GDLMany0         :: '(' 'many' ['+' as atLeast1] (many GDLPattern as patterns) ['as' (IdentifierToken as label)] ')'
+    GDLOptional      :: '[' (many GDLPattern as patterns) ['as' (IdentifierToken as label)] ']'
 }

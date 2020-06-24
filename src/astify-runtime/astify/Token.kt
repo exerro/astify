@@ -3,9 +3,9 @@ package astify
 import java.util.*
 
 abstract class Token(
-        val position: TextPosition,
+        override val position: TextPosition,
         val text: String
-) {
+): TextPositioned {
     override fun equals(other: Any?): Boolean {
         if (other == null) return false
         if (other::class != this::class) return false

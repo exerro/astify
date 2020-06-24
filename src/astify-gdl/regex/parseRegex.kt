@@ -1,10 +1,12 @@
 @file:Suppress("SelfReferenceConstructorParameter")
 
+package regex
+
 import astify.TokenStream
 
-private fun parseRegex(
+internal fun parseRegex(
         tokens: TokenStream<RegexToken>
-): RegexAST = parseTermsWhile(tokens) { true } .first
+): RegexAST = parseTermsWhile(tokens) { true }.first
 
 private fun parseTermsWhile(
         tokens: TokenStream<RegexToken>,

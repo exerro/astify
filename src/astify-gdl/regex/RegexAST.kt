@@ -1,4 +1,4 @@
-
+package regex
 internal fun regexToString(r: RegexAST): String = when (r) {
     is RegexCharRange -> r.run { "[$min-$max]" }
     is RegexAlt -> "(${r.rs.joinToString("|", transform = ::regexToString)})"

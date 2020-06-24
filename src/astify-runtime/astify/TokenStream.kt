@@ -1,15 +1,31 @@
 package astify
 
+import kotlin.reflect.KProperty0
+
 interface TokenStream<T: Token> {
-    fun next(): TokenStreamPair<T>
+    val next: TokenStreamNext<T>
 
     companion object {
-        fun <T: Token> pure(tokens: List<T>): TokenStream<T> = PureTokenStream(tokens)
-        fun <T: Token> pure(vararg tokens: T) = pure(tokens.toList())
+        fun <T: Token> pure(
+                p0: TextPosition = TextPosition.BEGIN,
+                tokens: List<T>
+        ): TokenStream<T> = PureTokenStream(p0, tokens)
+
+        fun <T: Token> pure(
+                p0: TextPosition = TextPosition.BEGIN,
+                vararg tokens: T
+        ): TokenStream<T> = pure(p0, tokens.toList())
     }
 }
 
-data class TokenStreamPair<T: Token>(val token: T?, val stream: TokenStream<T>)
+data class TokenStreamNext<T: Token>(
+        /** The next token, or null if the end of input has been reached. */
+        val token: T?,
+        /** The position of the previous token. */
+        val lastTokenPosition: TextPosition,
+        /** The next token stream object. */
+        val stream: TokenStream<T>
+)
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -31,20 +47,24 @@ private class MapTokenStream<T: Token, R: Token>(
         private val stream: TokenStream<T>,
         private val fn: (T) -> R
 ): TokenStream<R> {
-    override fun next(): TokenStreamPair<R> {
-        val (t, s) = stream.next()
-        return TokenStreamPair(t?.let(fn), MapTokenStream(s, fn))
+    override val next by LazyTS {
+        val (t, p, s) = stream.next
+        TokenStreamNext(t?.let(fn), p, MapTokenStream(s, fn))
     }
+    //    override val next: TokenStreamNext<R> by lazy {
+//        val (t, p, s) = stream.next()
+//        return TokenStreamNext(t?.let(fn), p, MapTokenStream(s, fn))
+//    }
 }
 
 private class JoinTokenStream<T: Token>(
         private val a: TokenStream<T>,
         private val b: TokenStream<T>
 ): TokenStream<T> {
-    override fun next(): TokenStreamPair<T> {
-        val (t, s) = a.next()
-        return if (t == null) b.next()
-        else TokenStreamPair(t, JoinTokenStream(s, b))
+    override val next: TokenStreamNext<T> by LazyTS {
+        val (t, p, s) = a.next
+        if (t == null) b.next
+        else TokenStreamNext(t, p, JoinTokenStream(s, b))
     }
 }
 
@@ -52,18 +72,28 @@ private class FlatMapTokenStream<T: Token, R: Token>(
         private val stream: TokenStream<T>,
         private val fn: (T) -> TokenStream<R>
 ): TokenStream<R> {
-    override fun next(): TokenStreamPair<R> {
-        val pair = stream.next()
-        return if (pair.token == null) TokenStreamPair(null, this)
-        else (fn(pair.token) + FlatMapTokenStream(pair.stream, fn)).next()
+    override val next by LazyTS {
+        val n = stream.next
+        if (n.token == null) TokenStreamNext(null, n.lastTokenPosition, this)
+        else (fn(n.token) + FlatMapTokenStream(n.stream, fn)).next
     }
 }
 
 private class PureTokenStream<T: Token>(
+        private val p0: TextPosition,
         private val tokens: List<T>
 ): TokenStream<T> {
-    override fun next() = TokenStreamPair(
-            tokens.getOrNull(0),
-            PureTokenStream(tokens.drop(1))
-    )
+    override val next by LazyTS {
+        val tk = tokens.getOrNull(0)
+        TokenStreamNext(
+                tk, p0,
+                PureTokenStream(tk?.position ?: p0, tokens.drop(1))
+        )
+    }
+}
+
+private class LazyTS<T: Token>(
+        private val get: () -> TokenStreamNext<T>
+) {
+    val getValue: (TokenStream<T>, KProperty0<*>) -> TokenStreamNext<T> = { _, _ -> get() }
 }

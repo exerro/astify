@@ -66,19 +66,19 @@ class LexerDescriptor<T>(
 class Lexer<T: Token>(
         private val descriptor: LexerDescriptor<T>,
         private val input: ByteArray,
-        private val index: Int = 0
+        private val index: Int
 ): TokenStream<T> {
     constructor(descriptor: LexerDescriptor<T>, input: String):
-            this(descriptor, input.toByteArray())
+            this(descriptor, input.toByteArray(), 0)
 
-    override fun next(): TokenStreamPair<T> {
-        if (index == input.size)
-            return TokenStreamPair(null, this)
+    override fun next(): TokenStreamNext<T> {
+        if (index >= input.size)
+            return TokenStreamNext(null, TextPosition(input.size), this)
 
         val (ti, i) = readToken(input, index, descriptor)
         val token = descriptor.createToken(input, ti, index, i)
         val nextLexer = Lexer(descriptor, input, i)
-        return TokenStreamPair(token, nextLexer)
+        return TokenStreamNext(token, token.position, nextLexer)
     }
 }
 
